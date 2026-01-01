@@ -243,52 +243,7 @@ export default function LabResults() {
         </CardContent>
       </Card>
 
-      {/* Latest Results */}
-      {labResults.length > 0 && (
-        <>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900">Latest Results</h2>
-            <span className="text-sm text-slate-500">
-              {new Date(labResults[0].upload_date).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </span>
-          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {biomarkerList.map((biomarker) => {
-              const data = labResults[0]?.biomarkers?.[biomarker];
-              if (!data) return null;
-
-              return (
-                <motion.div
-                  key={biomarker}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <Card className="border-slate-200">
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <p className="text-sm font-medium text-slate-600">{biomarker}</p>
-                          <p className="text-2xl font-bold text-slate-900 mt-1">
-                            {data.value}
-                            <span className="text-sm text-slate-500 ml-1">{data.unit}</span>
-                          </p>
-                        </div>
-                        {getStatusIcon(data.status)}
-                      </div>
-                      {getStatusBadge(data.status)}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-        </>
-      )}
 
       {/* Trends */}
       {labResults.length > 1 && (

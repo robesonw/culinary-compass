@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Flame, Pill, ChefHat, Download, Share2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -14,8 +16,49 @@ const mealIcons = {
   dinner: '🌙'
 };
 
+const groceryCategories = ['Proteins', 'Vegetables', 'Fruits', 'Grains', 'Dairy/Alternatives', 'Other'];
+
 export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [selectedDay, setSelectedDay] = useState(0);
+  const [checkedItems, setCheckedItems] = useState(new Set());
+
+  const groceryList = useMemo(() => {
+    if (!plan?.days) return {};
+    
+    const items = new Set();
+    plan.days.forEach(day => {
+      ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
+        if (day[meal]?.name) {
+          const words = day[meal].name.toLowerCase().split(/[\s,&]+/);
+          words.forEach(word => {
+            if (word.length > 3 && !['with', 'and', 'the'].includes(word)) {
+              items.add(word);
+            }
+          });
+        }
+      });
+    });
+
+    const categorized = {};
+    groceryCategories.forEach(cat => categorized[cat] = []);
+    
+    const proteinKeywords = ['chicken', 'beef', 'salmon', 'fish', 'turkey', 'pork', 'eggs', 'tofu', 'shrimp', 'tuna'];
+    const vegKeywords = ['broccoli', 'spinach', 'kale', 'lettuce', 'carrots', 'peppers', 'tomatoes', 'onions', 'garlic'];
+    const fruitKeywords = ['apple', 'banana', 'berries', 'orange', 'lemon', 'avocado', 'mango'];
+    const grainKeywords = ['rice', 'quinoa', 'bread', 'oats', 'pasta', 'tortilla'];
+    const dairyKeywords = ['milk', 'cheese', 'yogurt', 'butter'];
+
+    items.forEach(item => {
+      if (proteinKeywords.some(k => item.includes(k))) categorized['Proteins'].push(item);
+      else if (vegKeywords.some(k => item.includes(k))) categorized['Vegetables'].push(item);
+      else if (fruitKeywords.some(k => item.includes(k))) categorized['Fruits'].push(item);
+      else if (grainKeywords.some(k => item.includes(k))) categorized['Grains'].push(item);
+      else if (dairyKeywords.some(k => item.includes(k))) categorized['Dairy/Alternatives'].push(item);
+      else categorized['Other'].push(item);
+    });
+
+    return categorized;
+  }, [plan]);
 
   if (!plan) return null;
 
@@ -56,9 +99,15 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Day Selector */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
+        <Tabs defaultValue="meals" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="meals">Meal Plan</TabsTrigger>
+            <TabsTrigger value="grocery">Grocery List</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="meals" className="space-y-6">
+            {/* Day Selector */}
+            <div className="flex gap-2 overflow-x-auto pb-2">
             {plan.days?.map((day, index) => (
               <button
                 key={index}
@@ -176,7 +225,70 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
               </div>
             </>
           )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="grocery">
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5 text-indigo-600" />
+                <CardTitle>Grocery List</CardTitle>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const items = Object.values(groceryList).flat();
+                  const text = items.map(item => `• ${item}`).join('\n');
+                  navigator.clipboard.writeText(text);
+                  toast.success('Copied to clipboard');
+                }}
+              >
+                Copy List
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                {groceryCategories.map(category => {
+                  const items = groceryList[category] || [];
+                  if (items.length === 0) return null;
+
+                  return (
+                    <div key={category}>
+                      <h4 className="font-semibold text-slate-900 mb-3">{category}</h4>
+                      <div className="space-y-2">
+                        {items.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Checkbox
+                              checked={checkedItems.has(item)}
+                              onCheckedChange={(checked) => {
+                                const newSet = new Set(checkedItems);
+                                if (checked) newSet.add(item);
+                                else newSet.delete(item);
+                                setCheckedItems(newSet);
+                              }}
+                            />
+                            <span className={`text-sm capitalize ${checkedItems.has(item) ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                              {item}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="text-sm text-slate-600">
+                {checkedItems.size} of {Object.values(groceryList).flat().length} items checked
+              </div>
+            </CardContent>
+          </Card>
+          </TabsContent>
+          </Tabs>
+          </div>
       </DialogContent>
     </Dialog>
   );

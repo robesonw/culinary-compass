@@ -63,47 +63,67 @@ export default function LabResults() {
       // Upload file
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      // Extract biomarkers using AI - ask it to determine status from the PDF
+      // Extract multiple test results from PDF (handles historical data)
       const extractedData = await base44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: "object",
           properties: {
-            biomarkers: {
-              type: "object",
-              properties: {
-                ALT: { 
-                  type: "object", 
-                  properties: { 
-                    value: { type: "number" }, 
-                    unit: { type: "string" }, 
-                    status: { 
-                      type: "string",
-                      enum: ["normal", "high", "low"],
-                      description: "Extract the exact status shown in the PDF: 'High', 'Low', or if blank/normal assume 'normal'. Convert to lowercase."
-                    } 
-                  } 
-                },
-                AST: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                Glucose: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                Sodium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                Potassium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                eGFR: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                BUN: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                Creatinine: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } }
+            test_results: {
+              type: "array",
+              description: "Extract ALL test results with dates from the PDF, including historical data",
+              items: {
+                type: "object",
+                properties: {
+                  test_date: { 
+                    type: "string",
+                    description: "The date of this specific test in YYYY-MM-DD format"
+                  },
+                  biomarkers: {
+                    type: "object",
+                    properties: {
+                      ALT: { 
+                        type: "object", 
+                        properties: { 
+                          value: { type: "number" }, 
+                          unit: { type: "string" }, 
+                          status: { 
+                            type: "string",
+                            enum: ["normal", "high", "low"],
+                            description: "Extract the exact status shown: 'High', 'Low', or 'normal' if blank"
+                          } 
+                        } 
+                      },
+                      AST: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                      Glucose: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                      Sodium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                      Potassium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                      eGFR: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                      BUN: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                      Creatinine: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } }
+                    }
+                  }
+                }
               }
             }
           }
         }
       });
 
-      if (extractedData.status === 'success' && extractedData.output) {
-        await createLabResult.mutateAsync({
-          upload_date: uploadDate,
-          file_url,
-          biomarkers: extractedData.output.biomarkers || {},
-          notes
-        });
+      if (extractedData.status === 'success' && extractedData.output?.test_results) {
+        // Create a lab result record for each test date found in the PDF
+        const results = extractedData.output.test_results;
+        
+        for (const result of results) {
+          await createLabResult.mutateAsync({
+            upload_date: result.test_date || uploadDate,
+            file_url,
+            biomarkers: result.biomarkers || {},
+            notes: results.length > 1 ? `${notes} (Extracted ${results.length} test dates from PDF)` : notes
+          });
+        }
+        
+        toast.success(`Extracted ${results.length} test result${results.length > 1 ? 's' : ''} from PDF`);
         
         // Reset form
         const fileInput = document.querySelector('input[type="file"]');

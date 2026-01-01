@@ -24,6 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 const navigation = [
   { name: 'Dashboard', href: 'Dashboard', icon: LayoutDashboard },
   { name: 'Lab Results', href: 'LabResults', icon: FileText },
+  { name: 'Health Diet Hub', href: 'HealthDietHub', icon: ChefHat },
   { name: 'Meal Plans', href: 'MealPlans', icon: Calendar },
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
   { name: 'Analytics', href: 'Analytics', icon: BarChart3 },

@@ -325,9 +325,11 @@ export default function LabResults() {
       {labResults.length > 0 && (
         <>
           <h2 className="text-xl font-semibold text-slate-900">Complete Test History</h2>
-          
+
           <div className="space-y-4">
-            {labResults.map((result, index) => (
+            {labResults.filter((result, index, self) => 
+              index === self.findIndex(r => r.upload_date === result.upload_date)
+            ).map((result, index) => (
               <Card key={result.id} className="border-slate-200">
                 <CardHeader>
                   <div className="flex items-center justify-between">

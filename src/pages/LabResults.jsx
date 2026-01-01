@@ -173,8 +173,15 @@ export default function LabResults() {
   const biomarkerList = ['ALT', 'AST', 'Glucose', 'Sodium', 'Potassium', 'eGFR', 'BUN', 'Creatinine'];
 
   const getTrendData = (biomarkerName) => {
+    const seen = new Set();
     return labResults
       .filter(result => result.biomarkers?.[biomarkerName]?.value)
+      .filter(result => {
+        // Deduplicate by date - keep first occurrence (most recent due to sorting)
+        if (seen.has(result.upload_date)) return false;
+        seen.add(result.upload_date);
+        return true;
+      })
       .map(result => ({
         date: new Date(result.upload_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         value: result.biomarkers[biomarkerName].value

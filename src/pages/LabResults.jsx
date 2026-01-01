@@ -78,18 +78,30 @@ export default function LabResults() {
         }
       });
 
-      if (extractedData.status === 'success') {
+      if (extractedData.status === 'success' && extractedData.output) {
         await createLabResult.mutateAsync({
           upload_date: uploadDate,
           file_url,
           biomarkers: extractedData.output.biomarkers || {},
           notes
         });
+        
+        // Reset form
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = '';
       } else {
-        toast.error('Failed to extract biomarkers from file');
+        // Save without biomarkers if extraction failed
+        await createLabResult.mutateAsync({
+          upload_date: uploadDate,
+          file_url,
+          biomarkers: {},
+          notes: notes || 'Biomarker extraction failed'
+        });
+        toast.warning('File uploaded but biomarker extraction failed');
       }
     } catch (error) {
-      toast.error('Upload failed');
+      console.error('Upload error:', error);
+      toast.error(`Upload failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsUploading(false);
     }

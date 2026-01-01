@@ -63,7 +63,7 @@ export default function LabResults() {
       // Upload file
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      // Extract biomarkers using AI
+      // Extract biomarkers using AI - ask it to determine status from the PDF
       const extractedData = await base44.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
@@ -72,14 +72,25 @@ export default function LabResults() {
             biomarkers: {
               type: "object",
               properties: {
-                ALT: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string" } } },
-                AST: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string" } } },
-                Glucose: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string" } } },
-                Sodium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string" } } },
-                Potassium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string" } } },
-                eGFR: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string" } } },
-                BUN: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string" } } },
-                Creatinine: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string" } } }
+                ALT: { 
+                  type: "object", 
+                  properties: { 
+                    value: { type: "number" }, 
+                    unit: { type: "string" }, 
+                    status: { 
+                      type: "string",
+                      enum: ["normal", "high", "low"],
+                      description: "Extract the exact status shown in the PDF: 'High', 'Low', or if blank/normal assume 'normal'. Convert to lowercase."
+                    } 
+                  } 
+                },
+                AST: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                Glucose: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                Sodium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                Potassium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                eGFR: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                BUN: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
+                Creatinine: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } }
               }
             }
           }
@@ -134,8 +145,9 @@ export default function LabResults() {
   };
 
   const getStatusBadge = (status) => {
-    if (status === 'high') return <Badge className="bg-rose-100 text-rose-700 border-rose-200">High</Badge>;
-    if (status === 'low') return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Low</Badge>;
+    const normalizedStatus = status?.toLowerCase();
+    if (normalizedStatus === 'high') return <Badge className="bg-rose-100 text-rose-700 border-rose-200">High</Badge>;
+    if (normalizedStatus === 'low') return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Low</Badge>;
     return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Normal</Badge>;
   };
 
@@ -303,28 +315,28 @@ export default function LabResults() {
         </>
       )}
 
-      {/* History */}
+      {/* Complete History with Biomarkers */}
       {labResults.length > 0 && (
         <>
-          <h2 className="text-xl font-semibold text-slate-900">Test History</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Complete Test History</h2>
           
-          <div className="space-y-3">
-            {labResults.map((result) => (
+          <div className="space-y-4">
+            {labResults.map((result, index) => (
               <Card key={result.id} className="border-slate-200">
-                <CardContent className="p-5">
+                <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-indigo-600" />
+                        <Calendar className="w-5 h-5 text-indigo-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">
+                        <CardTitle className="text-base">
                           {new Date(result.upload_date).toLocaleDateString('en-US', { 
                             year: 'numeric', 
                             month: 'long', 
                             day: 'numeric' 
                           })}
-                        </p>
+                        </CardTitle>
                         {result.notes && (
                           <p className="text-sm text-slate-500">{result.notes}</p>
                         )}
@@ -332,10 +344,40 @@ export default function LabResults() {
                     </div>
                     <Button variant="outline" size="sm" asChild>
                       <a href={result.file_url} target="_blank" rel="noopener noreferrer">
+                        <FileText className="w-4 h-4 mr-2" />
                         View PDF
                       </a>
                     </Button>
                   </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {biomarkerList.map((biomarker) => {
+                      const data = result.biomarkers?.[biomarker];
+                      if (!data || !data.value) return null;
+
+                      return (
+                        <div key={biomarker} className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                          <div className="flex items-start justify-between mb-2">
+                            <p className="text-xs font-medium text-slate-600">{biomarker}</p>
+                            {getStatusIcon(data.status)}
+                          </div>
+                          <p className="text-lg font-bold text-slate-900">
+                            {data.value}
+                            <span className="text-xs text-slate-500 ml-1">{data.unit}</span>
+                          </p>
+                          <div className="mt-2">
+                            {getStatusBadge(data.status)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {Object.keys(result.biomarkers || {}).length === 0 && (
+                    <p className="text-sm text-slate-500 text-center py-3">
+                      No biomarker data extracted from this test
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}

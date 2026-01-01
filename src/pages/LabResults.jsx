@@ -113,19 +113,21 @@ export default function LabResults() {
       if (extractedData.status === 'success' && extractedData.output?.test_results) {
         // Create a lab result record for each test date found in the PDF
         const results = extractedData.output.test_results;
-        
+
         // Get existing lab result dates to avoid duplicates
         const existingDates = new Set(labResults.map(r => r.upload_date));
         let createdCount = 0;
-        
+        let skippedCount = 0;
+
         for (const result of results) {
           const testDate = result.test_date || uploadDate;
-          
+
           // Skip if we already have a result for this date
           if (existingDates.has(testDate)) {
+            skippedCount++;
             continue;
           }
-          
+
           await createLabResult.mutateAsync({
             upload_date: testDate,
             file_url,
@@ -133,22 +135,32 @@ export default function LabResults() {
             notes: results.length > 1 ? `${notes} (Extracted from PDF)` : notes
           });
           createdCount++;
+          existingDates.add(testDate); // Add to set to prevent duplicates within same upload
         }
-        
-        toast.success(`Extracted ${createdCount} new test result${createdCount !== 1 ? 's' : ''} from PDF`);
-        
+
+        if (createdCount > 0) {
+          toast.success(`Extracted ${createdCount} new test result${createdCount !== 1 ? 's' : ''} from PDF`);
+        } else {
+          toast.info('All test dates from this PDF already exist');
+        }
+
         // Reset form
         const fileInput = document.querySelector('input[type="file"]');
         if (fileInput) fileInput.value = '';
       } else {
-        // Save without biomarkers if extraction failed
-        await createLabResult.mutateAsync({
-          upload_date: uploadDate,
-          file_url,
-          biomarkers: {},
-          notes: notes || 'Biomarker extraction failed'
-        });
-        toast.warning('File uploaded but biomarker extraction failed');
+        // Only save without biomarkers if extraction failed and date doesn't exist
+        const existingDates = new Set(labResults.map(r => r.upload_date));
+        if (!existingDates.has(uploadDate)) {
+          await createLabResult.mutateAsync({
+            upload_date: uploadDate,
+            file_url,
+            biomarkers: {},
+            notes: notes || 'Biomarker extraction failed'
+          });
+          toast.warning('File uploaded but biomarker extraction failed');
+        } else {
+          toast.error('A result for this date already exists');
+        }
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -164,7 +176,7 @@ export default function LabResults() {
     return labResults
       .filter(result => result.biomarkers?.[biomarkerName]?.value)
       .map(result => ({
-        date: new Date(result.upload_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: new Date(result.upload_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         value: result.biomarkers[biomarkerName].value
       }))
       .reverse();

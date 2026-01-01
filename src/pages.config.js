@@ -5,6 +5,7 @@ import MealPlanner from './pages/MealPlanner';
 import Settings from './pages/Settings';
 import LabResults from './pages/LabResults';
 import HealthDietHub from './pages/HealthDietHub';
+import MealPlans from './pages/MealPlans';
 import __Layout from './Layout.jsx';
 
 
@@ -16,6 +17,7 @@ export const PAGES = {
     "Settings": Settings,
     "LabResults": LabResults,
     "HealthDietHub": HealthDietHub,
+    "MealPlans": MealPlans,
 }
 
 export const pagesConfig = {

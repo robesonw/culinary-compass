@@ -39,7 +39,15 @@ export default function LabResults() {
   const handleFileUpload = async (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
-    setFile(selectedFile);
+    
+    // Rename file to lowercase .pdf extension if needed
+    if (selectedFile.name.toUpperCase().endsWith('.PDF') && !selectedFile.name.endsWith('.pdf')) {
+      const newName = selectedFile.name.replace(/\.PDF$/i, '.pdf');
+      const renamedFile = new File([selectedFile], newName, { type: 'application/pdf' });
+      setFile(renamedFile);
+    } else {
+      setFile(selectedFile);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -166,7 +174,7 @@ export default function LabResults() {
                 <Label>Upload PDF File</Label>
                 <Input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,.PDF,application/pdf"
                   onChange={handleFileUpload}
                   required
                 />

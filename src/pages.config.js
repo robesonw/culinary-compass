@@ -1,17 +1,19 @@
-import MealPlanner from './pages/MealPlanner';
+import Analytics from './pages/Analytics';
 import Dashboard from './pages/Dashboard';
 import GroceryLists from './pages/GroceryLists';
-import Analytics from './pages/Analytics';
+import MealPlanner from './pages/MealPlanner';
 import Settings from './pages/Settings';
+import LabResults from './pages/LabResults';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "MealPlanner": MealPlanner,
+    "Analytics": Analytics,
     "Dashboard": Dashboard,
     "GroceryLists": GroceryLists,
-    "Analytics": Analytics,
+    "MealPlanner": MealPlanner,
     "Settings": Settings,
+    "LabResults": LabResults,
 }
 
 export const pagesConfig = {

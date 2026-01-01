@@ -33,6 +33,7 @@ export default function HealthDietHub() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [checkedItems, setCheckedItems] = useState(new Set());
+  const [planName, setPlanName] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -167,6 +168,7 @@ Return a JSON object with the meal plan and health notes.`;
 
       setGeneratedPlan(response);
       setCheckedItems(new Set());
+      setPlanName(`${goalDescription} Plan - ${new Date().toLocaleDateString()}`);
     } catch (error) {
       toast.error('Failed to generate meal plan');
       console.error(error);
@@ -175,11 +177,14 @@ Return a JSON object with the meal plan and health notes.`;
     }
   };
 
-  const handleSavePlan = () => {
-    if (!generatedPlan) return;
+  const handleSavePlan = async () => {
+    if (!generatedPlan || !planName.trim()) {
+      toast.error('Please enter a plan name');
+      return;
+    }
     
     savePlanMutation.mutate({
-      name: `AI Health Plan - ${new Date().toLocaleDateString()}`,
+      name: planName,
       diet_type: 'custom',
       days: generatedPlan.days.map(day => ({
         day: day.day,
@@ -412,11 +417,36 @@ Return a JSON object with the meal plan and health notes.`;
               </CardContent>
             </Card>
 
+            {/* Plan Name */}
+            <Card className="border-slate-200">
+              <CardContent className="p-4">
+                <Label className="mb-2 block">Plan Name</Label>
+                <Input
+                  value={planName}
+                  onChange={(e) => setPlanName(e.target.value)}
+                  placeholder="Enter a name for this meal plan..."
+                />
+              </CardContent>
+            </Card>
+
             {/* Action Buttons */}
             <div className="flex gap-3">
-              <Button onClick={handleSavePlan} className="flex-1">
-                <Save className="w-4 h-4 mr-2" />
-                Save This Plan
+              <Button 
+                onClick={handleSavePlan} 
+                className="flex-1"
+                disabled={savePlanMutation.isPending || !planName.trim()}
+              >
+                {savePlanMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save This Plan
+                  </>
+                )}
               </Button>
               <Button variant="outline" className="flex-1">
                 <ShoppingCart className="w-4 h-4 mr-2" />

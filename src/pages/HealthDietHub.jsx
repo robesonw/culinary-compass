@@ -19,6 +19,14 @@ const healthGoals = [
   { value: 'liver_health', label: 'Liver Health', icon: Heart, color: 'rose' },
   { value: 'weight_loss', label: 'Weight Loss', icon: Flame, color: 'orange' },
   { value: 'blood_sugar_control', label: 'Blood Sugar Control', icon: Salad, color: 'emerald' },
+  { value: 'muscle_gain', label: 'Muscle Gain', icon: Flame, color: 'blue' },
+  { value: 'heart_health', label: 'Heart Health', icon: Heart, color: 'red' },
+  { value: 'kidney_health', label: 'Kidney Health', icon: Heart, color: 'teal' },
+  { value: 'digestive_health', label: 'Digestive Health', icon: Salad, color: 'green' },
+  { value: 'energy_boost', label: 'Energy Boost', icon: Sparkles, color: 'yellow' },
+  { value: 'immune_support', label: 'Immune Support', icon: Sparkles, color: 'indigo' },
+  { value: 'anti_inflammatory', label: 'Anti-Inflammatory', icon: Heart, color: 'pink' },
+  { value: 'bone_health', label: 'Bone Health', icon: Salad, color: 'amber' },
   { value: 'general_wellness', label: 'General Wellness', icon: Sparkles, color: 'purple' },
 ];
 
@@ -300,7 +308,7 @@ Return a JSON object with the meal plan and health notes.`;
           {/* Health Goal */}
           <div>
             <Label className="mb-3 block">Primary Health Goal</Label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {healthGoals.map(goal => {
                 const Icon = goal.icon;
                 const selected = healthGoal === goal.value;

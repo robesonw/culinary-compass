@@ -114,16 +114,28 @@ export default function LabResults() {
         // Create a lab result record for each test date found in the PDF
         const results = extractedData.output.test_results;
         
+        // Get existing lab result dates to avoid duplicates
+        const existingDates = new Set(labResults.map(r => r.upload_date));
+        let createdCount = 0;
+        
         for (const result of results) {
+          const testDate = result.test_date || uploadDate;
+          
+          // Skip if we already have a result for this date
+          if (existingDates.has(testDate)) {
+            continue;
+          }
+          
           await createLabResult.mutateAsync({
-            upload_date: result.test_date || uploadDate,
+            upload_date: testDate,
             file_url,
             biomarkers: result.biomarkers || {},
-            notes: results.length > 1 ? `${notes} (Extracted ${results.length} test dates from PDF)` : notes
+            notes: results.length > 1 ? `${notes} (Extracted from PDF)` : notes
           });
+          createdCount++;
         }
         
-        toast.success(`Extracted ${results.length} test result${results.length > 1 ? 's' : ''} from PDF`);
+        toast.success(`Extracted ${createdCount} new test result${createdCount !== 1 ? 's' : ''} from PDF`);
         
         // Reset form
         const fileInput = document.querySelector('input[type="file"]');

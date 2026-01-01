@@ -36,6 +36,7 @@ export default function HealthDietHub() {
   const [healthGoal, setHealthGoal] = useState('liver_health');
   const [foodsLiked, setFoodsLiked] = useState('');
   const [foodsAvoided, setFoodsAvoided] = useState('');
+  const [customRequirements, setCustomRequirements] = useState('');
   const [duration, setDuration] = useState('week');
   const [numPeople, setNumPeople] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -103,6 +104,7 @@ HEALTH PROFILE:
 - Primary Goal: ${goalDescription}
 - ${healthContext}
 - Number of people: ${numPeople}
+${customRequirements ? `- Custom Requirements: ${customRequirements}` : ''}
 ${foodsLiked ? `- Foods they enjoy: ${foodsLiked}` : ''}
 ${foodsAvoided ? `- Foods to avoid: ${foodsAvoided}` : ''}
 ${userPrefs?.dietary_restrictions ? `- Dietary restrictions: ${userPrefs.dietary_restrictions}` : ''}
@@ -328,6 +330,18 @@ Return a JSON object with the meal plan and health notes.`;
                 );
               })}
             </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <Label>Additional Requirements (Optional)</Label>
+            <Textarea
+              placeholder="Describe any specific dietary needs, health conditions, preferences, or goals in your own words... e.g., 'I need low-sodium meals because of high blood pressure' or 'I want high-protein meals for muscle building'"
+              value={customRequirements}
+              onChange={(e) => setCustomRequirements(e.target.value)}
+              className="min-h-[100px]"
+            />
           </div>
 
           <Separator />

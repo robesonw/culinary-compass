@@ -146,8 +146,13 @@ export default function Layout({ children, currentPageName }) {
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full"></span>
               </Button>
               
-              <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
-                Create Plan
+              <Button 
+                asChild
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+              >
+                <Link to={createPageUrl('HealthDietHub')}>
+                  Create Plan
+                </Link>
               </Button>
             </div>
           </div>

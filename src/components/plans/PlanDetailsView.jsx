@@ -228,8 +228,8 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
           </TabsContent>
 
           <TabsContent value="grocery">
-          <Card className="border-slate-200">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="border-slate-200">
+              <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5 text-indigo-600" />
                 <CardTitle>Grocery List</CardTitle>
@@ -246,8 +246,8 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
               >
                 Copy List
               </Button>
-            </CardHeader>
-            <CardContent>
+              </CardHeader>
+              <CardContent>
               <div className="grid md:grid-cols-2 gap-6">
                 {groceryCategories.map(category => {
                   const items = groceryList[category] || [];
@@ -284,11 +284,10 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
               <div className="text-sm text-slate-600">
                 {checkedItems.size} of {Object.values(groceryList).flat().length} items checked
               </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
           </TabsContent>
-          </Tabs>
-          </div>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

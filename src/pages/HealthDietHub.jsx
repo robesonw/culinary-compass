@@ -183,28 +183,33 @@ Return a JSON object with the meal plan and health notes.`;
       return;
     }
     
+    if (!generatedPlan.days || generatedPlan.days.length === 0) {
+      toast.error('Invalid meal plan data');
+      return;
+    }
+    
     savePlanMutation.mutate({
       name: planName,
       diet_type: 'custom',
       days: generatedPlan.days.map(day => ({
-        day: day.day,
+        day: day.day || 'Day',
         breakfast: {
-          name: day.breakfast.name,
-          calories: day.breakfast.calories,
-          nutrients: day.breakfast.health_benefit,
-          prepTip: day.breakfast.description
+          name: day.breakfast?.name || 'Breakfast',
+          calories: day.breakfast?.calories || '400 kcal',
+          nutrients: day.breakfast?.health_benefit || '',
+          prepTip: day.breakfast?.description || ''
         },
         lunch: {
-          name: day.lunch.name,
-          calories: day.lunch.calories,
-          nutrients: day.lunch.health_benefit,
-          prepTip: day.lunch.description
+          name: day.lunch?.name || 'Lunch',
+          calories: day.lunch?.calories || '500 kcal',
+          nutrients: day.lunch?.health_benefit || '',
+          prepTip: day.lunch?.description || ''
         },
         dinner: {
-          name: day.dinner.name,
-          calories: day.dinner.calories,
-          nutrients: day.dinner.health_benefit,
-          prepTip: day.dinner.description
+          name: day.dinner?.name || 'Dinner',
+          calories: day.dinner?.calories || '600 kcal',
+          nutrients: day.dinner?.health_benefit || '',
+          prepTip: day.dinner?.description || ''
         },
         snacks: {
           name: day.snacks?.name || 'Mixed nuts',

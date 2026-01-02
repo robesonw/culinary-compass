@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Target, TrendingUp, Calendar as CalendarIcon, Plus, Flame, Activity, Award, Edit, Save } from 'lucide-react';
+import { Target, TrendingUp, Calendar as CalendarIcon, Plus, Flame, Activity, Award, Edit, Save, Camera, Upload, Loader2, ChefHat } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { format, startOfWeek, endOfWeek, subDays } from 'date-fns';
@@ -20,9 +20,12 @@ import { format, startOfWeek, endOfWeek, subDays } from 'date-fns';
 export default function NutritionTracking() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [logDialogOpen, setLogDialogOpen] = useState(false);
+  const [recipeBuilderOpen, setRecipeBuilderOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [timeRange, setTimeRange] = useState('week'); // 'week' or 'month'
   const [editingGoal, setEditingGoal] = useState(null);
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+  const [logMethod, setLogMethod] = useState('manual'); // 'manual', 'photo', 'recipe'
   
   const [goalForm, setGoalForm] = useState({
     goal_type: 'daily',
@@ -42,6 +45,9 @@ export default function NutritionTracking() {
     fat: 0,
     servings: 1
   });
+
+  const [recipeIngredients, setRecipeIngredients] = useState('');
+  const [isGeneratingNutrition, setIsGeneratingNutrition] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -65,6 +71,11 @@ export default function NutritionTracking() {
   const { data: favoriteMeals = [] } = useQuery({
     queryKey: ['favoriteMeals'],
     queryFn: () => base44.entities.FavoriteMeal.list(),
+  });
+
+  const { data: mealPlans = [] } = useQuery({
+    queryKey: ['mealPlans'],
+    queryFn: () => base44.entities.MealPlan.list('-created_date', 5),
   });
 
   const createGoalMutation = useMutation({
@@ -149,6 +160,116 @@ export default function NutritionTracking() {
     }
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsAnalyzingPhoto(true);
+    try {
+      // Upload the photo
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      // Analyze the food using AI
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this food photo and identify the meal/food items. Provide nutritional estimates per serving including calories, protein, carbs, and fat. Be specific about what you see.`,
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            meal_name: { type: "string", description: "Name of the meal or food items identified" },
+            description: { type: "string", description: "Brief description of what you see" },
+            calories: { type: "number", description: "Estimated calories per serving" },
+            protein: { type: "number", description: "Estimated protein in grams" },
+            carbs: { type: "number", description: "Estimated carbs in grams" },
+            fat: { type: "number", description: "Estimated fat in grams" },
+            confidence: { type: "string", enum: ["high", "medium", "low"], description: "Confidence in the estimate" }
+          }
+        }
+      });
+
+      setLogForm({
+        ...logForm,
+        recipe_name: result.meal_name,
+        calories: result.calories || 0,
+        protein: result.protein || 0,
+        carbs: result.carbs || 0,
+        fat: result.fat || 0
+      });
+
+      toast.success(`Identified: ${result.meal_name}. ${result.confidence === 'low' ? 'Please verify the nutrition info.' : ''}`);
+    } catch (error) {
+      toast.error('Failed to analyze photo. Please enter nutrition info manually.');
+    } finally {
+      setIsAnalyzingPhoto(false);
+    }
+  };
+
+  const handleGenerateNutrition = async () => {
+    if (!recipeIngredients.trim()) {
+      toast.error('Please enter ingredients');
+      return;
+    }
+
+    setIsGeneratingNutrition(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Given these ingredients: "${recipeIngredients}", calculate the total nutritional information. Provide a recipe name, total calories, protein (g), carbs (g), and fat (g) for the complete recipe.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            recipe_name: { type: "string", description: "Suggested name for this recipe" },
+            calories: { type: "number", description: "Total calories" },
+            protein: { type: "number", description: "Total protein in grams" },
+            carbs: { type: "number", description: "Total carbs in grams" },
+            fat: { type: "number", description: "Total fat in grams" },
+            servings: { type: "number", description: "Estimated number of servings" }
+          }
+        }
+      });
+
+      setLogForm({
+        ...logForm,
+        recipe_name: result.recipe_name,
+        calories: Math.round(result.calories / (result.servings || 1)),
+        protein: Math.round(result.protein / (result.servings || 1)),
+        carbs: Math.round(result.carbs / (result.servings || 1)),
+        fat: Math.round(result.fat / (result.servings || 1)),
+        servings: 1
+      });
+
+      toast.success(`Recipe created: ${result.recipe_name} (per serving)`);
+      setRecipeBuilderOpen(false);
+      setLogDialogOpen(true);
+    } catch (error) {
+      toast.error('Failed to generate nutrition info');
+    } finally {
+      setIsGeneratingNutrition(false);
+    }
+  };
+
+  const handleSelectFromMealPlan = (planId, day, mealType) => {
+    const plan = mealPlans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const dayData = plan.days?.find(d => d.day === day);
+    if (!dayData) return;
+
+    const meal = dayData[mealType];
+    if (!meal) return;
+
+    const caloriesMatch = meal.calories?.match(/(\d+)/);
+    setLogForm({
+      ...logForm,
+      recipe_name: meal.name,
+      calories: caloriesMatch ? parseInt(caloriesMatch[1]) : 0,
+      protein: meal.protein || 0,
+      carbs: meal.carbs || 0,
+      fat: meal.fat || 0,
+      meal_type: mealType
+    });
+    toast.success('Meal loaded from plan');
+  };
+
   // Calculate today's totals
   const todayTotals = useMemo(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -207,7 +328,11 @@ export default function NutritionTracking() {
             <Target className="w-4 h-4 mr-2" />
             Set Goals
           </Button>
-          <Button onClick={() => setLogDialogOpen(true)} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+          <Button variant="outline" onClick={() => setRecipeBuilderOpen(true)}>
+            <ChefHat className="w-4 h-4 mr-2" />
+            Recipe Builder
+          </Button>
+          <Button onClick={() => { setLogMethod('manual'); setLogDialogOpen(true); }} className="bg-gradient-to-r from-indigo-600 to-purple-600">
             <Plus className="w-4 h-4 mr-2" />
             Log Meal
           </Button>
@@ -445,13 +570,129 @@ export default function NutritionTracking() {
         </DialogContent>
       </Dialog>
 
+      {/* Recipe Builder Dialog */}
+      <Dialog open={recipeBuilderOpen} onOpenChange={setRecipeBuilderOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recipe Builder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Enter Ingredients</Label>
+              <textarea
+                className="w-full min-h-[120px] p-3 border rounded-lg text-sm"
+                placeholder="e.g.,&#10;2 chicken breasts&#10;1 cup rice&#10;2 tbsp olive oil&#10;1 cup broccoli&#10;Salt and pepper"
+                value={recipeIngredients}
+                onChange={(e) => setRecipeIngredients(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleGenerateNutrition}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600"
+              disabled={isGeneratingNutrition}
+            >
+              {isGeneratingNutrition ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Calculating Nutrition...
+                </>
+              ) : (
+                <>
+                  <ChefHat className="w-4 h-4 mr-2" />
+                  Generate Nutrition Info
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Log Meal Dialog */}
       <Dialog open={logDialogOpen} onOpenChange={setLogDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Log Meal</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Quick Add Options */}
+            <Tabs value={logMethod} onValueChange={setLogMethod}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="manual">Manual</TabsTrigger>
+                <TabsTrigger value="photo">Photo</TabsTrigger>
+                <TabsTrigger value="plan">From Plan</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="photo" className="space-y-3">
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
+                  <Camera className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                  <p className="text-sm text-slate-600 mb-3">
+                    Upload a photo of your meal for AI analysis
+                  </p>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                      disabled={isAnalyzingPhoto}
+                    />
+                    <Button variant="outline" disabled={isAnalyzingPhoto} asChild>
+                      <span>
+                        {isAnalyzingPhoto ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload Photo
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="plan" className="space-y-3">
+                <div>
+                  <Label>Select from Meal Plans</Label>
+                  {mealPlans.length === 0 ? (
+                    <p className="text-sm text-slate-500 mt-2">No meal plans found</p>
+                  ) : (
+                    mealPlans.map(plan => (
+                      <div key={plan.id} className="mt-2 p-3 border rounded-lg">
+                        <p className="font-medium text-sm mb-2">{plan.name}</p>
+                        <div className="space-y-1">
+                          {plan.days?.slice(0, 2).map(day => (
+                            <div key={day.day} className="text-xs">
+                              <p className="font-medium text-slate-700">{day.day}:</p>
+                              <div className="grid grid-cols-2 gap-1 ml-2">
+                                {['breakfast', 'lunch', 'dinner', 'snacks'].map(mealType => {
+                                  const meal = day[mealType];
+                                  if (!meal?.name) return null;
+                                  return (
+                                    <button
+                                      key={mealType}
+                                      onClick={() => handleSelectFromMealPlan(plan.id, day.day, mealType)}
+                                      className="text-left text-slate-600 hover:text-indigo-600 hover:underline"
+                                    >
+                                      {meal.name}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+
             <div>
               <Label>Select from Favorites (Optional)</Label>
               <Select onValueChange={handleSelectMeal}>

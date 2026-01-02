@@ -3,8 +3,71 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Flame, Clock, ChefHat, Wrench } from 'lucide-react';
 
-export default function SharedRecipeDetailDialog({ recipe, open, onOpenChange }) {
+export default function SharedRecipeDetailDialog({ recipe, open, onOpenChange, comments: allComments = [] }) {
+  const [newComment, setNewComment] = useState('');
+  const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: (data) => base44.entities.RecipeComment.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recipeComments'] });
+      setNewComment('');
+      toast.success('Comment added!');
+      
+      // Notify recipe author
+      if (recipe.created_by && recipe.created_by !== user?.email) {
+        base44.entities.Notification.create({
+          recipient_email: recipe.created_by,
+          type: 'recipe_comment',
+          title: 'New Comment',
+          message: `${user?.full_name || 'Someone'} commented on your recipe "${recipe.name}"`,
+          actor_name: user?.full_name || 'Anonymous',
+        });
+      }
+    },
+  });
+
+  const likeMutation = useMutation({
+    mutationFn: () => base44.entities.UserInteraction.create({
+      target_id: recipe.id,
+      target_type: 'shared_recipe',
+      interaction_type: 'like',
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sharedRecipes'] });
+      toast.success('Liked!');
+      
+      // Notify recipe author
+      if (recipe.created_by && recipe.created_by !== user?.email) {
+        base44.entities.Notification.create({
+          recipient_email: recipe.created_by,
+          type: 'recipe_like',
+          title: 'Recipe Liked',
+          message: `${user?.full_name || 'Someone'} liked your recipe "${recipe.name}"`,
+          actor_name: user?.full_name || 'Anonymous',
+        });
+      }
+    },
+  });
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+    
+    addCommentMutation.mutate({
+      recipe_id: recipe.id,
+      comment: newComment,
+      author_name: user?.full_name || 'Anonymous',
+    });
+  };
+
   if (!recipe) return null;
+
+  const recipeComments = allComments.filter(c => c.recipe_id === recipe.id);
 
   const meal = recipe.meal_data;
 

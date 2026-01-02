@@ -33,6 +33,11 @@ export default function SharedRecipes() {
     queryFn: () => base44.entities.Review.list(),
   });
 
+  const { data: recipeComments = [] } = useQuery({
+    queryKey: ['recipeComments'],
+    queryFn: () => base44.entities.RecipeComment.list('-created_date'),
+  });
+
   const interactionMutation = useMutation({
     mutationFn: (data) => base44.entities.UserInteraction.create(data),
     onSuccess: () => {
@@ -245,6 +250,7 @@ export default function SharedRecipes() {
         recipe={selectedRecipe}
         open={detailDialogOpen}
         onOpenChange={setDetailDialogOpen}
+        comments={recipeComments}
       />
     </div>
   );

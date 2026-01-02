@@ -26,7 +26,7 @@ const difficultyLevels = ['Easy', 'Medium', 'Hard'];
 
 const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert'];
 
-export default function ZRecipeGenerator() {
+export default function AIRecipeGenerator() {
   const [generating, setGenerating] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
   const [savingImage, setSavingImage] = useState(false);

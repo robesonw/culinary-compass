@@ -1,3 +1,4 @@
+import AIRecipeGenerator from './pages/AIRecipeGenerator';
 import Analytics from './pages/Analytics';
 import Community from './pages/Community';
 import Dashboard from './pages/Dashboard';
@@ -11,12 +12,12 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import SharedMealPlans from './pages/SharedMealPlans';
 import SharedRecipes from './pages/SharedRecipes';
-import ZRecipeGenerator from './pages/ZRecipeGenerator';
-import AAAHome from './pages/AAAHome';
+import AALandingPage from './pages/AALandingPage';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AIRecipeGenerator": AIRecipeGenerator,
     "Analytics": Analytics,
     "Community": Community,
     "Dashboard": Dashboard,
@@ -30,12 +31,11 @@ export const PAGES = {
     "Settings": Settings,
     "SharedMealPlans": SharedMealPlans,
     "SharedRecipes": SharedRecipes,
-    "ZRecipeGenerator": ZRecipeGenerator,
-    "AAAHome": AAAHome,
+    "AALandingPage": AALandingPage,
 }
 
 export const pagesConfig = {
-    mainPage: "Analytics",
+    mainPage: "AIRecipeGenerator",
     Pages: PAGES,
     Layout: __Layout,
 };

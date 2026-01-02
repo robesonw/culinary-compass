@@ -12,7 +12,7 @@ import SharedRecipes from './pages/SharedRecipes';
 import Community from './pages/Community';
 import Analytics from './pages/Analytics';
 import AIRecipeGenerator from './pages/AIRecipeGenerator';
-import AAHome from './pages/AAHome';
+import landing from './pages/_Landing';
 import __Layout from './Layout.jsx';
 
 
@@ -31,7 +31,7 @@ export const PAGES = {
     "Community": Community,
     "Analytics": Analytics,
     "AIRecipeGenerator": AIRecipeGenerator,
-    "AAHome": AAHome,
+    "_Landing": landing,
 }
 
 export const pagesConfig = {

@@ -4,14 +4,9 @@ import { createPageUrl } from '../utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Sparkles, 
-  TrendingUp, 
-  Calendar,
-  ArrowRight
-} from 'lucide-react';
+import { Sparkles, TrendingUp, Calendar, ArrowRight } from 'lucide-react';
 
-export default function AAHome() {
+export default function Landing() {
   const features = [
     {
       icon: Sparkles,
@@ -35,10 +30,8 @@ export default function AAHome() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white">
         <div className="absolute inset-0 bg-black/20" />
-        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
           <div className="text-center">
             <Badge className="mb-6 bg-white/20 text-white border-white/30 backdrop-blur-sm">
@@ -54,22 +47,13 @@ export default function AAHome() {
               and a supportive community—all in one beautiful platform
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                asChild
-                size="lg"
-                className="bg-white text-indigo-600 hover:bg-white/90 shadow-xl text-lg px-8 py-6"
-              >
+              <Button asChild size="lg" className="bg-white text-indigo-600 hover:bg-white/90 shadow-xl text-lg px-8 py-6">
                 <Link to={createPageUrl('HealthDietHub')}>
                   Get Started Free
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm text-lg px-8 py-6"
-              >
+              <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm text-lg px-8 py-6">
                 <Link to={createPageUrl('Dashboard')}>
                   View Dashboard
                 </Link>
@@ -78,7 +62,6 @@ export default function AAHome() {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           <div className="grid grid-cols-3 gap-4 md:gap-8">
             {[
@@ -86,10 +69,7 @@ export default function AAHome() {
               { label: 'Recipes Shared', value: '50K+' },
               { label: 'Meal Plans', value: '25K+' }
             ].map((stat, i) => (
-              <div
-                key={i}
-                className="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 text-center border border-white/20"
-              >
+              <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 text-center border border-white/20">
                 <div className="text-2xl md:text-4xl font-bold mb-1">{stat.value}</div>
                 <div className="text-xs md:text-sm text-white/80">{stat.label}</div>
               </div>
@@ -98,7 +78,6 @@ export default function AAHome() {
         </div>
       </section>
 
-      {/* Features */}
       <section className="py-20 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -128,10 +107,8 @@ export default function AAHome() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600" />
-        
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Ready to Transform Your Health?
@@ -139,11 +116,7 @@ export default function AAHome() {
           <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
             Join thousands of people achieving their health goals with our platform
           </p>
-          <Button
-            asChild
-            size="lg"
-            className="bg-white text-indigo-600 hover:bg-white/90 shadow-xl text-lg px-10 py-6"
-          >
+          <Button asChild size="lg" className="bg-white text-indigo-600 hover:bg-white/90 shadow-xl text-lg px-10 py-6">
             <Link to={createPageUrl('HealthDietHub')}>
               Start Your Journey Today
               <ArrowRight className="ml-2 w-5 h-5" />

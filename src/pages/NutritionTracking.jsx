@@ -29,8 +29,10 @@ export default function NutritionTracking() {
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const [logMethod, setLogMethod] = useState('manual'); // 'manual', 'photo', 'recipe'
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [goalTimeRange, setGoalTimeRange] = useState('month'); // 'week', 'month', 'custom'
-  const [goalDateRange, setGoalDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
+  const [dailyGoalTimeRange, setDailyGoalTimeRange] = useState('month'); // 'week', 'month', 'custom'
+  const [dailyGoalDateRange, setDailyGoalDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
+  const [weeklyGoalTimeRange, setWeeklyGoalTimeRange] = useState('month'); // 'week', 'month', 'custom'
+  const [weeklyGoalDateRange, setWeeklyGoalDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   
   const [goalForm, setGoalForm] = useState({
     goal_type: 'daily',
@@ -360,11 +362,11 @@ export default function NutritionTracking() {
     const history = [];
     let startDate, endDate;
     
-    if (goalTimeRange === 'custom') {
-      startDate = goalDateRange.from;
-      endDate = goalDateRange.to;
+    if (dailyGoalTimeRange === 'custom') {
+      startDate = dailyGoalDateRange.from;
+      endDate = dailyGoalDateRange.to;
     } else {
-      const days = goalTimeRange === 'week' ? 7 : 30;
+      const days = dailyGoalTimeRange === 'week' ? 7 : 30;
       startDate = subDays(new Date(), days - 1);
       endDate = new Date();
     }
@@ -402,7 +404,7 @@ export default function NutritionTracking() {
     }
     
     return history;
-  }, [logs, activeDailyGoal, goalTimeRange, goalDateRange]);
+  }, [logs, activeDailyGoal, dailyGoalTimeRange, dailyGoalDateRange]);
 
   // Calculate goal achievement history for weekly goals
   const weeklyGoalHistory = useMemo(() => {
@@ -411,11 +413,11 @@ export default function NutritionTracking() {
     const history = [];
     let startDate, endDate;
     
-    if (goalTimeRange === 'custom') {
-      startDate = goalDateRange.from;
-      endDate = goalDateRange.to;
+    if (weeklyGoalTimeRange === 'custom') {
+      startDate = weeklyGoalDateRange.from;
+      endDate = weeklyGoalDateRange.to;
     } else {
-      const days = goalTimeRange === 'week' ? 7 : 30;
+      const days = weeklyGoalTimeRange === 'week' ? 7 : 30;
       startDate = subDays(new Date(), days - 1);
       endDate = new Date();
     }
@@ -467,7 +469,7 @@ export default function NutritionTracking() {
     }
     
     return weeks;
-  }, [logs, activeWeeklyGoal, goalTimeRange, goalDateRange]);
+  }, [logs, activeWeeklyGoal, weeklyGoalTimeRange, weeklyGoalDateRange]);
 
   // Calculate statistics for daily goals
   const dailyGoalStats = useMemo(() => {
@@ -839,7 +841,7 @@ export default function NutritionTracking() {
                 Daily Goal Achievement History
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Select value={goalTimeRange} onValueChange={setGoalTimeRange}>
+                <Select value={dailyGoalTimeRange} onValueChange={setDailyGoalTimeRange}>
                   <SelectTrigger className="w-36">
                     <SelectValue />
                   </SelectTrigger>
@@ -849,13 +851,13 @@ export default function NutritionTracking() {
                     <SelectItem value="custom">Custom Range</SelectItem>
                   </SelectContent>
                 </Select>
-                {goalTimeRange === 'custom' && (
+                {dailyGoalTimeRange === 'custom' && (
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="sm">
                         <CalendarIcon className="w-4 h-4 mr-2" />
-                        {goalDateRange.from && goalDateRange.to ? (
-                          `${format(goalDateRange.from, 'MMM d')} - ${format(goalDateRange.to, 'MMM d')}`
+                        {dailyGoalDateRange.from && dailyGoalDateRange.to ? (
+                          `${format(dailyGoalDateRange.from, 'MMM d')} - ${format(dailyGoalDateRange.to, 'MMM d')}`
                         ) : (
                           'Select dates'
                         )}
@@ -867,8 +869,8 @@ export default function NutritionTracking() {
                           <Label className="text-xs">From</Label>
                           <Calendar
                             mode="single"
-                            selected={goalDateRange.from}
-                            onSelect={(date) => setGoalDateRange({ ...goalDateRange, from: date })}
+                            selected={dailyGoalDateRange.from}
+                            onSelect={(date) => setDailyGoalDateRange({ ...dailyGoalDateRange, from: date })}
                             disabled={(date) => date > new Date()}
                           />
                         </div>
@@ -876,9 +878,9 @@ export default function NutritionTracking() {
                           <Label className="text-xs">To</Label>
                           <Calendar
                             mode="single"
-                            selected={goalDateRange.to}
-                            onSelect={(date) => setGoalDateRange({ ...goalDateRange, to: date })}
-                            disabled={(date) => date > new Date() || date < goalDateRange.from}
+                            selected={dailyGoalDateRange.to}
+                            onSelect={(date) => setDailyGoalDateRange({ ...dailyGoalDateRange, to: date })}
+                            disabled={(date) => date > new Date() || date < dailyGoalDateRange.from}
                           />
                         </div>
                       </div>
@@ -1016,7 +1018,7 @@ export default function NutritionTracking() {
                 Weekly Goal Achievement History
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Select value={goalTimeRange} onValueChange={setGoalTimeRange}>
+                <Select value={weeklyGoalTimeRange} onValueChange={setWeeklyGoalTimeRange}>
                   <SelectTrigger className="w-36">
                     <SelectValue />
                   </SelectTrigger>
@@ -1026,13 +1028,13 @@ export default function NutritionTracking() {
                     <SelectItem value="custom">Custom Range</SelectItem>
                   </SelectContent>
                 </Select>
-                {goalTimeRange === 'custom' && (
+                {weeklyGoalTimeRange === 'custom' && (
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="sm">
                         <CalendarIcon className="w-4 h-4 mr-2" />
-                        {goalDateRange.from && goalDateRange.to ? (
-                          `${format(goalDateRange.from, 'MMM d')} - ${format(goalDateRange.to, 'MMM d')}`
+                        {weeklyGoalDateRange.from && weeklyGoalDateRange.to ? (
+                          `${format(weeklyGoalDateRange.from, 'MMM d')} - ${format(weeklyGoalDateRange.to, 'MMM d')}`
                         ) : (
                           'Select dates'
                         )}
@@ -1044,8 +1046,8 @@ export default function NutritionTracking() {
                           <Label className="text-xs">From</Label>
                           <Calendar
                             mode="single"
-                            selected={goalDateRange.from}
-                            onSelect={(date) => setGoalDateRange({ ...goalDateRange, from: date })}
+                            selected={weeklyGoalDateRange.from}
+                            onSelect={(date) => setWeeklyGoalDateRange({ ...weeklyGoalDateRange, from: date })}
                             disabled={(date) => date > new Date()}
                           />
                         </div>
@@ -1053,9 +1055,9 @@ export default function NutritionTracking() {
                           <Label className="text-xs">To</Label>
                           <Calendar
                             mode="single"
-                            selected={goalDateRange.to}
-                            onSelect={(date) => setGoalDateRange({ ...goalDateRange, to: date })}
-                            disabled={(date) => date > new Date() || date < goalDateRange.from}
+                            selected={weeklyGoalDateRange.to}
+                            onSelect={(date) => setWeeklyGoalDateRange({ ...weeklyGoalDateRange, to: date })}
+                            disabled={(date) => date > new Date() || date < weeklyGoalDateRange.from}
                           />
                         </div>
                       </div>

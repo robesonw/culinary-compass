@@ -15,7 +15,7 @@ const difficultyColors = {
   Hard: 'bg-rose-100 text-rose-700 border-rose-200',
 };
 
-export default function MealCard({ meal, mealType, mealIcon }) {
+export default function MealCard({ meal, mealType, mealIcon, mealPlanId, mealPlanName }) {
   if (!meal) return null;
 
   const queryClient = useQueryClient();
@@ -57,6 +57,9 @@ export default function MealCard({ meal, mealType, mealIcon }) {
             equipment: meal.equipment,
             healthBenefit: meal.healthBenefit,
             imageUrl: meal.imageUrl,
+            source_type: 'meal_plan',
+            source_meal_plan_id: mealPlanId,
+            source_meal_plan_name: mealPlanName,
           });
         }
       }

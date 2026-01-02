@@ -1,8 +1,11 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock, ChefHat, TrendingUp, Flame, ShoppingCart } from 'lucide-react';
+import { Clock, ChefHat, TrendingUp, Flame, ShoppingCart, ExternalLink, Calendar } from 'lucide-react';
+import { createPageUrl } from '../utils';
 
 export default function FavoriteMealDetailDialog({ meal, open, onOpenChange }) {
   if (!meal) return null;
@@ -60,6 +63,39 @@ export default function FavoriteMealDetailDialog({ meal, open, onOpenChange }) {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Source Reference */}
+          {meal.source_type && (
+            <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {meal.source_type === 'meal_plan' && <Calendar className="w-4 h-4 text-indigo-600" />}
+                {meal.source_type === 'ai_recipe' && <ChefHat className="w-4 h-4 text-indigo-600" />}
+                <div>
+                  <p className="text-xs font-medium text-indigo-900">
+                    {meal.source_type === 'meal_plan' && 'From Meal Plan'}
+                    {meal.source_type === 'ai_recipe' && 'From AI Recipe Generator'}
+                    {meal.source_type === 'shared_recipe' && 'From Shared Recipe'}
+                  </p>
+                  {meal.source_meal_plan_name && (
+                    <p className="text-xs text-indigo-700">{meal.source_meal_plan_name}</p>
+                  )}
+                </div>
+              </div>
+              {meal.source_meal_plan_id && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7"
+                  asChild
+                >
+                  <Link to={createPageUrl('MealPlans')}>
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    View Plan
+                  </Link>
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* Image */}
           {meal.imageUrl && (
             <div className="rounded-lg overflow-hidden">

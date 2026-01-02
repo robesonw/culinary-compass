@@ -75,9 +75,9 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-200">
             <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/695042d8937b0c0cf7f7afd6/0b100c36b_image.png" 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/695042d8937b0c0cf7f7afd6/1812bfbf0_image.png" 
               alt="VitaPlate Logo" 
-              className="w-10 h-10 rounded-lg object-contain"
+              className="w-10 h-10 object-contain"
             />
             <div>
               <h1 className="font-semibold text-slate-900">VitaPlate</h1>

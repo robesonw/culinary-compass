@@ -23,6 +23,7 @@ export default function MealPlans() {
   const { data: mealPlans = [], isLoading } = useQuery({
     queryKey: ['mealPlans'],
     queryFn: () => base44.entities.MealPlan.list('-created_date'),
+    initialData: [],
   });
 
   const deletePlanMutation = useMutation({

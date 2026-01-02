@@ -174,6 +174,9 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                       name: { type: "string" },
                       description: { type: "string" },
                       calories: { type: "string" },
+                      protein: { type: "number" },
+                      carbs: { type: "number" },
+                      fat: { type: "number" },
                       health_benefit: { type: "string" }
                     }
                   },
@@ -183,6 +186,9 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                       name: { type: "string" },
                       description: { type: "string" },
                       calories: { type: "string" },
+                      protein: { type: "number" },
+                      carbs: { type: "number" },
+                      fat: { type: "number" },
                       health_benefit: { type: "string" }
                     }
                   },
@@ -192,6 +198,9 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                       name: { type: "string" },
                       description: { type: "string" },
                       calories: { type: "string" },
+                      protein: { type: "number" },
+                      carbs: { type: "number" },
+                      fat: { type: "number" },
                       health_benefit: { type: "string" }
                     }
                   },
@@ -201,6 +210,9 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                       name: { type: "string" },
                       description: { type: "string" },
                       calories: { type: "string" },
+                      protein: { type: "number" },
+                      carbs: { type: "number" },
+                      fat: { type: "number" },
                       health_benefit: { type: "string" }
                     }
                   }

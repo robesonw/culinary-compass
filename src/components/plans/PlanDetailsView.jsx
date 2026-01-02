@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp } from 'lucide-react';
+import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
@@ -33,6 +33,8 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar' or 'detailed'
   const [localDays, setLocalDays] = useState(null);
+  const [regeneratingMeal, setRegeneratingMeal] = useState(null);
+  const [regeneratingDay, setRegeneratingDay] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -238,6 +240,139 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
 
   const nutritionStats = calculateTotalNutrition();
 
+  const saveMealToFavorites = async (meal, mealType) => {
+    try {
+      await base44.entities.FavoriteMeal.create({
+        name: meal.name,
+        meal_type: mealType,
+        calories: meal.calories,
+        protein: meal.protein,
+        carbs: meal.carbs,
+        fat: meal.fat,
+        nutrients: meal.nutrients,
+        prepTip: meal.prepTip,
+      });
+      toast.success('Meal saved to favorites!');
+    } catch (error) {
+      toast.error('Failed to save meal');
+    }
+  };
+
+  const regenerateMeal = async (dayIndex, mealType) => {
+    setRegeneratingMeal(`${dayIndex}-${mealType}`);
+    try {
+      const currentMeal = localDays[dayIndex][mealType];
+      const prompt = `Generate a single ${mealType} meal that is different from "${currentMeal?.name}". 
+      It should be healthy, nutritious, and include calorie count, macros (protein, carbs, fat in grams), 
+      health benefits, and preparation tips. Make it suitable for the same diet type.`;
+
+      const newMeal = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            calories: { type: "string" },
+            protein: { type: "number" },
+            carbs: { type: "number" },
+            fat: { type: "number" },
+            nutrients: { type: "string" },
+            prepTip: { type: "string" }
+          }
+        }
+      });
+
+      const newDays = [...localDays];
+      newDays[dayIndex][mealType] = newMeal;
+      setLocalDays(newDays);
+      updatePlanMutation.mutate({ days: newDays });
+      toast.success('Meal regenerated!');
+    } catch (error) {
+      toast.error('Failed to regenerate meal');
+    } finally {
+      setRegeneratingMeal(null);
+    }
+  };
+
+  const regenerateDay = async (dayIndex) => {
+    setRegeneratingDay(dayIndex);
+    try {
+      const prompt = `Generate a full day of meals (breakfast, lunch, dinner, snacks) that are healthy and nutritious. 
+      Each meal should include: name, calories (as string like "400 kcal"), protein/carbs/fat in grams, 
+      health benefits (nutrients field), and preparation tips (prepTip field).`;
+
+      const newDay = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            breakfast: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                calories: { type: "string" },
+                protein: { type: "number" },
+                carbs: { type: "number" },
+                fat: { type: "number" },
+                nutrients: { type: "string" },
+                prepTip: { type: "string" }
+              }
+            },
+            lunch: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                calories: { type: "string" },
+                protein: { type: "number" },
+                carbs: { type: "number" },
+                fat: { type: "number" },
+                nutrients: { type: "string" },
+                prepTip: { type: "string" }
+              }
+            },
+            dinner: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                calories: { type: "string" },
+                protein: { type: "number" },
+                carbs: { type: "number" },
+                fat: { type: "number" },
+                nutrients: { type: "string" },
+                prepTip: { type: "string" }
+              }
+            },
+            snacks: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                calories: { type: "string" },
+                protein: { type: "number" },
+                carbs: { type: "number" },
+                fat: { type: "number" },
+                nutrients: { type: "string" },
+                prepTip: { type: "string" }
+              }
+            }
+          }
+        }
+      });
+
+      const newDays = [...localDays];
+      newDays[dayIndex] = {
+        day: newDays[dayIndex].day,
+        ...newDay
+      };
+      setLocalDays(newDays);
+      updatePlanMutation.mutate({ days: newDays });
+      toast.success('Day regenerated!');
+    } catch (error) {
+      toast.error('Failed to regenerate day');
+    } finally {
+      setRegeneratingDay(null);
+    }
+  };
+
   if (!plan) return null;
 
   const dietColors = {
@@ -353,13 +488,28 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                       <CardHeader className="pb-3">
                         <CardTitle className="text-base flex items-center justify-between">
                           <span>{day.day}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {['breakfast', 'lunch', 'dinner', 'snacks'].reduce((total, mealType) => {
-                              const meal = day[mealType];
-                              const match = meal?.calories?.match(/(\d+)/);
-                              return total + (match ? parseInt(match[1]) : 0);
-                            }, 0)} kcal
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {['breakfast', 'lunch', 'dinner', 'snacks'].reduce((total, mealType) => {
+                                const meal = day[mealType];
+                                const match = meal?.calories?.match(/(\d+)/);
+                                return total + (match ? parseInt(match[1]) : 0);
+                              }, 0)} kcal
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => regenerateDay(dayIndex)}
+                              disabled={regeneratingDay === dayIndex}
+                            >
+                              {regeneratingDay === dayIndex ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <RefreshCw className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </div>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
@@ -396,9 +546,38 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                               {meal.name}
                                             </div>
                                           </div>
-                                          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 whitespace-nowrap">
-                                            {meal.calories}
-                                          </Badge>
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 w-6 p-0"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                saveMealToFavorites(meal, mealType);
+                                              }}
+                                            >
+                                              <Heart className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 w-6 p-0"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                regenerateMeal(dayIndex, mealType);
+                                              }}
+                                              disabled={regeneratingMeal === `${dayIndex}-${mealType}`}
+                                            >
+                                              {regeneratingMeal === `${dayIndex}-${mealType}` ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                              ) : (
+                                                <RefreshCw className="w-3 h-3" />
+                                              )}
+                                            </Button>
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 whitespace-nowrap">
+                                              {meal.calories}
+                                            </Badge>
+                                          </div>
                                         </div>
                                         {(meal.protein || meal.carbs || meal.fat) && (
                                           <div className="flex gap-2 mt-1.5 text-[10px]">
@@ -426,19 +605,33 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                   {/* Day Selector */}
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {localDays?.map((day, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedDay(index)}
-                        className={`
-                          px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all
-                          ${selectedDay === index 
-                            ? 'bg-indigo-600 text-white shadow-md' 
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          }
-                        `}
-                      >
-                        {day.day}
-                      </button>
+                      <div key={index} className="flex items-center gap-1">
+                        <button
+                          onClick={() => setSelectedDay(index)}
+                          className={`
+                            px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all
+                            ${selectedDay === index 
+                              ? 'bg-indigo-600 text-white shadow-md' 
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            }
+                          `}
+                        >
+                          {day.day}
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => regenerateDay(index)}
+                          disabled={regeneratingDay === index}
+                        >
+                          {regeneratingDay === index ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-3 h-3" />
+                          )}
+                        </Button>
+                      </div>
                     ))}
                   </div>
 
@@ -485,13 +678,34 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                         {mealType}
                                       </h3>
                                       <div className="flex items-center gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => saveMealToFavorites(meal, mealType)}
+                                        >
+                                          <Heart className="w-4 h-4 mr-1" />
+                                          Favorite
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => regenerateMeal(selectedDay, mealType)}
+                                          disabled={regeneratingMeal === `${selectedDay}-${mealType}`}
+                                        >
+                                          {regeneratingMeal === `${selectedDay}-${mealType}` ? (
+                                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                          ) : (
+                                            <RefreshCw className="w-4 h-4 mr-1" />
+                                          )}
+                                          Regenerate
+                                        </Button>
                                         <Badge variant="outline" className="flex items-center gap-1">
                                           <Flame className="w-3 h-3 text-orange-500" />
                                           {meal.calories}
                                         </Badge>
                                         <Badge variant="secondary" className="text-xs">
                                           <ArrowLeftRight className="w-3 h-3 mr-1" />
-                                          Drag to swap
+                                          Drag
                                         </Badge>
                                       </div>
                                     </div>

@@ -43,6 +43,17 @@ const commonAllergens = [
   { value: 'sesame', label: 'Sesame' },
 ];
 
+const cuisineOptions = [
+  { value: 'mediterranean', label: 'Mediterranean' },
+  { value: 'asian', label: 'Asian' },
+  { value: 'mexican', label: 'Mexican' },
+  { value: 'italian', label: 'Italian' },
+  { value: 'american', label: 'American' },
+  { value: 'indian', label: 'Indian' },
+  { value: 'middle_eastern', label: 'Middle Eastern' },
+  { value: 'greek', label: 'Greek' },
+];
+
 export default function HealthDietHub() {
   const [healthGoal, setHealthGoal] = useState('liver_health');
   const [foodsLiked, setFoodsLiked] = useState('');
@@ -53,6 +64,9 @@ export default function HealthDietHub() {
   const [weeklyBudget, setWeeklyBudget] = useState(100);
   const [maxBudget, setMaxBudget] = useState(500);
   const [allergens, setAllergens] = useState([]);
+  const [cuisinePreferences, setCuisinePreferences] = useState([]);
+  const [cookingTime, setCookingTime] = useState('any');
+  const [skillLevel, setSkillLevel] = useState('intermediate');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [checkedItems, setCheckedItems] = useState(new Set());
@@ -195,7 +209,10 @@ export default function HealthDietHub() {
     const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
     
     const allergenText = allergens.length > 0 ? `- STRICT ALLERGEN RESTRICTIONS (NEVER include): ${allergens.join(', ')}` : '';
-    
+    const cuisineText = cuisinePreferences.length > 0 ? `- Preferred Cuisines: ${cuisinePreferences.join(', ')}` : '';
+    const timeText = cookingTime !== 'any' ? `- Cooking Time Preference: ${cookingTime}` : '';
+    const skillText = `- Cooking Skill Level: ${skillLevel}`;
+
     const prompt = `You are a professional nutritionist. Create a ${daysCount}-day personalized meal plan.
 
 HEALTH PROFILE:
@@ -204,6 +221,9 @@ HEALTH PROFILE:
 - Number of people: ${numPeople}
 - Plan Budget Target: $${weeklyBudget}
 ${allergenText}
+${cuisineText}
+${timeText}
+${skillText}
 ${customRequirements ? `- Custom Requirements: ${customRequirements}` : ''}
 ${foodsLiked ? `- Foods they enjoy: ${foodsLiked}` : ''}
 ${foodsAvoided ? `- Foods to avoid: ${foodsAvoided}` : ''}

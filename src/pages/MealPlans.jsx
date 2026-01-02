@@ -5,9 +5,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Trash2, Eye } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, Trash2, Eye, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanDetailsView from '../components/plans/PlanDetailsView';
+import FavoriteMealsPanel from '../components/meals/FavoriteMealsPanel';
 
 export default function MealPlans() {
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -51,13 +53,26 @@ export default function MealPlans() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Saved Meal Plans</h1>
+        <h1 className="text-3xl font-bold text-slate-900">Meal Plans & Favorites</h1>
         <p className="text-slate-600 mt-1">
-          View and manage your personalized meal plans
+          View your saved meal plans and favorite meals
         </p>
       </div>
 
-      {mealPlans.length === 0 ? (
+      <Tabs defaultValue="plans" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="plans">
+            <Calendar className="w-4 h-4 mr-2" />
+            My Plans
+          </TabsTrigger>
+          <TabsTrigger value="favorites">
+            <Heart className="w-4 h-4 mr-2" />
+            Favorites
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="plans" className="space-y-6">
+          {mealPlans.length === 0 ? (
         <Card className="border-slate-200 border-dashed">
           <CardContent className="p-12 text-center">
             <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
@@ -68,9 +83,9 @@ export default function MealPlans() {
               Create your first meal plan in the Health Diet Hub
             </p>
           </CardContent>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {mealPlans.map((plan, index) => (
             <motion.div
               key={plan.id}
@@ -120,10 +135,16 @@ export default function MealPlans() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
-          ))}
-        </div>
-      )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+        </TabsContent>
+
+        <TabsContent value="favorites">
+          <FavoriteMealsPanel />
+        </TabsContent>
+      </Tabs>
 
       <PlanDetailsView
         plan={selectedPlan}

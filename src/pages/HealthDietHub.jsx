@@ -198,6 +198,8 @@ export default function HealthDietHub() {
       if (userPrefs.skill_level) setSkillLevel(userPrefs.skill_level);
       if (userPrefs.num_people) setNumPeople(userPrefs.num_people);
       if (userPrefs.weekly_budget) setWeeklyBudget(userPrefs.weekly_budget);
+      if (userPrefs.dietary_restrictions) setCustomRequirements(userPrefs.dietary_restrictions);
+      toast.success('Loaded your profile preferences!', { duration: 2000 });
     }
   }, [userPrefs]);
 

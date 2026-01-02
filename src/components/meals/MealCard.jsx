@@ -25,30 +25,40 @@ export default function MealCard({ meal, mealType, mealIcon }) {
     queryFn: () => base44.entities.FavoriteMeal.list(),
   });
 
-  const isFavorite = favoriteMeals.some(fav => fav.name === meal.name);
+  const isFavorite = favoriteMeals.some(
+    fav => fav.name === meal.name && fav.meal_type === mealType
+  );
 
   const toggleFavoriteMutation = useMutation({
     mutationFn: async () => {
-      const existing = favoriteMeals.find(fav => fav.name === meal.name);
+      const existing = favoriteMeals.find(
+        fav => fav.name === meal.name && fav.meal_type === mealType
+      );
       if (existing) {
         await base44.entities.FavoriteMeal.delete(existing.id);
       } else {
-        await base44.entities.FavoriteMeal.create({
-          name: meal.name,
-          meal_type: mealType,
-          calories: meal.calories,
-          protein: meal.protein,
-          carbs: meal.carbs,
-          fat: meal.fat,
-          nutrients: meal.nutrients,
-          prepTip: meal.prepTip,
-          prepTime: meal.prepTime,
-          prepSteps: meal.prepSteps,
-          difficulty: meal.difficulty,
-          equipment: meal.equipment,
-          healthBenefit: meal.healthBenefit,
-          imageUrl: meal.imageUrl,
-        });
+        // Check if already exists to prevent duplicates
+        const duplicate = favoriteMeals.find(
+          fav => fav.name === meal.name && fav.meal_type === mealType
+        );
+        if (!duplicate) {
+          await base44.entities.FavoriteMeal.create({
+            name: meal.name,
+            meal_type: mealType,
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fat: meal.fat,
+            nutrients: meal.nutrients,
+            prepTip: meal.prepTip,
+            prepTime: meal.prepTime,
+            prepSteps: meal.prepSteps,
+            difficulty: meal.difficulty,
+            equipment: meal.equipment,
+            healthBenefit: meal.healthBenefit,
+            imageUrl: meal.imageUrl,
+          });
+        }
       }
     },
     onSuccess: () => {

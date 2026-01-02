@@ -21,10 +21,21 @@ export default function FavoriteMealsPanel({ onAddToPlan }) {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: favoriteMeals = [], isLoading } = useQuery({
+  const { data: rawFavoriteMeals = [], isLoading } = useQuery({
     queryKey: ['favoriteMeals'],
     queryFn: () => base44.entities.FavoriteMeal.list('-created_date'),
   });
+
+  // Filter out duplicates based on name and meal_type
+  const favoriteMeals = rawFavoriteMeals.reduce((unique, meal) => {
+    const exists = unique.find(
+      m => m.name === meal.name && m.meal_type === meal.meal_type
+    );
+    if (!exists) {
+      unique.push(meal);
+    }
+    return unique;
+  }, []);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.FavoriteMeal.delete(id),

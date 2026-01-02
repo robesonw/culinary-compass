@@ -421,26 +421,19 @@ export default function NutritionTracking() {
       endDate = new Date();
     }
     
-    // Group by weeks
+    // Group by weeks (7-day periods)
     const weeks = [];
     let currentWeekStart = new Date(startDate);
-    currentWeekStart.setHours(0, 0, 0, 0);
     
     while (currentWeekStart <= endDate) {
       const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
-      weekEnd.setHours(23, 59, 59, 999);
       
       const actualWeekEnd = weekEnd > endDate ? endDate : weekEnd;
       
       const weekLogs = logs.filter(l => {
         const logDate = new Date(l.log_date);
-        logDate.setHours(0, 0, 0, 0);
-        const compareStart = new Date(currentWeekStart);
-        compareStart.setHours(0, 0, 0, 0);
-        const compareEnd = new Date(actualWeekEnd);
-        compareEnd.setHours(23, 59, 59, 999);
-        return logDate >= compareStart && logDate <= compareEnd;
+        return logDate >= currentWeekStart && logDate <= actualWeekEnd;
       });
       
       const totals = {
@@ -475,7 +468,9 @@ export default function NutritionTracking() {
         hasLogs: weekLogs.length > 0
       });
       
-      currentWeekStart = addDays(actualWeekEnd, 1);
+      const nextWeekStart = new Date(actualWeekEnd);
+      nextWeekStart.setDate(nextWeekStart.getDate() + 1);
+      currentWeekStart = nextWeekStart;
     }
     
     return weeks;

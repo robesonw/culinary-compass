@@ -29,6 +29,7 @@ import FeedbackButton from './components/FeedbackButton';
 
 const navigation = [
   { name: 'Dashboard', href: 'Dashboard', icon: LayoutDashboard },
+  { name: 'Search Recipes', href: 'RecipeSearch', icon: Search },
   { name: 'Lab Results', href: 'LabResults', icon: FileText },
   { name: 'Health Diet Hub', href: 'HealthDietHub', icon: ChefHat },
   { name: 'AI Recipe Generator', href: 'AIRecipeGenerator', icon: Sparkles },

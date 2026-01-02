@@ -74,9 +74,11 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-200">
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white">
-              <span className="text-2xl font-bold bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">V</span>
-            </div>
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/695042d8937b0c0cf7f7afd6/0b100c36b_image.png" 
+              alt="VitaPlate Logo" 
+              className="w-10 h-10 rounded-lg object-contain"
+            />
             <div>
               <h1 className="font-semibold text-slate-900">VitaPlate</h1>
               <p className="text-xs text-slate-500">Smart Nutrition Platform</p>

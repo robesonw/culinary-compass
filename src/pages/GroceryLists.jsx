@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2, Share2, Mail, MessageSquare } from 'lucide-react';
+import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2, Share2, Mail, MessageSquare, List, Calendar, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 
 export default function GroceryLists() {
   const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [selectedStandaloneId, setSelectedStandaloneId] = useState('');
+  const [listType, setListType] = useState('meal-plan'); // 'meal-plan' or 'standalone'
   const [checkedItems, setCheckedItems] = useState(new Set());
   const [groceryList, setGroceryList] = useState(null);
   const [editingPrice, setEditingPrice] = useState(null);
@@ -26,6 +28,8 @@ export default function GroceryLists() {
   const [newItemName, setNewItemName] = useState('');
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [createListDialogOpen, setCreateListDialogOpen] = useState(false);
+  const [newListName, setNewListName] = useState('');
   const [organizationMode, setOrganizationMode] = useState('category'); // 'category' or 'aisle'
 
   const queryClient = useQueryClient();
@@ -35,7 +39,13 @@ export default function GroceryLists() {
     queryFn: () => base44.entities.MealPlan.list('-created_date'),
   });
 
+  const { data: standaloneLists = [] } = useQuery({
+    queryKey: ['standaloneLists'],
+    queryFn: () => base44.entities.GroceryList.list('-created_date'),
+  });
+
   const selectedPlan = mealPlans.find(p => p.id === selectedPlanId);
+  const selectedStandaloneList = standaloneLists.find(l => l.id === selectedStandaloneId);
 
   const updatePlanMutation = useMutation({
     mutationFn: (data) => base44.entities.MealPlan.update(selectedPlanId, data),
@@ -45,8 +55,62 @@ export default function GroceryLists() {
     },
   });
 
+  const createStandaloneListMutation = useMutation({
+    mutationFn: (data) => base44.entities.GroceryList.create(data),
+    onSuccess: (newList) => {
+      queryClient.invalidateQueries({ queryKey: ['standaloneLists'] });
+      setSelectedStandaloneId(newList.id);
+      setListType('standalone');
+      toast.success('List created');
+      setCreateListDialogOpen(false);
+      setNewListName('');
+    },
+  });
+
+  const updateStandaloneListMutation = useMutation({
+    mutationFn: (data) => base44.entities.GroceryList.update(selectedStandaloneId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standaloneLists'] });
+      toast.success('List updated');
+    },
+  });
+
+  const deleteStandaloneListMutation = useMutation({
+    mutationFn: (id) => base44.entities.GroceryList.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standaloneLists'] });
+      toast.success('List deleted');
+      setSelectedStandaloneId('');
+      setGroceryList(null);
+    },
+  });
+
+  const handleCreateStandaloneList = () => {
+    if (!newListName.trim()) {
+      toast.error('Please enter a list name');
+      return;
+    }
+
+    const emptyList = {
+      'Proteins': [],
+      'Vegetables': [],
+      'Grains': [],
+      'Dairy/Alternatives': [],
+      'Fruits': [],
+      'Other': []
+    };
+
+    createStandaloneListMutation.mutate({
+      name: newListName,
+      items: emptyList,
+      total_cost: 0
+    });
+  };
+
   React.useEffect(() => {
-    if (selectedPlan?.grocery_list) {
+    if (listType === 'standalone' && selectedStandaloneList) {
+      setGroceryList(selectedStandaloneList.items || {});
+    } else if (listType === 'meal-plan' && selectedPlan?.grocery_list) {
       // Deduplicate saved grocery list
       const deduped = {};
       Object.entries(selectedPlan.grocery_list).forEach(([category, items]) => {
@@ -130,20 +194,27 @@ export default function GroceryLists() {
       setGroceryList(null);
     }
     setCheckedItems(new Set());
-  }, [selectedPlan]);
+  }, [selectedPlan, selectedStandaloneList, listType]);
 
   const saveGroceryList = (updatedList) => {
     const listToSave = updatedList || groceryList;
-    if (!listToSave || !selectedPlanId) return;
+    if (!listToSave) return;
     
     const currentTotal = Object.values(listToSave)
       .flat()
-      .reduce((sum, item) => sum + (item.price || 0), 0);
+      .reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
 
-    updatePlanMutation.mutate({
-      grocery_list: listToSave,
-      current_total_cost: currentTotal
-    });
+    if (listType === 'meal-plan' && selectedPlanId) {
+      updatePlanMutation.mutate({
+        grocery_list: listToSave,
+        current_total_cost: currentTotal
+      });
+    } else if (listType === 'standalone' && selectedStandaloneId) {
+      updateStandaloneListMutation.mutate({
+        items: listToSave,
+        total_cost: currentTotal
+      });
+    }
   };
 
   const fetchItemPrice = async (itemName, category) => {
@@ -317,51 +388,114 @@ export default function GroceryLists() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Grocery Lists</h1>
           <p className="text-slate-600 mt-1">
-            Auto-generate shopping lists from your meal plans
+            Generate from meal plans or create your own custom lists
           </p>
         </div>
+        <Button onClick={() => setCreateListDialogOpen(true)} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+          <Plus className="w-4 h-4 mr-2" />
+          New List
+        </Button>
       </div>
 
-      {/* Plan Selector */}
+      {/* List Type & Selector */}
       <Card className="border-slate-200">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-            <div className="flex-1">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">
-                Select Meal Plan
-              </label>
-              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Choose a meal plan..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {mealPlans.map((plan) => (
-                    <SelectItem key={plan.id} value={plan.id}>
-                      {plan.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedPlan && (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share
-                </Button>
-                <Button variant="outline" size="sm" onClick={downloadAsPDF}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-            )}
+        <CardContent className="p-6 space-y-4">
+          <div className="flex gap-2">
+            <Button
+              variant={listType === 'meal-plan' ? 'default' : 'outline'}
+              onClick={() => {
+                setListType('meal-plan');
+                setSelectedStandaloneId('');
+              }}
+              className="flex-1"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              From Meal Plan
+            </Button>
+            <Button
+              variant={listType === 'standalone' ? 'default' : 'outline'}
+              onClick={() => {
+                setListType('standalone');
+                setSelectedPlanId('');
+              }}
+              className="flex-1"
+            >
+              <List className="w-4 h-4 mr-2" />
+              My Custom Lists
+            </Button>
           </div>
+
+          {listType === 'meal-plan' ? (
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+              <div className="flex-1">
+                <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Choose a meal plan..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mealPlans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedPlan && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadAsPDF}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+              <div className="flex-1">
+                <Select value={selectedStandaloneId} onValueChange={setSelectedStandaloneId}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Choose a list..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {standaloneLists.map((list) => (
+                      <SelectItem key={list.id} value={list.id}>
+                        {list.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedStandaloneList && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadAsPDF}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteStandaloneListMutation.mutate(selectedStandaloneId)}
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-600" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Organization Toggle & Quick Info */}
-      {selectedPlan && groceryList && (
+      {(selectedPlan || selectedStandaloneList) && groceryList && (
         <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -389,7 +523,7 @@ export default function GroceryLists() {
       )}
 
       {/* Grocery List */}
-      {selectedPlan && groceryList ? (
+      {(selectedPlan || selectedStandaloneList) && groceryList ? (
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Stats Card */}
           <Card className="border-slate-200">
@@ -731,10 +865,12 @@ export default function GroceryLists() {
           <CardContent className="p-12 text-center">
             <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              No Meal Plan Selected
+              {listType === 'meal-plan' ? 'No Meal Plan Selected' : 'No List Selected'}
             </h3>
             <p className="text-slate-600">
-              Choose a meal plan above to generate your grocery list
+              {listType === 'meal-plan' 
+                ? 'Choose a meal plan to generate your grocery list' 
+                : 'Select an existing list or create a new one'}
             </p>
           </CardContent>
         </Card>
@@ -808,6 +944,42 @@ export default function GroceryLists() {
           </div>
         </DialogContent>
       </Dialog>
-      </div>
-      );
-      }
+
+      {/* Create List Dialog */}
+      <Dialog open={createListDialogOpen} onOpenChange={setCreateListDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Grocery List</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>List Name</Label>
+              <Input
+                placeholder="e.g., Weekly Groceries, Party Supplies..."
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateStandaloneList();
+                }}
+              />
+            </div>
+            <Button 
+              onClick={handleCreateStandaloneList} 
+              className="w-full"
+              disabled={createStandaloneListMutation.isPending}
+            >
+              {createStandaloneListMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create List'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -42,14 +42,36 @@ const allergenOptions = [
 ];
 
 const cuisineOptions = [
-  { value: 'mediterranean', label: 'Mediterranean' },
-  { value: 'asian', label: 'Asian' },
-  { value: 'mexican', label: 'Mexican' },
-  { value: 'italian', label: 'Italian' },
-  { value: 'american', label: 'American' },
-  { value: 'indian', label: 'Indian' },
-  { value: 'middle_eastern', label: 'Middle Eastern' },
-  { value: 'greek', label: 'Greek' },
+  { value: 'mediterranean', label: 'Mediterranean', emoji: '🫒' },
+  { value: 'asian', label: 'Asian', emoji: '🍜' },
+  { value: 'mexican', label: 'Mexican', emoji: '🌮' },
+  { value: 'italian', label: 'Italian', emoji: '🍝' },
+  { value: 'american', label: 'American', emoji: '🍔' },
+  { value: 'indian', label: 'Indian', emoji: '🍛' },
+  { value: 'middle_eastern', label: 'Middle Eastern', emoji: '🧆' },
+  { value: 'greek', label: 'Greek', emoji: '🥙' },
+  { value: 'chinese', label: 'Chinese', emoji: '🥢' },
+  { value: 'japanese', label: 'Japanese', emoji: '🍱' },
+  { value: 'thai', label: 'Thai', emoji: '🌶️' },
+  { value: 'french', label: 'French', emoji: '🥖' },
+  { value: 'spanish', label: 'Spanish', emoji: '🥘' },
+  { value: 'caribbean', label: 'Caribbean', emoji: '🏝️' },
+  { value: 'african', label: 'African', emoji: '🥘' },
+  { value: 'vietnamese', label: 'Vietnamese', emoji: '🍲' },
+];
+
+const lifeStageOptions = [
+  { value: 'general', label: 'General Adult' },
+  { value: 'children', label: 'Children (Nutrient-Dense)' },
+  { value: 'pregnancy', label: 'Pregnancy (Folate/Iron Focus)' },
+  { value: 'seniors', label: 'Seniors (Easy Prep, Bone Health)' },
+];
+
+const mealTimingOptions = [
+  { value: 'early_bird', label: 'Early Bird (Breakfast 6-7am)' },
+  { value: 'standard', label: 'Standard (Breakfast 7-9am)' },
+  { value: 'late_riser', label: 'Late Riser (Breakfast 9-11am)' },
+  { value: 'intermittent_fasting', label: 'Intermittent Fasting' },
 ];
 
 export default function Profile() {
@@ -84,6 +106,8 @@ export default function Profile() {
     skill_level: 'intermediate',
     num_people: 1,
     weekly_budget: 100,
+    life_stage: 'general',
+    meal_timing: 'standard',
   });
 
   React.useEffect(() => {
@@ -103,6 +127,8 @@ export default function Profile() {
         skill_level: preferences.skill_level || 'intermediate',
         num_people: preferences.num_people || 1,
         weekly_budget: preferences.weekly_budget || 100,
+        life_stage: preferences.life_stage || 'general',
+        meal_timing: preferences.meal_timing || 'standard',
       });
     }
   }, [preferences]);
@@ -337,7 +363,8 @@ export default function Profile() {
             <CardContent className="space-y-6">
               <div>
                 <Label className="mb-3 block">Preferred Cuisines</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <p className="text-xs text-slate-500 mb-3">Select cuisines you enjoy for personalized meal recommendations</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {cuisineOptions.map(cuisine => (
                     <div key={cuisine.value} className="flex items-center gap-2">
                       <Checkbox
@@ -351,7 +378,8 @@ export default function Profile() {
                           }
                         }}
                       />
-                      <Label htmlFor={`cuisine-${cuisine.value}`} className="cursor-pointer text-sm">
+                      <Label htmlFor={`cuisine-${cuisine.value}`} className="cursor-pointer text-sm flex items-center gap-1">
+                        <span>{cuisine.emoji}</span>
                         {cuisine.label}
                       </Label>
                     </div>
@@ -390,6 +418,44 @@ export default function Profile() {
                       <SelectItem value="over_60">Over 60 minutes</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="mb-2 block">Life Stage / Target Group</Label>
+                  <Select value={formData.life_stage} onValueChange={(value) => setFormData({ ...formData, life_stage: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {lifeStageOptions.map(stage => (
+                        <SelectItem key={stage.value} value={stage.value}>
+                          {stage.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500 mt-1">Adjusts nutrition and recipes for specific needs</p>
+                </div>
+
+                <div>
+                  <Label className="mb-2 block">Meal Timing Preference</Label>
+                  <Select value={formData.meal_timing} onValueChange={(value) => setFormData({ ...formData, meal_timing: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mealTimingOptions.map(timing => (
+                        <SelectItem key={timing.value} value={timing.value}>
+                          {timing.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500 mt-1">When you typically eat your first meal</p>
                 </div>
               </div>
             </CardContent>

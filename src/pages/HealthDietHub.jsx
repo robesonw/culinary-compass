@@ -332,11 +332,17 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       toast.error('Invalid meal plan data');
       return;
     }
+
+    const currentTotalCost = generatedPlan.grocery_prices 
+      ? Object.values(generatedPlan.grocery_prices).reduce((sum, item) => sum + (item.price || 0), 0)
+      : null;
     
     savePlanMutation.mutate({
       name: planName,
       diet_type: 'custom',
       estimated_cost: generatedPlan.estimated_weekly_cost || null,
+      current_total_cost: currentTotalCost,
+      grocery_list: groceryList,
       macros: generatedPlan.average_daily_macros || null,
       days: generatedPlan.days.map(day => ({
         day: day.day || 'Day',

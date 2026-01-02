@@ -6,9 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { base44 } from '@/api/base44Client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -21,44 +24,124 @@ const groceryCategories = ['Proteins', 'Vegetables', 'Fruits', 'Grains', 'Dairy/
 export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [selectedDay, setSelectedDay] = useState(0);
   const [checkedItems, setCheckedItems] = useState(new Set());
+  const [groceryList, setGroceryList] = useState(null);
+  const [editingPrice, setEditingPrice] = useState(null);
+  const [addingItem, setAddingItem] = useState(null);
+  const [newItemName, setNewItemName] = useState('');
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
 
-  const groceryList = useMemo(() => {
-    if (!plan?.days) return {};
+  const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    if (plan?.grocery_list) {
+      setGroceryList(plan.grocery_list);
+    } else if (plan?.days) {
+      // Generate from meals if not saved
+      const items = new Set();
+      plan.days.forEach(day => {
+        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
+          if (day[meal]?.name) {
+            const words = day[meal].name.split(/[\s,]+/);
+            words.forEach(word => {
+              const cleaned = word.toLowerCase();
+              if (cleaned.length > 3 && !['with', 'and', 'the'].includes(cleaned)) {
+                items.add(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+              }
+            });
+          }
+        });
+      });
+
+      const categorized = {};
+      groceryCategories.forEach(cat => categorized[cat] = []);
+      
+      const proteinKeywords = ['chicken', 'beef', 'salmon', 'fish', 'liver', 'turkey', 'pork', 'lamb', 'egg', 'tofu', 'cod', 'trout', 'mackerel', 'tuna', 'shrimp'];
+      const vegKeywords = ['spinach', 'broccoli', 'carrot', 'asparagus', 'onion', 'garlic', 'pepper', 'tomato', 'lettuce', 'kale', 'cabbage', 'zucchini', 'mushroom', 'artichoke', 'brussels'];
+      const grainKeywords = ['rice', 'quinoa', 'oat', 'bread', 'pasta', 'tortilla', 'barley'];
+      const dairyKeywords = ['yogurt', 'cheese', 'milk', 'cream', 'butter'];
+      const fruitKeywords = ['berry', 'berries', 'apple', 'banana', 'orange', 'lemon', 'avocado'];
+
+      items.forEach(item => {
+        const lowerItem = item.toLowerCase();
+        const itemWithPrice = { name: item, price: null };
+        
+        if (proteinKeywords.some(k => lowerItem.includes(k))) categorized['Proteins'].push(itemWithPrice);
+        else if (vegKeywords.some(k => lowerItem.includes(k))) categorized['Vegetables'].push(itemWithPrice);
+        else if (fruitKeywords.some(k => lowerItem.includes(k))) categorized['Fruits'].push(itemWithPrice);
+        else if (grainKeywords.some(k => lowerItem.includes(k))) categorized['Grains'].push(itemWithPrice);
+        else if (dairyKeywords.some(k => lowerItem.includes(k))) categorized['Dairy/Alternatives'].push(itemWithPrice);
+        else categorized['Other'].push(itemWithPrice);
+      });
+
+      setGroceryList(categorized);
+    }
+  }, [plan]);
+
+  const updatePlanMutation = useMutation({
+    mutationFn: (data) => base44.entities.MealPlan.update(plan.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mealPlans'] });
+      toast.success('Grocery list updated');
+    },
+  });
+
+  const saveGroceryList = () => {
+    if (!groceryList) return;
     
-    const items = new Set();
-    plan.days.forEach(day => {
-      ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
-        if (day[meal]?.name) {
-          const words = day[meal].name.toLowerCase().split(/[\s,&]+/);
-          words.forEach(word => {
-            if (word.length > 3 && !['with', 'and', 'the'].includes(word)) {
-              items.add(word);
-            }
-          });
+    const currentTotal = Object.values(groceryList)
+      .flat()
+      .reduce((sum, item) => sum + (item.price || 0), 0);
+
+    updatePlanMutation.mutate({
+      grocery_list: groceryList,
+      current_total_cost: currentTotal
+    });
+  };
+
+  const fetchItemPrice = async (itemName, category) => {
+    setIsFetchingPrice(true);
+    try {
+      const priceData = await base44.integrations.Core.InvokeLLM({
+        prompt: `Get current average grocery price in USD for: ${itemName}. Return approximate cost per typical package/unit from major US grocery stores.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            price: { type: "number" },
+            unit: { type: "string" }
+          }
         }
       });
-    });
 
-    const categorized = {};
-    groceryCategories.forEach(cat => categorized[cat] = []);
+      if (priceData?.price) {
+        setGroceryList(prev => ({
+          ...prev,
+          [category]: prev[category].map(item => 
+            item.name === itemName 
+              ? { ...item, price: priceData.price, unit: priceData.unit }
+              : item
+          )
+        }));
+        saveGroceryList();
+      }
+    } catch (error) {
+      toast.error('Failed to fetch price');
+    } finally {
+      setIsFetchingPrice(false);
+    }
+  };
+
+  const addCustomItem = (category) => {
+    if (!newItemName.trim()) return;
     
-    const proteinKeywords = ['chicken', 'beef', 'salmon', 'fish', 'turkey', 'pork', 'eggs', 'tofu', 'shrimp', 'tuna'];
-    const vegKeywords = ['broccoli', 'spinach', 'kale', 'lettuce', 'carrots', 'peppers', 'tomatoes', 'onions', 'garlic'];
-    const fruitKeywords = ['apple', 'banana', 'berries', 'orange', 'lemon', 'avocado', 'mango'];
-    const grainKeywords = ['rice', 'quinoa', 'bread', 'oats', 'pasta', 'tortilla'];
-    const dairyKeywords = ['milk', 'cheese', 'yogurt', 'butter'];
-
-    items.forEach(item => {
-      if (proteinKeywords.some(k => item.includes(k))) categorized['Proteins'].push(item);
-      else if (vegKeywords.some(k => item.includes(k))) categorized['Vegetables'].push(item);
-      else if (fruitKeywords.some(k => item.includes(k))) categorized['Fruits'].push(item);
-      else if (grainKeywords.some(k => item.includes(k))) categorized['Grains'].push(item);
-      else if (dairyKeywords.some(k => item.includes(k))) categorized['Dairy/Alternatives'].push(item);
-      else categorized['Other'].push(item);
-    });
-
-    return categorized;
-  }, [plan]);
+    setGroceryList(prev => ({
+      ...prev,
+      [category]: [...(prev[category] || []), { name: newItemName, price: null, unit: '' }]
+    }));
+    setNewItemName('');
+    setAddingItem(null);
+    saveGroceryList();
+  };
 
   if (!plan) return null;
 
@@ -229,61 +312,185 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
 
           <TabsContent value="grocery">
             <Card className="border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-indigo-600" />
-                <CardTitle>Grocery List</CardTitle>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const items = Object.values(groceryList).flat();
-                  const text = items.map(item => `• ${item}`).join('\n');
-                  navigator.clipboard.writeText(text);
-                  toast.success('Copied to clipboard');
-                }}
-              >
-                Copy List
-              </Button>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5 text-indigo-600" />
+                    <CardTitle>Grocery List</CardTitle>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const items = Object.entries(groceryList || {})
+                        .map(([cat, items]) => `${cat}:\n${items.map(i => `  • ${i.name}${i.price ? ` - $${i.price.toFixed(2)}` : ''}`).join('\n')}`)
+                        .join('\n\n');
+                      navigator.clipboard.writeText(items);
+                      toast.success('Copied to clipboard');
+                    }}
+                  >
+                    Copy List
+                  </Button>
+                </div>
+
+                {/* Cost Summary */}
+                {(plan?.estimated_cost || plan?.current_total_cost) && (
+                  <div className="mt-4 p-3 rounded-lg bg-slate-50 space-y-2">
+                    {plan.estimated_cost && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Initial Estimate:</span>
+                        <span className="font-semibold">${plan.estimated_cost.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {groceryList && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Current Total:</span>
+                        <span className="font-bold text-indigo-600">
+                          ${Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    {plan.estimated_cost && groceryList && (
+                      <div className="flex justify-between text-xs text-slate-500 pt-1 border-t">
+                        <span>Difference:</span>
+                        <span className={
+                          Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0) <= plan.estimated_cost
+                            ? 'text-emerald-600' : 'text-amber-600'
+                        }>
+                          ${(Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0) - plan.estimated_cost).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                {groceryCategories.map(category => {
-                  const items = groceryList[category] || [];
-                  if (items.length === 0) return null;
+                {groceryList && (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {groceryCategories.map(category => {
+                      const items = groceryList[category] || [];
 
-                  return (
-                    <div key={category}>
-                      <h4 className="font-semibold text-slate-900 mb-3">{category}</h4>
-                      <div className="space-y-2">
-                        {items.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <Checkbox
-                              checked={checkedItems.has(item)}
-                              onCheckedChange={(checked) => {
-                                const newSet = new Set(checkedItems);
-                                if (checked) newSet.add(item);
-                                else newSet.delete(item);
-                                setCheckedItems(newSet);
-                              }}
-                            />
-                            <span className={`text-sm capitalize ${checkedItems.has(item) ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                              {item}
-                            </span>
+                      return (
+                        <div key={category}>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold text-slate-900">{category}</h4>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setAddingItem(category)}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
 
-              <Separator className="my-4" />
+                          <div className="space-y-2">
+                            {items.map((item, idx) => {
+                              const itemName = typeof item === 'string' ? item : item.name;
+                              const itemPrice = typeof item === 'object' ? item.price : null;
+                              const itemUnit = typeof item === 'object' ? item.unit : null;
 
-              <div className="text-sm text-slate-600">
-                {checkedItems.size} of {Object.values(groceryList).flat().length} items checked
-              </div>
+                              return (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <Checkbox
+                                    checked={checkedItems.has(itemName)}
+                                    onCheckedChange={(checked) => {
+                                      const newSet = new Set(checkedItems);
+                                      if (checked) newSet.add(itemName);
+                                      else newSet.delete(itemName);
+                                      setCheckedItems(newSet);
+                                    }}
+                                  />
+                                  <span className={`text-sm flex-1 ${checkedItems.has(itemName) ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                    {itemName}
+                                  </span>
+
+                                  {editingPrice === `${category}-${idx}` ? (
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      defaultValue={itemPrice || ''}
+                                      placeholder="$"
+                                      className="w-20 h-7 text-xs"
+                                      onBlur={(e) => {
+                                        const newPrice = parseFloat(e.target.value);
+                                        if (!isNaN(newPrice)) {
+                                          setGroceryList(prev => ({
+                                            ...prev,
+                                            [category]: prev[category].map((it, i) => 
+                                              i === idx ? { ...it, price: newPrice } : it
+                                            )
+                                          }));
+                                          saveGroceryList();
+                                        }
+                                        setEditingPrice(null);
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') e.target.blur();
+                                      }}
+                                      autoFocus
+                                    />
+                                  ) : (
+                                    <button
+                                      onClick={() => setEditingPrice(`${category}-${idx}`)}
+                                      className="text-xs text-slate-500 hover:text-indigo-600 min-w-[70px] text-right"
+                                    >
+                                      {itemPrice ? (
+                                        `$${itemPrice.toFixed(2)}${itemUnit ? `/${itemUnit}` : ''}`
+                                      ) : (
+                                        <span
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            fetchItemPrice(itemName, category);
+                                          }}
+                                          className="text-indigo-600 hover:underline"
+                                        >
+                                          Get price
+                                        </span>
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+
+                            {addingItem === category && (
+                              <div className="flex gap-2 mt-2">
+                                <Input
+                                  placeholder="Item name..."
+                                  value={newItemName}
+                                  onChange={(e) => setNewItemName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') addCustomItem(category);
+                                    if (e.key === 'Escape') setAddingItem(null);
+                                  }}
+                                  className="h-8 text-sm"
+                                  autoFocus
+                                />
+                                <Button size="sm" onClick={() => addCustomItem(category)}>
+                                  Add
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <Separator className="my-4" />
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">
+                    {checkedItems.size} of {groceryList ? Object.values(groceryList).flat().length : 0} items checked
+                  </span>
+                  {isFetchingPrice && (
+                    <span className="flex items-center gap-2 text-indigo-600">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Fetching price...
+                    </span>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

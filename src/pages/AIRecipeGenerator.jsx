@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ export default function AIRecipeGenerator() {
   const [generating, setGenerating] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
   const [savingImage, setSavingImage] = useState(false);
+  const queryClient = useQueryClient();
   
   const [form, setForm] = useState({
     mealType: 'Dinner',
@@ -228,6 +230,7 @@ Provide:
         estimated_cost: totalCost
       });
       
+      queryClient.invalidateQueries({ queryKey: ['favoriteMeals'] });
       toast.dismiss();
       toast.success('Recipe saved to favorites!');
     } catch (error) {

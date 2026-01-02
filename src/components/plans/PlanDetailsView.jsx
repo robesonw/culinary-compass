@@ -17,7 +17,8 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 const mealIcons = {
   breakfast: '🌅',
   lunch: '☀️',
-  dinner: '🌙'
+  dinner: '🌙',
+  snacks: '🍎'
 };
 
 const groceryCategories = ['Proteins', 'Vegetables', 'Fruits', 'Grains', 'Dairy/Alternatives', 'Other'];
@@ -449,8 +450,8 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
               animate={{ opacity: 1, x: 0 }}
               className="space-y-4"
             >
-              {['breakfast', 'lunch', 'dinner'].map((mealType) => {
-                const meal = plan.days[selectedDay][mealType];
+              {['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
+                const meal = localDays[selectedDay][mealType];
                 if (!meal) return null;
 
                 return (

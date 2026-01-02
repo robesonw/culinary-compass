@@ -13,6 +13,7 @@ import { Star, Heart, Bookmark, Eye, Search, Plus, Share2, UserPlus, UserCheck }
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import PlanDetailsView from '../components/plans/PlanDetailsView';
+import SharedPlanDetailDialog from '../components/community/SharedPlanDetailDialog';
 
 export default function SharedMealPlans() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +24,8 @@ export default function SharedMealPlans() {
   const [viewingPlan, setViewingPlan] = useState(null);
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [ratingForm, setRatingForm] = useState({ rating: 5, comment: '' });
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedPlanDetail, setSelectedPlanDetail] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -264,7 +267,13 @@ export default function SharedMealPlans() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="border-slate-200 hover:shadow-lg transition-all">
+              <Card 
+                className="border-slate-200 hover:shadow-lg transition-all cursor-pointer"
+                onClick={() => {
+                  setSelectedPlanDetail(plan);
+                  setDetailDialogOpen(true);
+                }}
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
                     <Badge variant="secondary" className="capitalize">
@@ -336,15 +345,38 @@ export default function SharedMealPlans() {
                     </div>
                   )}
                   <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleLike(plan)}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLike(plan);
+                      }}
+                    >
                       <Heart className="w-3 h-3 mr-1" />
                       Like
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleSave(plan)}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSave(plan);
+                      }}
+                    >
                       <Bookmark className="w-3 h-3 mr-1" />
                       Save
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => openRatingDialog(plan)}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRatingDialog(plan);
+                      }}
+                    >
                       <Star className="w-3 h-3" />
                     </Button>
                   </div>
@@ -458,6 +490,12 @@ export default function SharedMealPlans() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SharedPlanDetailDialog
+        plan={selectedPlanDetail}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
     </div>
   );
 }

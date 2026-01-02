@@ -9,10 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Star, Heart, Bookmark, Eye, Search, ChefHat } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import SharedRecipeDetailDialog from '../components/community/SharedRecipeDetailDialog';
 
 export default function SharedRecipes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMealType, setFilterMealType] = useState('all');
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -142,7 +145,13 @@ export default function SharedRecipes() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="border-slate-200 hover:shadow-lg transition-all overflow-hidden">
+              <Card 
+                className="border-slate-200 hover:shadow-lg transition-all overflow-hidden cursor-pointer"
+                onClick={() => {
+                  setSelectedRecipe(recipe);
+                  setDetailDialogOpen(true);
+                }}
+              >
                 {recipe.image_url && (
                   <img
                     src={recipe.image_url}
@@ -195,7 +204,10 @@ export default function SharedRecipes() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => handleLike(recipe.id, recipe.created_by)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLike(recipe.id, recipe.created_by);
+                      }}
                     >
                       <Heart className="w-3 h-3 mr-1" />
                       Like
@@ -204,7 +216,10 @@ export default function SharedRecipes() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => handleSave(recipe)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSave(recipe);
+                      }}
                     >
                       <Bookmark className="w-3 h-3 mr-1" />
                       Save
@@ -225,6 +240,12 @@ export default function SharedRecipes() {
           </CardContent>
         </Card>
       )}
+
+      <SharedRecipeDetailDialog
+        recipe={selectedRecipe}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
     </div>
   );
 }

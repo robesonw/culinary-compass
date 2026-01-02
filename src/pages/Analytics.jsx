@@ -12,42 +12,118 @@ export default function Analytics() {
     queryFn: () => base44.entities.MealPlan.list(),
   });
 
-  // Calculate analytics
-  const dietDistribution = mealPlans.reduce((acc, plan) => {
-    const type = plan.diet_type || 'unknown';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {});
+  // Calculate accurate diet distribution
+  const dietDistribution = React.useMemo(() => {
+    return mealPlans.reduce((acc, plan) => {
+      const type = plan.diet_type || 'custom';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+  }, [mealPlans]);
 
   const pieData = Object.entries(dietDistribution).map(([name, value]) => ({
-    name: name.replace(/-/g, ' '),
+    name: name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
     value
   }));
 
   const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
 
-  // Weekly meal planning trend
-  const weeklyData = [
-    { week: 'Week 1', plans: 2 },
-    { week: 'Week 2', plans: 3 },
-    { week: 'Week 3', plans: 4 },
-    { week: 'Week 4', plans: 5 },
-    { week: 'Week 5', plans: mealPlans.length },
-  ];
+  // Calculate actual weekly trend based on creation dates
+  const weeklyData = React.useMemo(() => {
+    const weeks = {};
+    const now = Date.now();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    
+    mealPlans.forEach(plan => {
+      const planDate = new Date(plan.created_date).getTime();
+      const weeksAgo = Math.floor((now - planDate) / weekMs);
+      const weekLabel = weeksAgo === 0 ? 'This Week' : 
+                       weeksAgo === 1 ? 'Last Week' :
+                       weeksAgo <= 4 ? `${weeksAgo} Weeks Ago` : 'Earlier';
+      
+      if (weeksAgo <= 4) {
+        weeks[weekLabel] = (weeks[weekLabel] || 0) + 1;
+      }
+    });
+    
+    const labels = ['4 Weeks Ago', '3 Weeks Ago', '2 Weeks Ago', 'Last Week', 'This Week'];
+    return labels.map(label => ({
+      week: label,
+      plans: weeks[label] || 0
+    }));
+  }, [mealPlans]);
 
-  // Calorie estimates by diet
-  const calorieData = [
-    { diet: 'Liver-Centric', avg: 2100 },
-    { diet: 'Low-Sugar', avg: 1800 },
-    { diet: 'Vegetarian', avg: 1950 },
-    { diet: 'Custom', avg: 2000 },
-  ];
+  // Calculate actual average calories by diet type
+  const calorieData = React.useMemo(() => {
+    const dietCalories = {};
+    const dietCounts = {};
+    
+    mealPlans.forEach(plan => {
+      const dietType = plan.diet_type || 'custom';
+      let planCalories = 0;
+      let mealCount = 0;
+      
+      plan.days?.forEach(day => {
+        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+          const meal = day[mealType];
+          if (meal?.calories) {
+            const match = meal.calories.match(/(\d+)/);
+            if (match) {
+              planCalories += parseInt(match[1]);
+              mealCount++;
+            }
+          }
+        });
+      });
+      
+      if (mealCount > 0) {
+        const avgPerDay = planCalories / (plan.days?.length || 1);
+        dietCalories[dietType] = (dietCalories[dietType] || 0) + avgPerDay;
+        dietCounts[dietType] = (dietCounts[dietType] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(dietCalories).map(([diet, total]) => ({
+      diet: diet.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      avg: Math.round(total / dietCounts[diet])
+    }));
+  }, [mealPlans]);
+
+  const totalMeals = mealPlans.reduce((sum, p) => sum + (p.days?.length || 0) * 4, 0);
+  
+  const avgCalories = React.useMemo(() => {
+    if (mealPlans.length === 0) return 0;
+    
+    let totalCals = 0;
+    let dayCount = 0;
+    
+    mealPlans.forEach(plan => {
+      plan.days?.forEach(day => {
+        let dayCals = 0;
+        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+          const meal = day[mealType];
+          if (meal?.calories) {
+            const match = meal.calories.match(/(\d+)/);
+            if (match) {
+              dayCals += parseInt(match[1]);
+            }
+          }
+        });
+        if (dayCals > 0) {
+          totalCals += dayCals;
+          dayCount++;
+        }
+      });
+    });
+    
+    return dayCount > 0 ? Math.round(totalCals / dayCount) : 0;
+  }, [mealPlans]);
 
   const stats = [
     { title: 'Total Plans Created', value: mealPlans.length, icon: Calendar, color: 'indigo' },
-    { title: 'Total Meals', value: mealPlans.reduce((sum, p) => sum + (p.days?.length || 0) * 3, 0), icon: Target, color: 'emerald' },
-    { title: 'Avg Calories/Day', value: '1,950', icon: Flame, color: 'orange' },
-    { title: 'Success Rate', value: '94%', icon: TrendingUp, color: 'purple' },
+    { title: 'Total Meals', value: totalMeals, icon: Target, color: 'emerald' },
+    { title: 'Avg Calories/Day', value: avgCalories > 0 ? avgCalories.toLocaleString() : 'N/A', icon: Flame, color: 'orange' },
+    { title: 'Diet Types', value: Object.keys(dietDistribution).length, icon: TrendingUp, color: 'purple' },
   ];
 
   return (
@@ -109,25 +185,31 @@ export default function Analytics() {
               <CardDescription>Breakdown of your meal plans by diet type</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+{pieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-slate-400">
+                  <p>No meal plans created yet</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -176,15 +258,21 @@ export default function Analytics() {
               <CardDescription>Compare calorie intake across different diet types</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={calorieData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="diet" stroke="#64748b" />
-                  <YAxis stroke="#64748b" />
-                  <Tooltip />
-                  <Bar dataKey="avg" fill="#10b981" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+{calorieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={calorieData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="diet" stroke="#64748b" />
+                    <YAxis stroke="#64748b" />
+                    <Tooltip />
+                    <Bar dataKey="avg" fill="#10b981" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-slate-400">
+                  <p>Create meal plans to see calorie analysis</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -202,31 +290,35 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-100">
-                <h4 className="font-semibold text-indigo-900 mb-2">Most Popular Diet</h4>
-                <p className="text-sm text-indigo-700">
-                  {pieData.length > 0 && `${pieData.reduce((max, item) => item.value > max.value ? item : max).name} is your most frequently planned diet type`}
-                </p>
-              </div>
+              {pieData.length > 0 && (
+                <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-100">
+                  <h4 className="font-semibold text-indigo-900 mb-2">Most Popular Diet</h4>
+                  <p className="text-sm text-indigo-700">
+                    {pieData.reduce((max, item) => item.value > max.value ? item : max).name} is your most frequently planned diet type with {pieData.reduce((max, item) => item.value > max.value ? item : max).value} plans
+                  </p>
+                </div>
+              )}
               
               <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-100">
-                <h4 className="font-semibold text-emerald-900 mb-2">Planning Consistency</h4>
+                <h4 className="font-semibold text-emerald-900 mb-2">Planning Activity</h4>
                 <p className="text-sm text-emerald-700">
-                  You've created {mealPlans.length} meal plans. Keep up the great work!
+                  {mealPlans.length > 0 ? `You've created ${mealPlans.length} meal plan${mealPlans.length === 1 ? '' : 's'} with ${totalMeals} total meals. Keep up the great work!` : 'Start creating meal plans to track your progress'}
                 </p>
               </div>
               
-              <div className="p-4 rounded-lg bg-amber-50 border border-amber-100">
-                <h4 className="font-semibold text-amber-900 mb-2">Nutritional Balance</h4>
-                <p className="text-sm text-amber-700">
-                  Your average daily calorie target is well-balanced across different diet types
-                </p>
-              </div>
+              {avgCalories > 0 && (
+                <div className="p-4 rounded-lg bg-amber-50 border border-amber-100">
+                  <h4 className="font-semibold text-amber-900 mb-2">Nutritional Balance</h4>
+                  <p className="text-sm text-amber-700">
+                    Your average daily intake is {avgCalories} calories, {avgCalories >= 1800 && avgCalories <= 2200 ? 'well-balanced for most adults' : avgCalories < 1800 ? 'on the lower side - ensure adequate nutrition' : 'on the higher side - monitor your goals'}
+                  </p>
+                </div>
+              )}
               
               <div className="p-4 rounded-lg bg-purple-50 border border-purple-100">
-                <h4 className="font-semibold text-purple-900 mb-2">Goal Achievement</h4>
+                <h4 className="font-semibold text-purple-900 mb-2">Variety</h4>
                 <p className="text-sm text-purple-700">
-                  94% success rate in following your planned meals. Excellent consistency!
+                  You're exploring {Object.keys(dietDistribution).length} different diet type{Object.keys(dietDistribution).length === 1 ? '' : 's'}. Great way to find what works best for you!
                 </p>
               </div>
             </div>

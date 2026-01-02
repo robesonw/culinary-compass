@@ -4,9 +4,9 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import React from 'react';
 import { 
-  TrendingUp, 
-  TrendingDown,
+  TrendingUp,
   Calendar,
   Flame,
   Target,
@@ -32,59 +32,122 @@ export default function Dashboard() {
     retry: false,
   });
 
-  // Calculate statistics
+  const { data: sharedPlans = [] } = useQuery({
+    queryKey: ['sharedPlans'],
+    queryFn: () => base44.entities.SharedMealPlan.list('-created_date', 3),
+  });
+
+  const { data: labResults = [] } = useQuery({
+    queryKey: ['labResults'],
+    queryFn: () => base44.entities.LabResult.list('-upload_date', 1),
+  });
+
+  // Calculate accurate statistics
+  const totalMeals = mealPlans.reduce((sum, p) => {
+    return sum + (p.days?.length || 0) * 4; // breakfast, lunch, dinner, snacks
+  }, 0);
+
+  const avgCalories = React.useMemo(() => {
+    if (mealPlans.length === 0) return 0;
+    
+    let totalCals = 0;
+    let dayCount = 0;
+    
+    mealPlans.forEach(plan => {
+      plan.days?.forEach(day => {
+        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+          const meal = day[mealType];
+          if (meal?.calories) {
+            const match = meal.calories.match(/(\d+)/);
+            if (match) {
+              totalCals += parseInt(match[1]);
+              dayCount++;
+            }
+          }
+        });
+      });
+    });
+    
+    return dayCount > 0 ? Math.round(totalCals / (mealPlans.reduce((sum, p) => sum + (p.days?.length || 0), 0) || 1)) : 0;
+  }, [mealPlans]);
+
   const stats = {
-    activePlans: mealPlans.filter(p => p.diet_type).length,
-    totalMeals: mealPlans.reduce((sum, p) => sum + (p.days?.length || 0) * 3, 0),
-    weekStreak: 3,
-    avgCalories: 1850,
+    activePlans: mealPlans.length,
+    totalMeals,
+    avgCalories,
+    communityShares: sharedPlans.length,
   };
 
   const statCards = [
     { 
       title: 'Active Plans', 
-      value: stats.activePlans, 
-      change: '+12%', 
-      trend: 'up',
+      value: stats.activePlans,
+      subtitle: 'meal plans',
       icon: Calendar,
       color: 'indigo'
     },
     { 
       title: 'Meals Planned', 
-      value: stats.totalMeals, 
-      change: '+8%', 
-      trend: 'up',
+      value: stats.totalMeals,
+      subtitle: 'total meals',
       icon: Target,
       color: 'emerald'
     },
     { 
       title: 'Avg Calories/Day', 
-      value: `${stats.avgCalories}`, 
-      change: '-3%', 
-      trend: 'down',
+      value: stats.avgCalories > 0 ? `${stats.avgCalories}` : 'N/A',
+      subtitle: stats.avgCalories > 0 ? 'kcal per day' : 'Create plans to track',
       icon: Flame,
       color: 'orange'
     },
     { 
-      title: 'Week Streak', 
-      value: stats.weekStreak, 
-      change: 'On track', 
-      trend: 'neutral',
+      title: 'Community Shares', 
+      value: stats.communityShares,
+      subtitle: 'shared recently',
       icon: TrendingUp,
       color: 'purple'
     },
   ];
 
-  const recentActivity = [
-    { action: 'Created meal plan', plan: 'Low-Sugar Plan', time: '2 hours ago' },
-    { action: 'Updated preferences', plan: 'Vegetarian Plan', time: '1 day ago' },
-    { action: 'Generated grocery list', plan: 'Liver-Centric Plan', time: '2 days ago' },
-  ];
+  // Generate recent activity from actual data
+  const recentActivity = React.useMemo(() => {
+    const activities = [];
+    
+    // Add meal plan activities
+    mealPlans.slice(0, 3).forEach(plan => {
+      const date = new Date(plan.created_date);
+      const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+      const timeText = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
+      
+      activities.push({
+        action: 'Created meal plan',
+        plan: plan.name,
+        time: timeText
+      });
+    });
+    
+    // Add lab result if exists
+    if (labResults.length > 0) {
+      const date = new Date(labResults[0].upload_date);
+      const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+      const timeText = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
+      
+      activities.push({
+        action: 'Uploaded lab results',
+        plan: 'Health tracking',
+        time: timeText
+      });
+    }
+    
+    return activities.length > 0 ? activities.slice(0, 4) : [
+      { action: 'Welcome!', plan: 'Start by creating your first meal plan', time: 'Get started' }
+    ];
+  }, [mealPlans, labResults]);
 
   const quickActions = [
-    { title: 'Create AI Meal Plan', description: 'Generate personalized plan', icon: Sparkles, href: 'MealPlans' },
+    { title: 'Create AI Meal Plan', description: 'Generate personalized plan', icon: Sparkles, href: 'HealthDietHub' },
     { title: 'View Analytics', description: 'Track your nutrition', icon: TrendingUp, href: 'Analytics' },
-    { title: 'Grocery Shopping', description: 'Manage your lists', icon: Calendar, href: 'GroceryLists' },
+    { title: 'Browse Community', description: 'Discover shared recipes', icon: Target, href: 'Community' },
   ];
 
   return (
@@ -123,18 +186,7 @@ export default function Dashboard() {
                     <div className="flex-1">
                       <p className="text-sm font-medium text-slate-600">{stat.title}</p>
                       <p className="text-3xl font-bold text-slate-900 mt-2">{stat.value}</p>
-                      <div className="flex items-center gap-1 mt-2">
-                        {stat.trend === 'up' && <TrendingUp className="w-4 h-4 text-emerald-600" />}
-                        {stat.trend === 'down' && <TrendingDown className="w-4 h-4 text-rose-600" />}
-                        <span className={`text-sm font-medium ${
-                          stat.trend === 'up' ? 'text-emerald-600' : 
-                          stat.trend === 'down' ? 'text-rose-600' : 
-                          'text-slate-600'
-                        }`}>
-                          {stat.change}
-                        </span>
-                        <span className="text-sm text-slate-500 ml-1">vs last week</span>
-                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{stat.subtitle}</p>
                     </div>
                     <div className={`w-12 h-12 rounded-xl ${colorClasses[stat.color]} flex items-center justify-center`}>
                       <Icon className="w-6 h-6 text-white" />

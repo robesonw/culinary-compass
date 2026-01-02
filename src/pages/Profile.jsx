@@ -489,7 +489,7 @@ export default function Profile() {
                 </div>
 
                 <div>
-                  <Label className="mb-2 block">Weekly Grocery Budget: ${formData.weekly_budget}</Label>
+                  <Label className="mb-2 block">Budget for Plan Duration (for all {formData.num_people} {formData.num_people === 1 ? 'person' : 'people'}): ${formData.weekly_budget}</Label>
                   <Input
                     type="range"
                     min="30"

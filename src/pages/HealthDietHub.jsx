@@ -109,11 +109,23 @@ export default function HealthDietHub() {
       if (priceData?.items) {
         const priceMap = {};
         priceData.items.forEach(item => {
-          priceMap[item.name.toLowerCase()] = {
+          // Create multiple keys for better matching
+          const itemName = item.name.toLowerCase();
+          const basePrice = {
             name: item.name,
             price: item.price,
             unit: item.unit
           };
+          
+          // Add full name
+          priceMap[itemName] = basePrice;
+          
+          // Add individual words (e.g., "chicken breast" -> "chicken", "breast")
+          itemName.split(/[\s,]+/).forEach(word => {
+            if (word.length > 3) {
+              priceMap[word] = basePrice;
+            }
+          });
         });
         
         setGeneratedPlan(prev => ({
@@ -808,17 +820,25 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
 
             {/* Grocery List */}
             <Card id="grocery-list-section" className="border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader>
+                <div className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5" />
                   Grocery List
                   {isFetchingPrices && (
-                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                   <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
                   )}
                   {numPeople > 1 && (
-                    <Badge variant="outline" className="ml-2">
-                      Scaled for {numPeople} people
-                    </Badge>
+                   <Badge variant="outline" className="ml-2">
+                     Scaled for {numPeople} people
+                   </Badge>
+                  )}
+                  </CardTitle>
+                  {!isFetchingPrices && generatedPlan?.grocery_prices && (
+                  <p className="text-xs text-slate-500 mt-1">
+                   Prices are estimates from major US grocery stores. Click any item to adjust.
+                  </p>
                   )}
                 </CardTitle>
                 <div className="flex gap-2">
@@ -851,6 +871,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                   >
                     Copy
                   </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

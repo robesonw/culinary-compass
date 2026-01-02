@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Forum from './pages/Forum';
 import GroceryLists from './pages/GroceryLists';
 import HealthDietHub from './pages/HealthDietHub';
+import HelpCenter from './pages/HelpCenter';
 import Index from './pages/Index';
 import LabResults from './pages/LabResults';
 import MealPlans from './pages/MealPlans';
@@ -16,7 +17,6 @@ import ProgressFeed from './pages/ProgressFeed';
 import Settings from './pages/Settings';
 import SharedMealPlans from './pages/SharedMealPlans';
 import SharedRecipes from './pages/SharedRecipes';
-import HelpCenter from './pages/HelpCenter';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +30,7 @@ export const PAGES = {
     "Forum": Forum,
     "GroceryLists": GroceryLists,
     "HealthDietHub": HealthDietHub,
+    "HelpCenter": HelpCenter,
     "Index": Index,
     "LabResults": LabResults,
     "MealPlans": MealPlans,
@@ -39,7 +40,6 @@ export const PAGES = {
     "Settings": Settings,
     "SharedMealPlans": SharedMealPlans,
     "SharedRecipes": SharedRecipes,
-    "HelpCenter": HelpCenter,
 }
 
 export const pagesConfig = {

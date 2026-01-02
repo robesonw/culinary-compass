@@ -75,7 +75,7 @@ export default function GroceryLists() {
 
       items.forEach(item => {
         const lowerItem = item.toLowerCase();
-        const itemWithPrice = { name: item, price: null };
+        const itemWithPrice = { name: item, price: null, quantity: 1 };
         
         if (proteinKeywords.some(k => lowerItem.includes(k))) categorized['Proteins'].push(itemWithPrice);
         else if (vegKeywords.some(k => lowerItem.includes(k))) categorized['Vegetables'].push(itemWithPrice);
@@ -145,7 +145,7 @@ export default function GroceryLists() {
     
     const updatedList = {
       ...groceryList,
-      [category]: [...(groceryList[category] || []), { name: newItemName.trim(), price: null, unit: '' }]
+      [category]: [...(groceryList[category] || []), { name: newItemName.trim(), price: null, unit: '', quantity: 1 }]
     };
     
     setGroceryList(updatedList);
@@ -305,17 +305,17 @@ export default function GroceryLists() {
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Current Total:</span>
                     <span className="font-bold text-indigo-600">
-                      ${Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                      ${Object.values(groceryList).flat().reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}
                     </span>
                   </div>
                   {selectedPlan.estimated_cost && (
                     <div className="flex justify-between text-xs text-slate-500 pt-1 border-t">
                       <span>Difference:</span>
                       <span className={
-                        Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0) <= selectedPlan.estimated_cost
+                        Object.values(groceryList).flat().reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0) <= selectedPlan.estimated_cost
                           ? 'text-emerald-600' : 'text-amber-600'
                       }>
-                        ${(Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0) - selectedPlan.estimated_cost).toFixed(2)}
+                        ${(Object.values(groceryList).flat().reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0) - selectedPlan.estimated_cost).toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -372,9 +372,11 @@ export default function GroceryLists() {
                           const itemName = item.name;
                           const itemPrice = item.price;
                           const itemUnit = item.unit;
+                          const itemQuantity = item.quantity || 1;
+                          const totalPrice = (itemPrice || 0) * itemQuantity;
 
                           return (
-                            <div key={idx} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50">
+                            <div key={idx} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50">
                               <Checkbox 
                                 checked={checkedItems.has(itemName)}
                                 onCheckedChange={(checked) => {
@@ -389,6 +391,28 @@ export default function GroceryLists() {
                               }`}>
                                 {itemName}
                               </span>
+                              
+                              {/* Quantity Input */}
+                              <Input
+                                type="number"
+                                step="0.5"
+                                min="0.1"
+                                value={itemQuantity}
+                                onChange={(e) => {
+                                  const newQty = parseFloat(e.target.value);
+                                  if (!isNaN(newQty) && newQty > 0) {
+                                    const updatedList = {
+                                      ...groceryList,
+                                      [category]: groceryList[category].map((it, i) => 
+                                        i === idx ? { ...it, quantity: newQty } : it
+                                      )
+                                    };
+                                    setGroceryList(updatedList);
+                                    saveGroceryList(updatedList);
+                                  }
+                                }}
+                                className="w-14 h-7 text-xs text-center"
+                              />
                               
                               {editingPrice === `${category}-${idx}` ? (
                                 <Input
@@ -420,10 +444,17 @@ export default function GroceryLists() {
                               ) : (
                                 <button
                                   onClick={() => setEditingPrice(`${category}-${idx}`)}
-                                  className="text-xs text-slate-500 hover:text-indigo-600 min-w-[80px] text-right"
+                                  className="text-xs text-slate-500 hover:text-indigo-600 min-w-[90px] text-right"
                                 >
                                   {itemPrice ? (
-                                    `$${itemPrice.toFixed(2)}${itemUnit ? `/${itemUnit}` : ''}`
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-[10px] text-slate-400">
+                                        ${itemPrice.toFixed(2)}{itemUnit ? `/${itemUnit}` : ''}
+                                      </span>
+                                      <span className="font-semibold text-slate-700">
+                                        ${totalPrice.toFixed(2)}
+                                      </span>
+                                    </div>
                                   ) : (
                                     <span
                                       onClick={(e) => {

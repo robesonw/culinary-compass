@@ -63,7 +63,7 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
 
       items.forEach(item => {
         const lowerItem = item.toLowerCase();
-        const itemWithPrice = { name: item, price: null };
+        const itemWithPrice = { name: item, price: null, quantity: 1 };
         
         if (proteinKeywords.some(k => lowerItem.includes(k))) categorized['Proteins'].push(itemWithPrice);
         else if (vegKeywords.some(k => lowerItem.includes(k))) categorized['Vegetables'].push(itemWithPrice);
@@ -346,7 +346,7 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Current Total:</span>
                         <span className="font-bold text-indigo-600">
-                          ${Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                          ${Object.values(groceryList).flat().reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}
                         </span>
                       </div>
                     )}
@@ -388,6 +388,8 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                               const itemName = typeof item === 'string' ? item : item.name;
                               const itemPrice = typeof item === 'object' ? item.price : null;
                               const itemUnit = typeof item === 'object' ? item.unit : null;
+                              const itemQuantity = typeof item === 'object' ? (item.quantity || 1) : 1;
+                              const totalPrice = (itemPrice || 0) * itemQuantity;
 
                               return (
                                 <div key={idx} className="flex items-center gap-2">
@@ -403,6 +405,27 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                   <span className={`text-sm flex-1 ${checkedItems.has(itemName) ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                                     {itemName}
                                   </span>
+
+                                  {/* Quantity Input */}
+                                  <Input
+                                    type="number"
+                                    step="0.5"
+                                    min="0.1"
+                                    value={itemQuantity}
+                                    onChange={(e) => {
+                                      const newQty = parseFloat(e.target.value);
+                                      if (!isNaN(newQty) && newQty > 0) {
+                                        setGroceryList(prev => ({
+                                          ...prev,
+                                          [category]: prev[category].map((it, i) => 
+                                            i === idx ? { ...it, quantity: newQty } : it
+                                          )
+                                        }));
+                                        saveGroceryList();
+                                      }
+                                    }}
+                                    className="w-14 h-7 text-xs text-center"
+                                  />
 
                                   {editingPrice === `${category}-${idx}` ? (
                                     <Input
@@ -432,10 +455,17 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                   ) : (
                                     <button
                                       onClick={() => setEditingPrice(`${category}-${idx}`)}
-                                      className="text-xs text-slate-500 hover:text-indigo-600 min-w-[70px] text-right"
+                                      className="text-xs text-slate-500 hover:text-indigo-600 min-w-[90px] text-right"
                                     >
                                       {itemPrice ? (
-                                        `$${itemPrice.toFixed(2)}${itemUnit ? `/${itemUnit}` : ''}`
+                                        <div className="flex flex-col items-end">
+                                          <span className="text-[10px] text-slate-400">
+                                            ${itemPrice.toFixed(2)}{itemUnit ? `/${itemUnit}` : ''}
+                                          </span>
+                                          <span className="font-semibold text-slate-700">
+                                            ${totalPrice.toFixed(2)}
+                                          </span>
+                                        </div>
                                       ) : (
                                         <span
                                           onClick={(e) => {

@@ -424,13 +424,16 @@ export default function NutritionTracking() {
     
     // Group by weeks
     const weeks = [];
-    let currentWeekStart = startOfWeek(startDate);
+    let currentWeekStart = startDate;
     
     while (currentWeekStart <= endDate) {
-      const weekEnd = endOfWeek(currentWeekStart);
+      const weekEnd = new Date(currentWeekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      const actualWeekEnd = weekEnd > endDate ? endDate : weekEnd;
+      
       const weekLogs = logs.filter(l => {
         const logDate = new Date(l.log_date);
-        return logDate >= currentWeekStart && logDate <= weekEnd;
+        return logDate >= currentWeekStart && logDate <= actualWeekEnd;
       });
       
       const totals = {
@@ -456,8 +459,8 @@ export default function NutritionTracking() {
       
       weeks.push({
         weekStart: format(currentWeekStart, 'yyyy-MM-dd'),
-        weekEnd: format(weekEnd, 'yyyy-MM-dd'),
-        displayDate: `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`,
+        weekEnd: format(actualWeekEnd, 'yyyy-MM-dd'),
+        displayDate: `${format(currentWeekStart, 'MMM d')} - ${format(actualWeekEnd, 'MMM d')}`,
         totals,
         weekTarget,
         goalsMetCount,
@@ -465,7 +468,7 @@ export default function NutritionTracking() {
         hasLogs: weekLogs.length > 0
       });
       
-      currentWeekStart = addDays(currentWeekStart, 7);
+      currentWeekStart = addDays(actualWeekEnd, 1);
     }
     
     return weeks;

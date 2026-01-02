@@ -106,10 +106,26 @@ export default function Forum() {
   });
 
   const addCommentReactionMutation = useMutation({
-    mutationFn: ({ commentId, emoji }) => {
-      return base44.entities.ForumComment.update(commentId, {
-        reaction_emoji: emoji
-      });
+    mutationFn: async ({ commentId, emoji }) => {
+      const comment = comments.find(c => c.id === commentId);
+      if (!comment) return;
+
+      const reactions = comment.reactions || {};
+      const userEmail = user?.email || 'anonymous';
+      
+      // Toggle reaction
+      if (reactions[emoji] && reactions[emoji].includes(userEmail)) {
+        // Remove reaction
+        reactions[emoji] = reactions[emoji].filter(e => e !== userEmail);
+        if (reactions[emoji].length === 0) {
+          delete reactions[emoji];
+        }
+      } else {
+        // Add reaction
+        reactions[emoji] = [...(reactions[emoji] || []), userEmail];
+      }
+
+      return base44.entities.ForumComment.update(commentId, { reactions });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['forumComments'] });
@@ -402,16 +418,23 @@ export default function Forum() {
                             <span className="text-xs text-slate-500">{comment.likes_count || 0}</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            {['👍', '❤️', '😂', '🎉', '🤔'].map(emoji => (
-                              <button
-                                key={emoji}
-                                onClick={() => addCommentReactionMutation.mutate({ commentId: comment.id, emoji })}
-                                className="text-sm hover:scale-125 transition-transform opacity-70 hover:opacity-100"
-                                title={`React with ${emoji}`}
-                              >
-                                {emoji}
-                              </button>
-                            ))}
+                            {['👍', '❤️', '😂', '🎉', '🤔'].map(emoji => {
+                              const reactions = comment.reactions || {};
+                              const count = reactions[emoji]?.length || 0;
+                              const hasReacted = reactions[emoji]?.includes(user?.email);
+                              
+                              return (
+                                <button
+                                  key={emoji}
+                                  onClick={() => addCommentReactionMutation.mutate({ commentId: comment.id, emoji })}
+                                  className={`text-sm hover:scale-125 transition-transform flex items-center gap-0.5 ${hasReacted ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+                                  title={`React with ${emoji}`}
+                                >
+                                  {emoji}
+                                  {count > 0 && <span className="text-[10px] text-slate-500">{count}</span>}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>

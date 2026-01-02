@@ -38,6 +38,11 @@ export default function Forum() {
     queryFn: () => base44.entities.ForumComment.list('-created_date'),
   });
 
+  const { data: userInteractions = [] } = useQuery({
+    queryKey: ['userInteractions'],
+    queryFn: () => base44.entities.UserInteraction.list(),
+  });
+
   const createPostMutation = useMutation({
     mutationFn: (data) => base44.entities.ForumPost.create(data),
     onSuccess: () => {
@@ -54,6 +59,56 @@ export default function Forum() {
       queryClient.invalidateQueries({ queryKey: ['forumComments'] });
       toast.success('Comment added!');
       setNewComment('');
+    },
+  });
+
+  const toggleLikeMutation = useMutation({
+    mutationFn: async ({ targetId, targetType }) => {
+      const existing = userInteractions.find(
+        i => i.target_id === targetId && i.target_type === targetType && i.interaction_type === 'like'
+      );
+
+      if (existing) {
+        await base44.entities.UserInteraction.delete(existing.id);
+        return { action: 'unlike', targetId, targetType };
+      } else {
+        await base44.entities.UserInteraction.create({
+          target_id: targetId,
+          target_type: targetType,
+          interaction_type: 'like'
+        });
+        return { action: 'like', targetId, targetType };
+      }
+    },
+    onSuccess: ({ action, targetId, targetType }) => {
+      queryClient.invalidateQueries({ queryKey: ['userInteractions'] });
+      
+      if (targetType === 'forum_post') {
+        const post = posts.find(p => p.id === targetId);
+        if (post) {
+          const newCount = action === 'like' ? (post.likes_count || 0) + 1 : Math.max(0, (post.likes_count || 0) - 1);
+          base44.entities.ForumPost.update(targetId, { likes_count: newCount });
+          queryClient.invalidateQueries({ queryKey: ['forumPosts'] });
+        }
+      } else if (targetType === 'forum_comment') {
+        const comment = comments.find(c => c.id === targetId);
+        if (comment) {
+          const newCount = action === 'like' ? (comment.likes_count || 0) + 1 : Math.max(0, (comment.likes_count || 0) - 1);
+          base44.entities.ForumComment.update(targetId, { likes_count: newCount });
+          queryClient.invalidateQueries({ queryKey: ['forumComments'] });
+        }
+      }
+    },
+  });
+
+  const addCommentReactionMutation = useMutation({
+    mutationFn: ({ commentId, emoji }) => {
+      return base44.entities.ForumComment.update(commentId, {
+        reaction_emoji: emoji
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['forumComments'] });
     },
   });
 
@@ -94,6 +149,12 @@ export default function Forum() {
   );
 
   const postComments = selectedPost ? comments.filter(c => c.post_id === selectedPost.id) : [];
+
+  const isLiked = (targetId, targetType) => {
+    return userInteractions.some(
+      i => i.target_id === targetId && i.target_type === targetType && i.interaction_type === 'like'
+    );
+  };
 
   const categories = [
     { value: 'general', label: 'General', emoji: '💬' },
@@ -181,10 +242,16 @@ export default function Forum() {
                             <Eye className="w-3 h-3" />
                             {post.views_count || 0}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Heart className="w-3 h-3" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleLikeMutation.mutate({ targetId: post.id, targetType: 'forum_post' });
+                            }}
+                            className="flex items-center gap-1 hover:text-rose-500 transition-colors"
+                          >
+                            <Heart className={`w-3 h-3 ${isLiked(post.id, 'forum_post') ? 'fill-rose-500 text-rose-500' : ''}`} />
                             {post.likes_count || 0}
-                          </span>
+                          </button>
                         </div>
                       </div>
                       <Badge variant="secondary" className="capitalize flex-shrink-0">
@@ -288,10 +355,13 @@ export default function Forum() {
                 <Eye className="w-3 h-3" />
                 {selectedPost?.views_count || 0} views
               </span>
-              <span className="flex items-center gap-1">
-                <Heart className="w-3 h-3" />
+              <button
+                onClick={() => toggleLikeMutation.mutate({ targetId: selectedPost.id, targetType: 'forum_post' })}
+                className="flex items-center gap-1 hover:text-rose-500 transition-colors"
+              >
+                <Heart className={`w-3 h-3 ${isLiked(selectedPost.id, 'forum_post') ? 'fill-rose-500 text-rose-500' : ''}`} />
                 {selectedPost?.likes_count || 0} likes
-              </span>
+              </button>
             </div>
 
             {/* Comments */}
@@ -311,9 +381,33 @@ export default function Forum() {
                       <div className="flex-1">
                         <p className="text-sm font-medium text-slate-900">{comment.author_name}</p>
                         <p className="text-sm text-slate-600 mt-1">{comment.content}</p>
-                        <p className="text-xs text-slate-400 mt-1">
-                          {new Date(comment.created_date).toLocaleString()}
-                        </p>
+                        <div className="flex items-center gap-3 mt-2">
+                          <p className="text-xs text-slate-400">
+                            {new Date(comment.created_date).toLocaleString()}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => toggleLikeMutation.mutate({ targetId: comment.id, targetType: 'forum_comment' })}
+                              className="hover:scale-110 transition-transform"
+                              title="Like"
+                            >
+                              <Heart className={`w-3.5 h-3.5 ${isLiked(comment.id, 'forum_comment') ? 'fill-rose-500 text-rose-500' : 'text-slate-400 hover:text-rose-500'}`} />
+                            </button>
+                            <span className="text-xs text-slate-500">{comment.likes_count || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {['👍', '❤️', '😂', '🎉', '🤔'].map(emoji => (
+                              <button
+                                key={emoji}
+                                onClick={() => addCommentReactionMutation.mutate({ commentId: comment.id, emoji })}
+                                className="text-sm hover:scale-125 transition-transform opacity-70 hover:opacity-100"
+                                title={`React with ${emoji}`}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

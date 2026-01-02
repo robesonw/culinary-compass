@@ -29,6 +29,8 @@ export default function NutritionTracking() {
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const [logMethod, setLogMethod] = useState('manual'); // 'manual', 'photo', 'recipe'
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [goalTimeRange, setGoalTimeRange] = useState('month'); // 'week', 'month', 'custom'
+  const [goalDateRange, setGoalDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   
   const [goalForm, setGoalForm] = useState({
     goal_type: 'daily',
@@ -353,11 +355,22 @@ export default function NutritionTracking() {
     if (!activeGoal) return [];
     
     const history = [];
-    const daysToCheck = 30; // Last 30 days
+    let startDate, endDate;
     
-    for (let i = daysToCheck - 1; i >= 0; i--) {
-      const currentDate = new Date();
-      currentDate.setDate(currentDate.getDate() - i);
+    if (goalTimeRange === 'custom') {
+      startDate = goalDateRange.from;
+      endDate = goalDateRange.to;
+    } else {
+      const days = goalTimeRange === 'week' ? 7 : 30;
+      startDate = subDays(new Date(), days - 1);
+      endDate = new Date();
+    }
+    
+    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    
+    for (let i = 0; i < daysDiff; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(currentDate.getDate() + i);
       const dateStr = format(currentDate, 'yyyy-MM-dd');
       const dayLogs = logs.filter(l => l.log_date === dateStr);
       
@@ -386,7 +399,7 @@ export default function NutritionTracking() {
     }
     
     return history;
-  }, [logs, activeGoal]);
+  }, [logs, activeGoal, goalTimeRange, goalDateRange]);
 
   // Calculate statistics
   const goalStats = useMemo(() => {
@@ -726,10 +739,60 @@ export default function NutritionTracking() {
       {activeGoal && goalStats && (
         <Card className="border-slate-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-indigo-600" />
-              Goal Achievement History (Last 30 Days)
-            </CardTitle>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-indigo-600" />
+                Goal Achievement History
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Select value={goalTimeRange} onValueChange={setGoalTimeRange}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="week">Last 7 Days</SelectItem>
+                    <SelectItem value="month">Last 30 Days</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+                {goalTimeRange === 'custom' && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <CalendarIcon className="w-4 h-4 mr-2" />
+                        {goalDateRange.from && goalDateRange.to ? (
+                          `${format(goalDateRange.from, 'MMM d')} - ${format(goalDateRange.to, 'MMM d')}`
+                        ) : (
+                          'Select dates'
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <div className="p-3 space-y-3">
+                        <div>
+                          <Label className="text-xs">From</Label>
+                          <Calendar
+                            mode="single"
+                            selected={goalDateRange.from}
+                            onSelect={(date) => setGoalDateRange({ ...goalDateRange, from: date })}
+                            disabled={(date) => date > new Date()}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">To</Label>
+                          <Calendar
+                            mode="single"
+                            selected={goalDateRange.to}
+                            onSelect={(date) => setGoalDateRange({ ...goalDateRange, to: date })}
+                            disabled={(date) => date > new Date() || date < goalDateRange.from}
+                          />
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Stats Summary */}
@@ -756,7 +819,7 @@ export default function NutritionTracking() {
             <div>
               <h4 className="text-sm font-semibold text-slate-700 mb-3">Daily Achievement Calendar</h4>
               <div className="grid grid-cols-7 gap-2">
-                {goalAchievementHistory.slice(-28).map((day, idx) => (
+                {goalAchievementHistory.map((day, idx) => (
                   <div
                     key={idx}
                     className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs relative group cursor-pointer transition-all ${

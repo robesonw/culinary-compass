@@ -145,38 +145,97 @@ Provide:
     }
   };
 
-  const saveToFavorites = async () => {
+  const saveRecipe = async () => {
     if (!generatedRecipe) return;
     
+    const saveButton = document.querySelector('[data-save-recipe]');
+    if (saveButton) saveButton.disabled = true;
+    
     try {
-      await base44.entities.FavoriteMeal.create({
+      // Generate grocery list and get prices
+      const ingredientNames = generatedRecipe.ingredients?.map(ing => ing.item) || [];
+      
+      let groceryList = {};
+      let totalCost = 0;
+      
+      if (ingredientNames.length > 0) {
+        toast.loading('Estimating grocery costs...');
+        
+        try {
+          const priceData = await base44.integrations.Core.InvokeLLM({
+            prompt: `For these ingredients: ${ingredientNames.join(', ')}. Provide current average grocery prices in USD per typical package/unit from major US grocery stores. Categorize them into: Proteins, Vegetables, Fruits, Grains, Dairy/Alternatives, Spices/Condiments, Other.`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                categories: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        price: { type: "number" },
+                        unit: { type: "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          });
+          
+          if (priceData?.categories) {
+            groceryList = priceData.categories;
+            // Calculate total
+            Object.values(groceryList).forEach(items => {
+              items.forEach(item => {
+                totalCost += item.price || 0;
+              });
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch prices:', error);
+        }
+      }
+      
+      const cuisineName = form.cuisine === 'Other' ? form.customCuisine : form.cuisine;
+      
+      // Save complete recipe with all details
+      await base44.entities.SharedRecipe.create({
         name: generatedRecipe.name,
         meal_type: form.mealType.toLowerCase(),
+        description: generatedRecipe.description,
+        meal_data: {
+          ...generatedRecipe,
+          prepSteps: generatedRecipe.instructions,
+          prepTime: generatedRecipe.prepTime,
+          difficulty: form.difficulty,
+          equipment: [],
+          healthBenefit: generatedRecipe.healthBenefits,
+          cuisine: cuisineName,
+          servings: form.servings,
+          dietary: form.dietary,
+          grocery_list: groceryList,
+          estimated_cost: totalCost
+        },
         calories: `${generatedRecipe.nutrition?.calories || 0} kcal`,
         protein: generatedRecipe.nutrition?.protein || 0,
         carbs: generatedRecipe.nutrition?.carbs || 0,
         fat: generatedRecipe.nutrition?.fat || 0,
-        prepTip: generatedRecipe.tips,
-        cuisine: form.cuisine,
-        cooking_time: generatedRecipe.cookTime,
-        tags: [form.cuisine, form.dietary, form.difficulty]
+        image_url: generatedRecipe.imageUrl,
+        tags: [cuisineName, form.dietary, form.difficulty].filter(Boolean)
       });
       
-      // Also log to nutrition tracking
-      await base44.entities.NutritionLog.create({
-        recipe_name: generatedRecipe.name,
-        meal_type: form.mealType.toLowerCase(),
-        log_date: new Date().toISOString().split('T')[0],
-        calories: generatedRecipe.nutrition?.calories || 0,
-        protein: generatedRecipe.nutrition?.protein || 0,
-        carbs: generatedRecipe.nutrition?.carbs || 0,
-        fat: generatedRecipe.nutrition?.fat || 0,
-        servings: 1
-      });
-      
-      toast.success('Saved to favorites and logged!');
+      toast.dismiss();
+      toast.success('Recipe saved successfully!');
     } catch (error) {
-      toast.error('Failed to save');
+      toast.dismiss();
+      toast.error('Failed to save recipe');
+      console.error(error);
+    } finally {
+      if (saveButton) saveButton.disabled = false;
     }
   };
 
@@ -433,9 +492,14 @@ Provide:
                         )}
                         Generate Image
                       </Button>
-                      <Button variant="outline" size="sm" onClick={saveToFavorites}>
+                      <Button 
+                        size="sm" 
+                        onClick={saveRecipe}
+                        data-save-recipe
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                      >
                         <Heart className="w-4 h-4 mr-2" />
-                        Save to Favorites
+                        Save Recipe
                       </Button>
                       <Button variant="outline" size="sm" onClick={shareRecipe}>
                         <Share2 className="w-4 h-4 mr-2" />

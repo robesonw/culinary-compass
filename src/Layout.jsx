@@ -29,7 +29,6 @@ import FeedbackButton from './components/FeedbackButton';
 
 const navigation = [
   { name: 'Dashboard', href: 'Dashboard', icon: LayoutDashboard },
-  { name: 'Search Recipes', href: 'RecipeSearch', icon: Search },
   { name: 'Lab Results', href: 'LabResults', icon: FileText },
   { name: 'Health Diet Hub', href: 'HealthDietHub', icon: ChefHat },
   { name: 'AI Recipe Generator', href: 'AIRecipeGenerator', icon: Sparkles },
@@ -38,7 +37,7 @@ const navigation = [
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
   { name: 'Community', href: 'Community', icon: Users },
   { name: 'Progress Feed', href: 'ProgressFeed', icon: TrendingUp },
-  { name: 'Recipes', href: 'SharedRecipes', icon: ChefHat },
+  { name: 'Recipes', href: 'SharedRecipes', icon: Search },
   { name: 'Analytics', href: 'Analytics', icon: BarChart3 },
   { name: 'My Profile', href: 'Profile', icon: User },
   { name: 'Settings', href: 'Settings', icon: Settings },

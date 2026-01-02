@@ -23,6 +23,8 @@ const mealIcons = {
 export default function SharedRecipes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMealType, setFilterMealType] = useState('all');
+  const [filterCuisine, setFilterCuisine] = useState('all');
+  const [filterDietary, setFilterDietary] = useState('all');
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const queryClient = useQueryClient();
@@ -40,6 +42,11 @@ export default function SharedRecipes() {
   const { data: recipeComments = [] } = useQuery({
     queryKey: ['recipeComments'],
     queryFn: () => base44.entities.RecipeComment.list('-created_date'),
+  });
+
+  const { data: favoriteMeals = [] } = useQuery({
+    queryKey: ['favoriteMeals'],
+    queryFn: () => base44.entities.FavoriteMeal.list('-created_date'),
   });
 
   // Separate user's recipes from community recipes
@@ -102,10 +109,25 @@ export default function SharedRecipes() {
     toast.success('Saved to favorites!');
   };
 
-  const filteredRecipes = allRecipes.filter(recipe => {
-    const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterMealType === 'all' || recipe.meal_type === filterMealType;
-    return matchesSearch && matchesFilter;
+  // Combine all recipes (shared + favorites)
+  const allRecipesWithFavorites = [
+    ...allRecipes.map(r => ({ ...r, source: 'shared' })),
+    ...favoriteMeals.map(r => ({ ...r, source: 'favorite' }))
+  ];
+
+  const filteredRecipes = allRecipesWithFavorites.filter(recipe => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm || 
+      recipe.name?.toLowerCase().includes(searchLower) ||
+      recipe.ingredients?.some(ing => ing.toLowerCase().includes(searchLower)) ||
+      recipe.tags?.some(tag => tag.toLowerCase().includes(searchLower));
+    
+    const matchesMealType = filterMealType === 'all' || recipe.meal_type === filterMealType;
+    const matchesCuisine = filterCuisine === 'all' || recipe.cuisine?.toLowerCase() === filterCuisine.toLowerCase();
+    const matchesDietary = filterDietary === 'all' || 
+      recipe.tags?.some(tag => tag.toLowerCase() === filterDietary.toLowerCase());
+    
+    return matchesSearch && matchesMealType && matchesCuisine && matchesDietary;
   });
 
   if (isLoading) {
@@ -124,20 +146,20 @@ export default function SharedRecipes() {
       </div>
 
       <Card className="border-slate-200">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Search recipes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        <CardContent className="p-4 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Input
+              placeholder="Search by name, ingredients, tags..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-12"
+            />
+          </div>
+          <div className="grid md:grid-cols-4 gap-3">
             <Select value={filterMealType} onValueChange={setFilterMealType}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by meal" />
+              <SelectTrigger>
+                <SelectValue placeholder="Meal Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Meals</SelectItem>
@@ -147,16 +169,79 @@ export default function SharedRecipes() {
                 <SelectItem value="snacks">Snacks</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterCuisine} onValueChange={setFilterCuisine}>
+              <SelectTrigger>
+                <SelectValue placeholder="Cuisine" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Cuisines</SelectItem>
+                <SelectItem value="italian">Italian</SelectItem>
+                <SelectItem value="mexican">Mexican</SelectItem>
+                <SelectItem value="chinese">Chinese</SelectItem>
+                <SelectItem value="japanese">Japanese</SelectItem>
+                <SelectItem value="indian">Indian</SelectItem>
+                <SelectItem value="thai">Thai</SelectItem>
+                <SelectItem value="mediterranean">Mediterranean</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterDietary} onValueChange={setFilterDietary}>
+              <SelectTrigger>
+                <SelectValue placeholder="Dietary" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="vegetarian">Vegetarian</SelectItem>
+                <SelectItem value="vegan">Vegan</SelectItem>
+                <SelectItem value="gluten-free">Gluten-Free</SelectItem>
+                <SelectItem value="keto">Keto</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSearchTerm('');
+                setFilterMealType('all');
+                setFilterCuisine('all');
+                setFilterDietary('all');
+              }}
+            >
+              Clear Filters
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="my" className="space-y-6">
+      <Tabs defaultValue="all" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="all">All Recipes ({filteredRecipes.length})</TabsTrigger>
           <TabsTrigger value="my">My Recipes ({myRecipes.length})</TabsTrigger>
           <TabsTrigger value="community">Community ({sharedRecipes.length})</TabsTrigger>
-          <TabsTrigger value="all">All Recipes</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="all" className="space-y-6">
+          {filteredRecipes.length === 0 ? (
+            <Card className="border-slate-200 border-dashed">
+              <CardContent className="p-12 text-center">
+                <ChefHat className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-600">No recipes found matching your filters</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredRecipes.map((recipe, index) => (
+                <RecipeCard 
+                  key={`${recipe.source}-${recipe.id}`}
+                  recipe={recipe} 
+                  index={index}
+                  onLike={handleLike}
+                  onSave={handleSave}
+                  setSelectedRecipe={setSelectedRecipe}
+                  setDetailDialogOpen={setDetailDialogOpen}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="my" className="space-y-6">
           {myRecipes.length === 0 ? (
@@ -218,30 +303,6 @@ export default function SharedRecipes() {
           )}
         </TabsContent>
 
-        <TabsContent value="all" className="space-y-6">
-          {filteredRecipes.length === 0 ? (
-            <Card className="border-slate-200 border-dashed">
-              <CardContent className="p-12 text-center">
-                <ChefHat className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-600">No recipes found</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRecipes.map((recipe, index) => (
-                <RecipeCard 
-                  key={recipe.id} 
-                  recipe={recipe} 
-                  index={index}
-                  onLike={handleLike}
-                  onSave={handleSave}
-                  setSelectedRecipe={setSelectedRecipe}
-                  setDetailDialogOpen={setDetailDialogOpen}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
       </Tabs>
 
       <SharedRecipeDetailDialog
@@ -255,6 +316,8 @@ export default function SharedRecipes() {
 }
 
 function RecipeCard({ recipe, index, onLike, onSave, setSelectedRecipe, setDetailDialogOpen }) {
+  const isFromFavorites = recipe.source === 'favorite';
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -280,10 +343,15 @@ function RecipeCard({ recipe, index, onLike, onSave, setSelectedRecipe, setDetai
               <ChefHat className="w-16 h-16 text-slate-300" />
             </div>
           )}
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 flex gap-2">
             <Badge className="bg-white/90 backdrop-blur-sm text-slate-900 capitalize">
               {mealIcons[recipe.meal_type]} {recipe.meal_type}
             </Badge>
+            {isFromFavorites && (
+              <Badge className="bg-indigo-100 text-indigo-700 backdrop-blur-sm">
+                ❤️ Favorite
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -308,7 +376,11 @@ function RecipeCard({ recipe, index, onLike, onSave, setSelectedRecipe, setDetai
             )}
           </div>
 
-          <RecipeRating recipeId={recipe.id} targetType="shared_recipe" compact />
+          <RecipeRating 
+            recipeId={recipe.id} 
+            targetType={isFromFavorites ? 'favorite_meal' : 'shared_recipe'} 
+            compact 
+          />
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-200">
             <div className="flex items-center gap-3 text-sm text-slate-600">

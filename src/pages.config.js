@@ -15,7 +15,6 @@ import ProgressFeed from './pages/ProgressFeed';
 import Settings from './pages/Settings';
 import SharedMealPlans from './pages/SharedMealPlans';
 import SharedRecipes from './pages/SharedRecipes';
-import RecipeSearch from './pages/RecipeSearch';
 import __Layout from './Layout.jsx';
 
 
@@ -37,7 +36,6 @@ export const PAGES = {
     "Settings": Settings,
     "SharedMealPlans": SharedMealPlans,
     "SharedRecipes": SharedRecipes,
-    "RecipeSearch": RecipeSearch,
 }
 
 export const pagesConfig = {

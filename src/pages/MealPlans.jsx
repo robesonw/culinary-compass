@@ -6,14 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Trash2, Eye, Heart } from 'lucide-react';
+import { Calendar, Trash2, Eye, Heart, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanDetailsView from '../components/plans/PlanDetailsView';
 import FavoriteMealsPanel from '../components/meals/FavoriteMealsPanel';
+import SharePlanDialog from '../components/share/SharePlanDialog';
 
 export default function MealPlans() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [planToShare, setPlanToShare] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -33,6 +36,11 @@ export default function MealPlans() {
   const handleViewPlan = (plan) => {
     setSelectedPlan(plan);
     setViewDialogOpen(true);
+  };
+
+  const handleSharePlan = (plan) => {
+    setPlanToShare(plan);
+    setShareDialogOpen(true);
   };
 
   const dietColors = {
@@ -127,6 +135,13 @@ export default function MealPlans() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleSharePlan(plan)}
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => deletePlanMutation.mutate(plan.id)}
                       disabled={deletePlanMutation.isPending}
                     >
@@ -150,6 +165,12 @@ export default function MealPlans() {
         plan={selectedPlan}
         open={viewDialogOpen}
         onOpenChange={setViewDialogOpen}
+      />
+
+      <SharePlanDialog
+        plan={planToShare}
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
       />
     </div>
   );

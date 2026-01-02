@@ -14,6 +14,7 @@ import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MealCard from '../meals/MealCard';
+import SharePlanDialog from '../share/SharePlanDialog';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -37,6 +38,7 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [regeneratingMeal, setRegeneratingMeal] = useState(null);
   const [regeneratingDay, setRegeneratingDay] = useState(null);
   const [regeneratingImage, setRegeneratingImage] = useState(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -455,7 +457,7 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
             </div>
             
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
@@ -1205,6 +1207,12 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <SharePlanDialog
+        plan={plan}
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+      />
     </Dialog>
   );
 }

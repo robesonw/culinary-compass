@@ -413,8 +413,17 @@ export default function NutritionTracking() {
     let startDate, endDate;
     
     if (weeklyGoalTimeRange === 'custom') {
+      // Ensure both from and to dates are selected
+      if (!weeklyGoalDateRange.from || !weeklyGoalDateRange.to) {
+        return [];
+      }
       startDate = new Date(weeklyGoalDateRange.from);
       endDate = new Date(weeklyGoalDateRange.to);
+      
+      // Validate dates
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return [];
+      }
     } else {
       const days = weeklyGoalTimeRange === 'week' ? 7 : 28;
       startDate = subDays(new Date(), days - 1);

@@ -234,7 +234,7 @@ export default function HelpCenter() {
             'Click "Set Goals" in the top right',
             'Enter target calories and macro breakdown',
             'Choose between daily or weekly goals',
-            'Your progress bars will show how you're tracking',
+            'Your progress bars will show how you are tracking',
             'Goals are saved and persist across sessions',
           ],
         },

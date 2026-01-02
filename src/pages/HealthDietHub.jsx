@@ -827,24 +827,24 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                 <div className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5" />
-                  Grocery List
-                  {isFetchingPrices && (
-                   <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                  )}
-                  {numPeople > 1 && (
-                   <Badge variant="outline" className="ml-2">
-                     Scaled for {numPeople} people
-                   </Badge>
-                  )}
-                  </CardTitle>
-                  {!isFetchingPrices && generatedPlan?.grocery_prices && (
-                  <p className="text-xs text-slate-500 mt-1">
-                   Prices are estimates from major US grocery stores. Click any item to adjust.
-                  </p>
-                  )}
-                </CardTitle>
-                <div className="flex gap-2">
+                      <ShoppingCart className="w-5 h-5" />
+                      Grocery List
+                      {isFetchingPrices && (
+                        <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                      )}
+                      {numPeople > 1 && (
+                        <Badge variant="outline" className="ml-2">
+                          Scaled for {numPeople} people
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    {!isFetchingPrices && generatedPlan?.grocery_prices && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Prices are estimates from major US grocery stores. Click any item to adjust.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
                   {!isFetchingPrices && (
                     <Button
                       variant="outline"
@@ -962,11 +962,11 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                     </span>
                   )}
                 </div>
-                </CardContent>
-                </Card>
-                </motion.div>
-                )}
-                </AnimatePresence>
-                </div>
-                );
-                }
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

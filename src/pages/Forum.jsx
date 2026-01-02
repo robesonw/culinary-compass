@@ -40,7 +40,11 @@ export default function Forum() {
 
   const { data: userInteractions = [] } = useQuery({
     queryKey: ['userInteractions'],
-    queryFn: () => base44.entities.UserInteraction.list(),
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return base44.entities.UserInteraction.filter({ created_by: user.email });
+    },
+    enabled: !!user?.email,
   });
 
   const createPostMutation = useMutation({

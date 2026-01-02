@@ -383,10 +383,11 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
     generatedPlan.days.forEach(day => {
       ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
         if (day[meal]?.name) {
-          const words = day[meal].name.toLowerCase().split(/[\s,&]+/);
+          const words = day[meal].name.split(/[\s,]+/);
           words.forEach(word => {
-            if (word.length > 3 && !['with', 'and', 'the'].includes(word)) {
-              items.add(word);
+            const cleaned = word.toLowerCase();
+            if (cleaned.length > 3 && !['with', 'and', 'the'].includes(cleaned)) {
+              items.add(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
             }
           });
         }
@@ -396,19 +397,21 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
     const categorized = {};
     groceryCategories.forEach(cat => categorized[cat] = []);
     
-    const proteinKeywords = ['chicken', 'beef', 'salmon', 'fish', 'turkey', 'pork', 'eggs', 'tofu', 'shrimp', 'tuna'];
-    const vegKeywords = ['broccoli', 'spinach', 'kale', 'lettuce', 'carrots', 'peppers', 'tomatoes', 'onions', 'garlic'];
-    const fruitKeywords = ['apple', 'banana', 'berries', 'orange', 'lemon', 'avocado', 'mango'];
-    const grainKeywords = ['rice', 'quinoa', 'bread', 'oats', 'pasta', 'tortilla'];
-    const dairyKeywords = ['milk', 'cheese', 'yogurt', 'butter'];
+    const proteinKeywords = ['chicken', 'beef', 'salmon', 'fish', 'liver', 'turkey', 'pork', 'lamb', 'egg', 'tofu', 'cod', 'trout', 'mackerel', 'tuna', 'shrimp'];
+    const vegKeywords = ['spinach', 'broccoli', 'carrot', 'asparagus', 'onion', 'garlic', 'pepper', 'tomato', 'lettuce', 'kale', 'cabbage', 'zucchini', 'mushroom', 'artichoke', 'brussels'];
+    const grainKeywords = ['rice', 'quinoa', 'oat', 'bread', 'pasta', 'tortilla', 'barley'];
+    const dairyKeywords = ['yogurt', 'cheese', 'milk', 'cream', 'butter'];
+    const fruitKeywords = ['berry', 'berries', 'apple', 'banana', 'orange', 'lemon', 'avocado'];
 
     items.forEach(item => {
-      const itemWithPrice = generatedPlan.grocery_prices?.[item] || { name: item, price: null };
-      if (proteinKeywords.some(k => item.includes(k))) categorized['Proteins'].push(itemWithPrice);
-      else if (vegKeywords.some(k => item.includes(k))) categorized['Vegetables'].push(itemWithPrice);
-      else if (fruitKeywords.some(k => item.includes(k))) categorized['Fruits'].push(itemWithPrice);
-      else if (grainKeywords.some(k => item.includes(k))) categorized['Grains'].push(itemWithPrice);
-      else if (dairyKeywords.some(k => item.includes(k))) categorized['Dairy/Alternatives'].push(itemWithPrice);
+      const lowerItem = item.toLowerCase();
+      const itemWithPrice = generatedPlan.grocery_prices?.[lowerItem] || { name: item, price: null };
+      
+      if (proteinKeywords.some(k => lowerItem.includes(k))) categorized['Proteins'].push(itemWithPrice);
+      else if (vegKeywords.some(k => lowerItem.includes(k))) categorized['Vegetables'].push(itemWithPrice);
+      else if (fruitKeywords.some(k => lowerItem.includes(k))) categorized['Fruits'].push(itemWithPrice);
+      else if (grainKeywords.some(k => lowerItem.includes(k))) categorized['Grains'].push(itemWithPrice);
+      else if (dairyKeywords.some(k => lowerItem.includes(k))) categorized['Dairy/Alternatives'].push(itemWithPrice);
       else categorized['Other'].push(itemWithPrice);
     });
 

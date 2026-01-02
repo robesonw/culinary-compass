@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Trash2, Plus } from 'lucide-react';
+import { Heart, Trash2, Plus, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import FavoriteMealDetailDialog from './FavoriteMealDetailDialog';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -16,6 +17,8 @@ const mealIcons = {
 };
 
 export default function FavoriteMealsPanel({ onAddToPlan }) {
+  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: favoriteMeals = [], isLoading } = useQuery({
@@ -90,6 +93,18 @@ export default function FavoriteMealsPanel({ onAddToPlan }) {
                 </div>
               </div>
               <div className="flex flex-col gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => {
+                    setSelectedMeal(meal);
+                    setDetailDialogOpen(true);
+                  }}
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  View
+                </Button>
                 {onAddToPlan && (
                   <Button
                     variant="ghost"
@@ -107,13 +122,19 @@ export default function FavoriteMealsPanel({ onAddToPlan }) {
                   className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700"
                   onClick={() => deleteMutation.mutate(meal.id)}
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Heart className="w-3 h-3 fill-rose-600" />
                 </Button>
               </div>
             </div>
           </motion.div>
         ))}
       </CardContent>
+
+      <FavoriteMealDetailDialog
+        meal={selectedMeal}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
     </Card>
   );
 }

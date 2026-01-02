@@ -40,7 +40,21 @@ export default function GroceryLists() {
 
   React.useEffect(() => {
     if (selectedPlan?.grocery_list) {
-      setGroceryList(selectedPlan.grocery_list);
+      // Deduplicate saved grocery list
+      const deduped = {};
+      Object.entries(selectedPlan.grocery_list).forEach(([category, items]) => {
+        const itemMap = {};
+        items.forEach(item => {
+          const key = item.name;
+          if (itemMap[key]) {
+            itemMap[key].quantity = (itemMap[key].quantity || 1) + (item.quantity || 1);
+          } else {
+            itemMap[key] = { ...item };
+          }
+        });
+        deduped[category] = Object.values(itemMap);
+      });
+      setGroceryList(deduped);
     } else if (selectedPlan?.days) {
       // Generate from meals if not saved
       const items = new Set();

@@ -412,9 +412,9 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
     const updatedDays = [...plan.days];
     
     try {
-      // Generate images for first 3 meals to start
+      // Generate images for all days
       const imagesToGenerate = [];
-      for (let i = 0; i < Math.min(2, plan.days.length); i++) {
+      for (let i = 0; i < plan.days.length; i++) {
         const day = plan.days[i];
         ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
           if (day[mealType]?.name) {
@@ -423,8 +423,8 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
         });
       }
 
-      // Generate images one by one (to avoid rate limits)
-      for (const { dayIndex, mealType, mealName } of imagesToGenerate.slice(0, 3)) {
+      // Generate images (breakfast & lunch for each day to start)
+      for (const { dayIndex, mealType, mealName } of imagesToGenerate.slice(0, Math.min(10, imagesToGenerate.length))) {
         try {
           const effectiveCulturalStyle = customCulturalStyle.trim() || (culturalStyle !== 'none' ? culturalStyle : '');
           const culturalContext = effectiveCulturalStyle ? `${effectiveCulturalStyle} style ` : '';

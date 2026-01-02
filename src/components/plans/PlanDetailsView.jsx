@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles, Clock, Wrench } from 'lucide-react';
+import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles, Clock, Wrench, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
@@ -36,6 +36,7 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [localDays, setLocalDays] = useState(null);
   const [regeneratingMeal, setRegeneratingMeal] = useState(null);
   const [regeneratingDay, setRegeneratingDay] = useState(null);
+  const [regeneratingImage, setRegeneratingImage] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -292,6 +293,36 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
       toast.error('Failed to regenerate meal');
     } finally {
       setRegeneratingMeal(null);
+    }
+  };
+
+  const regenerateMealImage = async (dayIndex, mealType) => {
+    const meal = localDays[dayIndex][mealType];
+    if (!meal?.name) return;
+    
+    setRegeneratingImage(`${dayIndex}-${mealType}`);
+    
+    try {
+      const culturalContext = plan.cultural_style && plan.cultural_style !== 'none' ? `${plan.cultural_style} style ` : '';
+      const result = await base44.integrations.Core.GenerateImage({
+        prompt: `Professional food photography of ${culturalContext}${meal.name}, appetizing presentation, natural lighting, high quality, restaurant style plating`
+      });
+      
+      if (result?.url) {
+        const newDays = [...localDays];
+        newDays[dayIndex][mealType].imageUrl = result.url;
+        newDays[dayIndex][mealType].imageError = false;
+        setLocalDays(newDays);
+        updatePlanMutation.mutate({ days: newDays });
+        toast.success('Image regenerated');
+      }
+    } catch (error) {
+      toast.error('Failed to generate image');
+      const newDays = [...localDays];
+      newDays[dayIndex][mealType].imageError = true;
+      setLocalDays(newDays);
+    } finally {
+      setRegeneratingImage(null);
     }
   };
 
@@ -685,8 +716,65 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                               className={`border-slate-200 transition-all ${
                                 snapshot.isDragging ? 'shadow-2xl border-indigo-400 bg-indigo-50' : ''
                               }`}
-                            >
+                              >
                               <CardContent className="p-6">
+                                {/* Meal Image */}
+                                {(meal.imageUrl || meal.imageError !== undefined) && (
+                                  <div className="relative mb-4 rounded-lg overflow-hidden bg-slate-100 group">
+                                    {meal.imageUrl && !meal.imageError ? (
+                                      <>
+                                        <img
+                                          src={meal.imageUrl}
+                                          alt={meal.name}
+                                          loading="lazy"
+                                          className="w-full h-64 object-cover"
+                                          onError={(e) => {
+                                            const newDays = [...localDays];
+                                            newDays[selectedDay][mealType].imageError = true;
+                                            setLocalDays(newDays);
+                                          }}
+                                        />
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          onClick={() => regenerateMealImage(selectedDay, mealType)}
+                                          disabled={regeneratingImage === `${selectedDay}-${mealType}`}
+                                        >
+                                          {regeneratingImage === `${selectedDay}-${mealType}` ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                          ) : (
+                                            <RefreshCw className="w-3 h-3" />
+                                          )}
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <div className="w-full h-64 flex flex-col items-center justify-center">
+                                        <Utensils className="w-16 h-16 text-slate-300 mb-2" />
+                                        <p className="text-xs text-slate-400 mb-3">Image unavailable</p>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => regenerateMealImage(selectedDay, mealType)}
+                                          disabled={regeneratingImage === `${selectedDay}-${mealType}`}
+                                        >
+                                          {regeneratingImage === `${selectedDay}-${mealType}` ? (
+                                            <>
+                                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                              Generating...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Sparkles className="w-3 h-3 mr-1" />
+                                              Generate Image
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
                                 <div className="flex items-start gap-4">
                                   <div 
                                     {...provided.dragHandleProps}

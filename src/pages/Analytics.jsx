@@ -119,11 +119,13 @@ export default function Analytics() {
     return dayCount > 0 ? Math.round(totalCals / dayCount) : 0;
   }, [mealPlans]);
 
+  const totalDaysPlanned = mealPlans.reduce((sum, p) => sum + (p.days?.length || 0), 0);
+
   const stats = [
     { title: 'Total Plans Created', value: mealPlans.length, icon: Calendar, color: 'indigo' },
     { title: 'Total Meals', value: totalMeals, icon: Target, color: 'emerald' },
     { title: 'Avg Calories/Day', value: avgCalories > 0 ? avgCalories.toLocaleString() : 'N/A', icon: Flame, color: 'orange' },
-    { title: 'Diet Types', value: Object.keys(dietDistribution).length, icon: TrendingUp, color: 'purple' },
+    { title: 'Days Planned', value: totalDaysPlanned, icon: TrendingUp, color: 'purple' },
   ];
 
   return (

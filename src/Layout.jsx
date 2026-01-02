@@ -39,6 +39,7 @@ const navigation = [
   { name: 'Progress Feed', href: 'ProgressFeed', icon: TrendingUp },
   { name: 'Recipes', href: 'SharedRecipes', icon: Search },
   { name: 'Analytics', href: 'Analytics', icon: BarChart3 },
+  { name: 'Help Center', href: 'HelpCenter', icon: MessageSquare },
   { name: 'My Profile', href: 'Profile', icon: User },
   { name: 'Settings', href: 'Settings', icon: Settings },
 ];

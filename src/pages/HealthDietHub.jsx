@@ -51,6 +51,7 @@ export default function HealthDietHub() {
   const [duration, setDuration] = useState('week');
   const [numPeople, setNumPeople] = useState(1);
   const [weeklyBudget, setWeeklyBudget] = useState(100);
+  const [maxBudget, setMaxBudget] = useState(500);
   const [allergens, setAllergens] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
@@ -201,7 +202,7 @@ HEALTH PROFILE:
 - Primary Goal: ${goalDescription}
 - ${healthContext}
 - Number of people: ${numPeople}
-- Weekly Budget Target: $${weeklyBudget}
+- Plan Budget Target: $${weeklyBudget}
 ${allergenText}
 ${customRequirements ? `- Custom Requirements: ${customRequirements}` : ''}
 ${foodsLiked ? `- Foods they enjoy: ${foodsLiked}` : ''}
@@ -210,7 +211,7 @@ ${userPrefs?.dietary_restrictions ? `- Dietary restrictions: ${userPrefs.dietary
 
 IMPORTANT REQUIREMENTS:
 - Scale ALL portions and ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
-- Keep TOTAL weekly cost around $${weeklyBudget} (for all ${numPeople} ${numPeople === 1 ? 'person' : 'people'}) by using affordable, seasonal ingredients
+- Keep TOTAL cost around $${weeklyBudget} (for all ${numPeople} ${numPeople === 1 ? 'person' : 'people'}) by using affordable, seasonal ingredients
 - Each meal must clearly show "Serves ${numPeople}" and calories PER PERSON
 - If muscle gain/athletic goal: prioritize high protein (1.6-2g/kg), show macro breakdown
 - NEVER include allergens: ${allergens.join(', ') || 'none specified'}
@@ -234,7 +235,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
             },
             estimated_weekly_cost: {
               type: "number",
-              description: "Estimated total cost for the week in dollars"
+              description: "Estimated total cost for the plan duration in dollars"
             },
             average_daily_macros: {
               type: "object",
@@ -308,7 +309,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       setGeneratedPlan(response);
       setCheckedItems(new Set());
 
-      const budgetText = weeklyBudget ? ` ($${weeklyBudget}/wk)` : '';
+      const budgetText = weeklyBudget ? ` ($${weeklyBudget})` : '';
       const peopleText = numPeople > 1 ? ` for ${numPeople}` : '';
       setPlanName(`${goalDescription} Plan${peopleText}${budgetText} - ${new Date().toLocaleDateString()}`);
 
@@ -532,24 +533,40 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
               </Select>
             </div>
 
-            {/* Weekly Budget */}
+            {/* Plan Budget */}
             <div>
               <Label className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-4 h-4" />
-                Total Weekly Budget (for all {numPeople} {numPeople === 1 ? 'person' : 'people'}): ${weeklyBudget}
+                Budget for Plan Duration (for all {numPeople} {numPeople === 1 ? 'person' : 'people'}): ${weeklyBudget}
               </Label>
-              <Input
-                type="range"
-                min="30"
-                max="300"
-                step="10"
-                value={weeklyBudget}
-                onChange={(e) => setWeeklyBudget(Number(e.target.value))}
-                className="cursor-pointer"
-              />
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="range"
+                  min="30"
+                  max={maxBudget}
+                  step="10"
+                  value={weeklyBudget}
+                  onChange={(e) => setWeeklyBudget(Number(e.target.value))}
+                  className="cursor-pointer flex-1"
+                />
+                <Input
+                  type="number"
+                  min="100"
+                  max="2000"
+                  step="50"
+                  value={maxBudget}
+                  onChange={(e) => {
+                    const newMax = Number(e.target.value);
+                    setMaxBudget(newMax);
+                    if (weeklyBudget > newMax) setWeeklyBudget(newMax);
+                  }}
+                  className="w-20 h-8 text-sm"
+                  placeholder="Max"
+                />
+              </div>
               <div className="flex justify-between text-xs text-slate-500 mt-1">
                 <span>$30</span>
-                <span>$300</span>
+                <span>${maxBudget}</span>
               </div>
             </div>
           </div>
@@ -660,7 +677,6 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                     </h3>
                     <div className="text-2xl font-bold mb-1">
                       ${generatedPlan.estimated_weekly_cost}
-                      <span className="text-sm font-normal text-slate-600">/week</span>
                     </div>
                     <p className="text-xs">
                       {generatedPlan.estimated_weekly_cost <= weeklyBudget 

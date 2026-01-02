@@ -393,21 +393,21 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
 
       // Generate images for meals in background
       generateMealImages(response);
-      } catch (error) {
+    } catch (error) {
       toast.error('Failed to generate meal plan');
       console.error(error);
-      } finally {
+    } finally {
       setIsGenerating(false);
-      }
-      };
+    }
+  };
 
-      const generateMealImages = async (plan) => {
-      if (!plan?.days) return;
-
-      setGeneratingImages(true);
-      const updatedDays = [...plan.days];
-
-      try {
+  const generateMealImages = async (plan) => {
+    if (!plan?.days) return;
+    
+    setGeneratingImages(true);
+    const updatedDays = [...plan.days];
+    
+    try {
       // Generate images for first 3 meals to start
       const imagesToGenerate = [];
       for (let i = 0; i < Math.min(2, plan.days.length); i++) {
@@ -426,7 +426,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
           const result = await base44.integrations.Core.GenerateImage({
             prompt: `Professional food photography of ${culturalContext}${mealName}, appetizing presentation, natural lighting, high quality, restaurant style plating`
           });
-
+          
           if (result?.url) {
             updatedDays[dayIndex][mealType].imageUrl = result.url;
             setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
@@ -435,12 +435,11 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
           console.log('Image generation skipped for', mealName);
         }
       }
-      } catch (error) {
+    } catch (error) {
       console.log('Image generation completed with some skips');
-      } finally {
+    } finally {
       setGeneratingImages(false);
-      }
-      };
+    }
   };
 
   const handleSavePlan = async () => {

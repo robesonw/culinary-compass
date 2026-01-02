@@ -34,6 +34,7 @@ export default function AIRecipeGenerator() {
   const queryClient = useQueryClient();
   
   const [form, setForm] = useState({
+    recipeName: '',
     mealType: 'Dinner',
     cuisine: 'Italian',
     customCuisine: '',
@@ -56,6 +57,7 @@ export default function AIRecipeGenerator() {
       const cuisineName = form.cuisine === 'Other' ? form.customCuisine : form.cuisine;
       const prompt = `Generate a detailed ${form.difficulty.toLowerCase()} difficulty ${cuisineName} ${form.mealType.toLowerCase()} recipe.
 
+${form.recipeName ? `Recipe Name: ${form.recipeName}` : 'Create a creative recipe name'}
 Dietary Preference: ${form.dietary}
 Available Ingredients: ${form.ingredients}
 Servings: ${form.servings}
@@ -63,7 +65,7 @@ Target Cook Time: ~${form.cookTime} minutes
 ${form.additionalNotes ? `Additional Notes: ${form.additionalNotes}` : ''}
 
 Provide:
-1. Recipe name
+1. Recipe name${form.recipeName ? ' (use the provided name or a slight variation if needed for accuracy)' : ''}
 2. Complete ingredient list with quantities
 3. Step-by-step instructions
 4. Nutritional information per serving (calories, protein, carbs, fat)
@@ -291,6 +293,18 @@ Provide:
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <Label>Recipe Name (Optional)</Label>
+                <Input
+                  placeholder="e.g., Mediterranean Chicken Bowl (leave blank for AI suggestion)"
+                  value={form.recipeName}
+                  onChange={(e) => setForm({ ...form, recipeName: e.target.value })}
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Leave empty to let AI generate a creative name
+                </p>
+              </div>
+
               <div>
                 <Label>Meal Type</Label>
                 <Select value={form.mealType} onValueChange={(v) => setForm({ ...form, mealType: v })}>

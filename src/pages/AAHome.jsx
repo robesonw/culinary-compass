@@ -5,21 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  ChefHat, 
-  TrendingUp, 
-  Users, 
-  ShoppingCart, 
   Sparkles, 
+  TrendingUp, 
   Calendar,
-  FileText,
-  Heart,
-  ArrowRight,
-  CheckCircle,
-  Star
+  ArrowRight
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
-export default function Landing() {
+export default function AAHome() {
   const features = [
     {
       icon: Sparkles,

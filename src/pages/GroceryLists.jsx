@@ -1,18 +1,27 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { ShoppingCart, Plus, Check, Copy, Printer, Download } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 
 export default function GroceryLists() {
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [checkedItems, setCheckedItems] = useState(new Set());
+  const [groceryList, setGroceryList] = useState(null);
+  const [editingPrice, setEditingPrice] = useState(null);
+  const [addingItem, setAddingItem] = useState(null);
+  const [newItemName, setNewItemName] = useState('');
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+
+  const queryClient = useQueryClient();
 
   const { data: mealPlans = [] } = useQuery({
     queryKey: ['mealPlans'],
@@ -21,81 +30,158 @@ export default function GroceryLists() {
 
   const selectedPlan = mealPlans.find(p => p.id === selectedPlanId);
 
-  const groceryItems = useMemo(() => {
-    if (!selectedPlan?.days) return {};
+  const updatePlanMutation = useMutation({
+    mutationFn: (data) => base44.entities.MealPlan.update(selectedPlanId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mealPlans'] });
+      toast.success('Grocery list updated');
+    },
+  });
 
-    const items = {
-      proteins: new Set(),
-      vegetables: new Set(),
-      grains: new Set(),
-      dairy: new Set(),
-      fruits: new Set(),
-      other: new Set()
-    };
-
-    const proteinKeywords = ['chicken', 'beef', 'salmon', 'fish', 'liver', 'turkey', 'pork', 'lamb', 'egg', 'tofu', 'cod', 'trout', 'mackerel', 'tuna', 'shrimp'];
-    const vegetableKeywords = ['spinach', 'broccoli', 'carrot', 'asparagus', 'onion', 'garlic', 'pepper', 'tomato', 'lettuce', 'kale', 'cabbage', 'zucchini', 'mushroom', 'artichoke', 'brussels'];
-    const grainKeywords = ['rice', 'quinoa', 'oat', 'bread', 'pasta', 'tortilla', 'barley'];
-    const dairyKeywords = ['yogurt', 'cheese', 'milk', 'cream', 'butter'];
-    const fruitKeywords = ['berry', 'berries', 'apple', 'banana', 'orange', 'lemon', 'avocado'];
-
-    const categorizeWord = (word) => {
-      const lowerWord = word.toLowerCase();
-      if (proteinKeywords.some(k => lowerWord.includes(k))) return 'proteins';
-      if (vegetableKeywords.some(k => lowerWord.includes(k))) return 'vegetables';
-      if (grainKeywords.some(k => lowerWord.includes(k))) return 'grains';
-      if (dairyKeywords.some(k => lowerWord.includes(k))) return 'dairy';
-      if (fruitKeywords.some(k => lowerWord.includes(k))) return 'fruits';
-      return null;
-    };
-
-    selectedPlan.days.forEach(day => {
-      ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
-        const meal = day[mealType];
-        if (meal?.name) {
-          const words = meal.name.split(/[\s,]+/);
-          words.forEach(word => {
-            const category = categorizeWord(word);
-            if (category) {
-              items[category].add(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
-            }
-          });
-        }
+  React.useEffect(() => {
+    if (selectedPlan?.grocery_list) {
+      setGroceryList(selectedPlan.grocery_list);
+    } else if (selectedPlan?.days) {
+      // Generate from meals if not saved
+      const items = new Set();
+      selectedPlan.days.forEach(day => {
+        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
+          if (day[meal]?.name) {
+            const words = day[meal].name.split(/[\s,]+/);
+            words.forEach(word => {
+              const cleaned = word.toLowerCase();
+              if (cleaned.length > 3 && !['with', 'and', 'the'].includes(cleaned)) {
+                items.add(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+              }
+            });
+          }
+        });
       });
-    });
 
-    return Object.fromEntries(
-      Object.entries(items).map(([key, value]) => [key, Array.from(value).sort()])
-    );
+      const categorized = {
+        'Proteins': [],
+        'Vegetables': [],
+        'Grains': [],
+        'Dairy/Alternatives': [],
+        'Fruits': [],
+        'Other': []
+      };
+      
+      const proteinKeywords = ['chicken', 'beef', 'salmon', 'fish', 'liver', 'turkey', 'pork', 'lamb', 'egg', 'tofu', 'cod', 'trout', 'mackerel', 'tuna', 'shrimp'];
+      const vegKeywords = ['spinach', 'broccoli', 'carrot', 'asparagus', 'onion', 'garlic', 'pepper', 'tomato', 'lettuce', 'kale', 'cabbage', 'zucchini', 'mushroom', 'artichoke', 'brussels'];
+      const grainKeywords = ['rice', 'quinoa', 'oat', 'bread', 'pasta', 'tortilla', 'barley'];
+      const dairyKeywords = ['yogurt', 'cheese', 'milk', 'cream', 'butter'];
+      const fruitKeywords = ['berry', 'berries', 'apple', 'banana', 'orange', 'lemon', 'avocado'];
+
+      items.forEach(item => {
+        const lowerItem = item.toLowerCase();
+        const itemWithPrice = { name: item, price: null };
+        
+        if (proteinKeywords.some(k => lowerItem.includes(k))) categorized['Proteins'].push(itemWithPrice);
+        else if (vegKeywords.some(k => lowerItem.includes(k))) categorized['Vegetables'].push(itemWithPrice);
+        else if (fruitKeywords.some(k => lowerItem.includes(k))) categorized['Fruits'].push(itemWithPrice);
+        else if (grainKeywords.some(k => lowerItem.includes(k))) categorized['Grains'].push(itemWithPrice);
+        else if (dairyKeywords.some(k => lowerItem.includes(k))) categorized['Dairy/Alternatives'].push(itemWithPrice);
+        else categorized['Other'].push(itemWithPrice);
+      });
+
+      setGroceryList(categorized);
+    } else {
+      setGroceryList(null);
+    }
+    setCheckedItems(new Set());
   }, [selectedPlan]);
 
-  const categoryColors = {
-    proteins: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', badge: 'bg-rose-500' },
-    vegetables: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', badge: 'bg-emerald-500' },
-    grains: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-500' },
-    dairy: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', badge: 'bg-blue-500' },
-    fruits: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', badge: 'bg-purple-500' },
-    other: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', badge: 'bg-slate-500' }
+  const saveGroceryList = () => {
+    if (!groceryList || !selectedPlanId) return;
+    
+    const currentTotal = Object.values(groceryList)
+      .flat()
+      .reduce((sum, item) => sum + (item.price || 0), 0);
+
+    updatePlanMutation.mutate({
+      grocery_list: groceryList,
+      current_total_cost: currentTotal
+    });
   };
 
-  const totalItems = Object.values(groceryItems).flat().length;
-  const checkedCount = checkedItems.size;
+  const fetchItemPrice = async (itemName, category) => {
+    setIsFetchingPrice(true);
+    try {
+      const priceData = await base44.integrations.Core.InvokeLLM({
+        prompt: `Get current average grocery price in USD for: ${itemName}. Return approximate cost per typical package/unit from major US grocery stores.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            price: { type: "number" },
+            unit: { type: "string" }
+          }
+        }
+      });
 
-  const toggleItem = (item) => {
-    const newChecked = new Set(checkedItems);
-    if (newChecked.has(item)) {
-      newChecked.delete(item);
-    } else {
-      newChecked.add(item);
+      if (priceData?.price) {
+        setGroceryList(prev => ({
+          ...prev,
+          [category]: prev[category].map(item => 
+            item.name === itemName 
+              ? { ...item, price: priceData.price, unit: priceData.unit }
+              : item
+          )
+        }));
+        saveGroceryList();
+      }
+    } catch (error) {
+      toast.error('Failed to fetch price');
+    } finally {
+      setIsFetchingPrice(false);
     }
+  };
+
+  const addCustomItem = (category) => {
+    if (!newItemName.trim()) return;
+    
+    setGroceryList(prev => ({
+      ...prev,
+      [category]: [...(prev[category] || []), { name: newItemName, price: null, unit: '' }]
+    }));
+    setNewItemName('');
+    setAddingItem(null);
+    saveGroceryList();
+  };
+
+  const toggleAllInCategory = (category, items) => {
+    const newChecked = new Set(checkedItems);
+    const allChecked = items.every(item => checkedItems.has(item.name));
+    
+    items.forEach(item => {
+      if (allChecked) {
+        newChecked.delete(item.name);
+      } else {
+        newChecked.add(item.name);
+      }
+    });
+    
     setCheckedItems(newChecked);
   };
 
+  const categoryColors = {
+    'Proteins': { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', badge: 'bg-rose-500' },
+    'Vegetables': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', badge: 'bg-emerald-500' },
+    'Grains': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-500' },
+    'Dairy/Alternatives': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', badge: 'bg-blue-500' },
+    'Fruits': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', badge: 'bg-purple-500' },
+    'Other': { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', badge: 'bg-slate-500' }
+  };
+
+  const totalItems = groceryList ? Object.values(groceryList).flat().length : 0;
+  const checkedCount = checkedItems.size;
+
   const copyToClipboard = () => {
-    const allItems = Object.entries(groceryItems)
+    const allItems = Object.entries(groceryList || {})
       .map(([category, items]) => 
         items.length > 0 
-          ? `${category.charAt(0).toUpperCase() + category.slice(1)}:\n${items.map(i => `  □ ${i}`).join('\n')}`
+          ? `${category}:\n${items.map(i => `  □ ${i.name}${i.price ? ` - $${i.price.toFixed(2)}` : ''}`).join('\n')}`
           : ''
       )
       .filter(Boolean)
@@ -156,7 +242,7 @@ export default function GroceryLists() {
       </Card>
 
       {/* Grocery List */}
-      {selectedPlan ? (
+      {selectedPlan && groceryList ? (
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Stats Card */}
           <Card className="border-slate-200">
@@ -197,14 +283,47 @@ export default function GroceryLists() {
                   {totalItems > 0 ? Math.round((checkedCount / totalItems) * 100) : 0}% Complete
                 </div>
               </div>
+
+              <Separator />
+
+              {/* Cost Summary */}
+              {(selectedPlan.estimated_cost || selectedPlan.current_total_cost) && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-slate-700 mb-2">Budget Summary</div>
+                  {selectedPlan.estimated_cost && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Initial Estimate:</span>
+                      <span className="font-semibold">${selectedPlan.estimated_cost.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Current Total:</span>
+                    <span className="font-bold text-indigo-600">
+                      ${Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                    </span>
+                  </div>
+                  {selectedPlan.estimated_cost && (
+                    <div className="flex justify-between text-xs text-slate-500 pt-1 border-t">
+                      <span>Difference:</span>
+                      <span className={
+                        Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0) <= selectedPlan.estimated_cost
+                          ? 'text-emerald-600' : 'text-amber-600'
+                      }>
+                        ${(Object.values(groceryList).flat().reduce((sum, item) => sum + (item.price || 0), 0) - selectedPlan.estimated_cost).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Items List */}
           <div className="lg:col-span-2 space-y-4">
-            {Object.entries(groceryItems).map(([category, items]) => {
-              if (items.length === 0) return null;
+            {Object.entries(groceryList).map(([category, items]) => {
+              if (!items || items.length === 0) return null;
               const colors = categoryColors[category];
+              const allChecked = items.every(item => checkedItems.has(item.name));
               
               return (
                 <motion.div
@@ -215,40 +334,127 @@ export default function GroceryLists() {
                   <Card className={`border ${colors.border}`}>
                     <CardHeader className={`${colors.bg} border-b ${colors.border}`}>
                       <div className="flex items-center justify-between">
-                        <CardTitle className={`${colors.text} capitalize flex items-center gap-2`}>
+                        <CardTitle className={`${colors.text} flex items-center gap-2`}>
                           <div className={`w-2 h-2 rounded-full ${colors.badge}`} />
                           {category}
                         </CardTitle>
-                        <Badge variant="secondary">
-                          {items.filter(item => checkedItems.has(item)).length} / {items.length}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleAllInCategory(category, items)}
+                            className="h-7 text-xs"
+                          >
+                            {allChecked ? 'Uncheck All' : 'Check All'}
+                          </Button>
+                          <Badge variant="secondary">
+                            {items.filter(item => checkedItems.has(item.name)).length} / {items.length}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setAddingItem(category)}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="p-4">
-                      <div className="grid sm:grid-cols-2 gap-2">
-                        {items.map((item) => (
-                          <div
-                            key={item}
-                            onClick={() => toggleItem(item)}
-                            className={`
-                              flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all
-                              ${checkedItems.has(item) 
-                                ? `${colors.bg} ${colors.text}` 
-                                : 'hover:bg-slate-50'
-                              }
-                            `}
-                          >
-                            <Checkbox 
-                              checked={checkedItems.has(item)}
-                              className="pointer-events-none"
+                      <div className="space-y-2">
+                        {items.map((item, idx) => {
+                          const itemName = item.name;
+                          const itemPrice = item.price;
+                          const itemUnit = item.unit;
+
+                          return (
+                            <div key={idx} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50">
+                              <Checkbox 
+                                checked={checkedItems.has(itemName)}
+                                onCheckedChange={(checked) => {
+                                  const newSet = new Set(checkedItems);
+                                  if (checked) newSet.add(itemName);
+                                  else newSet.delete(itemName);
+                                  setCheckedItems(newSet);
+                                }}
+                              />
+                              <span className={`text-sm flex-1 ${
+                                checkedItems.has(itemName) ? 'line-through text-slate-400' : 'text-slate-700'
+                              }`}>
+                                {itemName}
+                              </span>
+                              
+                              {editingPrice === `${category}-${idx}` ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  defaultValue={itemPrice || ''}
+                                  placeholder="$"
+                                  className="w-20 h-7 text-xs"
+                                  onBlur={(e) => {
+                                    const newPrice = parseFloat(e.target.value);
+                                    if (!isNaN(newPrice)) {
+                                      setGroceryList(prev => ({
+                                        ...prev,
+                                        [category]: prev[category].map((it, i) => 
+                                          i === idx ? { ...it, price: newPrice } : it
+                                        )
+                                      }));
+                                      saveGroceryList();
+                                    }
+                                    setEditingPrice(null);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') e.target.blur();
+                                    if (e.key === 'Escape') setEditingPrice(null);
+                                  }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <button
+                                  onClick={() => setEditingPrice(`${category}-${idx}`)}
+                                  className="text-xs text-slate-500 hover:text-indigo-600 min-w-[80px] text-right"
+                                >
+                                  {itemPrice ? (
+                                    `$${itemPrice.toFixed(2)}${itemUnit ? `/${itemUnit}` : ''}`
+                                  ) : (
+                                    <span
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        fetchItemPrice(itemName, category);
+                                      }}
+                                      className="text-indigo-600 hover:underline"
+                                    >
+                                      Get price
+                                    </span>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {addingItem === category && (
+                          <div className="flex gap-2 mt-2 p-2 bg-slate-50 rounded-lg">
+                            <Input
+                              placeholder="Item name..."
+                              value={newItemName}
+                              onChange={(e) => setNewItemName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') addCustomItem(category);
+                                if (e.key === 'Escape') setAddingItem(null);
+                              }}
+                              className="h-8 text-sm"
+                              autoFocus
                             />
-                            <span className={`text-sm font-medium ${
-                              checkedItems.has(item) ? 'line-through opacity-60' : ''
-                            }`}>
-                              {item}
-                            </span>
+                            <Button size="sm" onClick={() => addCustomItem(category)}>
+                              Add
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setAddingItem(null)}>
+                              Cancel
+                            </Button>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -269,6 +475,13 @@ export default function GroceryLists() {
             </p>
           </CardContent>
         </Card>
+      )}
+      
+      {isFetchingPrice && (
+        <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 flex items-center gap-3 border border-slate-200">
+          <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+          <span className="text-sm text-slate-700">Fetching price...</span>
+        </div>
       )}
     </div>
   );

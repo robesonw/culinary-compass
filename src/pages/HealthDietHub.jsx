@@ -210,7 +210,7 @@ ${userPrefs?.dietary_restrictions ? `- Dietary restrictions: ${userPrefs.dietary
 
 IMPORTANT REQUIREMENTS:
 - Scale ALL portions and ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
-- Keep total weekly cost around $${weeklyBudget} by using affordable, seasonal ingredients
+- Keep TOTAL weekly cost around $${weeklyBudget} (for all ${numPeople} ${numPeople === 1 ? 'person' : 'people'}) by using affordable, seasonal ingredients
 - Each meal must clearly show "Serves ${numPeople}" and calories PER PERSON
 - If muscle gain/athletic goal: prioritize high protein (1.6-2g/kg), show macro breakdown
 - NEVER include allergens: ${allergens.join(', ') || 'none specified'}
@@ -536,7 +536,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
             <div>
               <Label className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-4 h-4" />
-                Weekly Budget: ${weeklyBudget}
+                Total Weekly Budget (for all {numPeople} {numPeople === 1 ? 'person' : 'people'}): ${weeklyBudget}
               </Label>
               <Input
                 type="range"

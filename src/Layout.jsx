@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import NotificationBell from './components/notifications/NotificationBell';
+import FeedbackButton from './components/FeedbackButton';
 
 const navigation = [
   { name: 'Dashboard', href: 'Dashboard', icon: LayoutDashboard },
@@ -168,7 +169,10 @@ export default function Layout({ children, currentPageName }) {
         <main className="p-4 lg:p-8">
           {children}
         </main>
-      </div>
-    </div>
-  );
-}
+
+        {/* Beta Feedback Button */}
+        <FeedbackButton />
+        </div>
+        </div>
+        );
+        }

@@ -79,11 +79,13 @@ export default function Profile() {
   const queryClient = useQueryClient();
 
   const { data: preferences, isLoading } = useQuery({
-    queryKey: ['userPreferences'],
+    queryKey: ['userPreferences', user?.email],
     queryFn: async () => {
-      const prefs = await base44.entities.UserPreferences.list();
+      if (!user?.email) return null;
+      const prefs = await base44.entities.UserPreferences.filter({ created_by: user.email });
       return prefs?.[0] || null;
     },
+    enabled: !!user?.email,
   });
 
   const { data: user } = useQuery({
@@ -130,11 +132,13 @@ export default function Profile() {
   });
 
   const { data: userSettings } = useQuery({
-    queryKey: ['userSettings'],
+    queryKey: ['userSettings', user?.email],
     queryFn: async () => {
-      const settings = await base44.entities.UserSettings.list();
+      if (!user?.email) return null;
+      const settings = await base44.entities.UserSettings.filter({ created_by: user.email });
       return settings?.[0] || null;
     },
+    enabled: !!user?.email,
   });
 
   const [formData, setFormData] = React.useState({

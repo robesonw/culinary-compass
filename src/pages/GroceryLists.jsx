@@ -17,6 +17,8 @@ export default function GroceryLists() {
   const [checkedItems, setCheckedItems] = useState(new Set());
   const [groceryList, setGroceryList] = useState(null);
   const [editingPrice, setEditingPrice] = useState(null);
+  const [editingUnit, setEditingUnit] = useState(null);
+  const [editingNotes, setEditingNotes] = useState(null);
   const [addingItem, setAddingItem] = useState(null);
   const [newItemName, setNewItemName] = useState('');
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
@@ -178,7 +180,7 @@ export default function GroceryLists() {
     
     const updatedList = {
       ...groceryList,
-      [category]: [...(groceryList[category] || []), { name: newItemName.trim(), price: null, unit: '', quantity: 1 }]
+      [category]: [...(groceryList[category] || []), { name: newItemName.trim(), price: null, unit: '', quantity: 1, notes: '' }]
     };
     
     setGroceryList(updatedList);
@@ -406,99 +408,176 @@ export default function GroceryLists() {
                           const itemPrice = item.price;
                           const itemUnit = item.unit;
                           const itemQuantity = item.quantity || 1;
+                          const itemNotes = item.notes || '';
                           const totalPrice = (itemPrice || 0) * itemQuantity;
 
                           return (
-                            <div key={idx} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50">
-                              <Checkbox 
-                                checked={checkedItems.has(itemName)}
-                                onCheckedChange={(checked) => {
-                                  const newSet = new Set(checkedItems);
-                                  if (checked) newSet.add(itemName);
-                                  else newSet.delete(itemName);
-                                  setCheckedItems(newSet);
-                                }}
-                              />
-                              <span className={`text-sm flex-1 ${
-                                checkedItems.has(itemName) ? 'line-through text-slate-400' : 'text-slate-700'
-                              }`}>
-                                {itemName}
-                              </span>
-                              
-                              {/* Quantity Input */}
-                              <Input
-                                type="number"
-                                step="0.5"
-                                min="0.1"
-                                value={itemQuantity}
-                                onChange={(e) => {
-                                  const newQty = parseFloat(e.target.value);
-                                  if (!isNaN(newQty) && newQty > 0) {
-                                    const updatedList = {
-                                      ...groceryList,
-                                      [category]: groceryList[category].map((it, i) => 
-                                        i === idx ? { ...it, quantity: newQty } : it
-                                      )
-                                    };
-                                    setGroceryList(updatedList);
-                                    saveGroceryList(updatedList);
-                                  }
-                                }}
-                                className="w-14 h-7 text-xs text-center"
-                              />
-                              
-                              {editingPrice === `${category}-${idx}` ? (
+                            <div key={idx} className="p-2 rounded-lg hover:bg-slate-50">
+                              <div className="flex items-center gap-2">
+                                <Checkbox 
+                                  checked={checkedItems.has(itemName)}
+                                  onCheckedChange={(checked) => {
+                                    const newSet = new Set(checkedItems);
+                                    if (checked) newSet.add(itemName);
+                                    else newSet.delete(itemName);
+                                    setCheckedItems(newSet);
+                                  }}
+                                />
+                                <div className="flex-1">
+                                  <span className={`text-sm block ${
+                                    checkedItems.has(itemName) ? 'line-through text-slate-400' : 'text-slate-700'
+                                  }`}>
+                                    {itemName}
+                                  </span>
+                                  {itemNotes && (
+                                    <span className="text-xs text-slate-500 italic">
+                                      {itemNotes}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Quantity Input */}
                                 <Input
                                   type="number"
-                                  step="0.01"
-                                  defaultValue={itemPrice || ''}
-                                  placeholder="$"
-                                  className="w-20 h-7 text-xs"
-                                  onBlur={(e) => {
-                                    const newPrice = parseFloat(e.target.value);
-                                    if (!isNaN(newPrice)) {
+                                  step="0.5"
+                                  min="0.1"
+                                  value={itemQuantity}
+                                  onChange={(e) => {
+                                    const newQty = parseFloat(e.target.value);
+                                    if (!isNaN(newQty) && newQty > 0) {
                                       const updatedList = {
                                         ...groceryList,
                                         [category]: groceryList[category].map((it, i) => 
-                                          i === idx ? { ...it, price: newPrice } : it
+                                          i === idx ? { ...it, quantity: newQty } : it
                                         )
                                       };
                                       setGroceryList(updatedList);
                                       saveGroceryList(updatedList);
                                     }
-                                    setEditingPrice(null);
+                                  }}
+                                  className="w-14 h-7 text-xs text-center"
+                                />
+                                
+                                {/* Unit Input */}
+                                {editingUnit === `${category}-${idx}` ? (
+                                  <Input
+                                    type="text"
+                                    defaultValue={itemUnit || ''}
+                                    placeholder="unit"
+                                    className="w-20 h-7 text-xs"
+                                    onBlur={(e) => {
+                                      const updatedList = {
+                                        ...groceryList,
+                                        [category]: groceryList[category].map((it, i) => 
+                                          i === idx ? { ...it, unit: e.target.value } : it
+                                        )
+                                      };
+                                      setGroceryList(updatedList);
+                                      saveGroceryList(updatedList);
+                                      setEditingUnit(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') e.target.blur();
+                                      if (e.key === 'Escape') setEditingUnit(null);
+                                    }}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingUnit(`${category}-${idx}`)}
+                                    className="text-xs text-slate-500 hover:text-indigo-600 w-20 text-center"
+                                  >
+                                    {itemUnit || 'unit'}
+                                  </button>
+                                )}
+                                
+                                {/* Price Input */}
+                                {editingPrice === `${category}-${idx}` ? (
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    defaultValue={itemPrice || ''}
+                                    placeholder="$"
+                                    className="w-20 h-7 text-xs"
+                                    onBlur={(e) => {
+                                      const newPrice = parseFloat(e.target.value);
+                                      if (!isNaN(newPrice)) {
+                                        const updatedList = {
+                                          ...groceryList,
+                                          [category]: groceryList[category].map((it, i) => 
+                                            i === idx ? { ...it, price: newPrice } : it
+                                          )
+                                        };
+                                        setGroceryList(updatedList);
+                                        saveGroceryList(updatedList);
+                                      }
+                                      setEditingPrice(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') e.target.blur();
+                                      if (e.key === 'Escape') setEditingPrice(null);
+                                    }}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingPrice(`${category}-${idx}`)}
+                                    className="text-xs text-slate-500 hover:text-indigo-600 min-w-[90px] text-right"
+                                  >
+                                    {itemPrice ? (
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-[10px] text-slate-400">
+                                          ${itemPrice.toFixed(2)}/{itemUnit || 'unit'}
+                                        </span>
+                                        <span className="font-semibold text-slate-700">
+                                          ${totalPrice.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          fetchItemPrice(itemName, category);
+                                        }}
+                                        className="text-indigo-600 hover:underline"
+                                      >
+                                        Get price
+                                      </span>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {/* Notes Input */}
+                              {editingNotes === `${category}-${idx}` ? (
+                                <Input
+                                  type="text"
+                                  defaultValue={itemNotes}
+                                  placeholder="Add notes (e.g., organic, low-sodium)..."
+                                  className="mt-2 h-7 text-xs"
+                                  onBlur={(e) => {
+                                    const updatedList = {
+                                      ...groceryList,
+                                      [category]: groceryList[category].map((it, i) => 
+                                        i === idx ? { ...it, notes: e.target.value } : it
+                                      )
+                                    };
+                                    setGroceryList(updatedList);
+                                    saveGroceryList(updatedList);
+                                    setEditingNotes(null);
                                   }}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') e.target.blur();
-                                    if (e.key === 'Escape') setEditingPrice(null);
+                                    if (e.key === 'Escape') setEditingNotes(null);
                                   }}
                                   autoFocus
                                 />
                               ) : (
                                 <button
-                                  onClick={() => setEditingPrice(`${category}-${idx}`)}
-                                  className="text-xs text-slate-500 hover:text-indigo-600 min-w-[90px] text-right"
+                                  onClick={() => setEditingNotes(`${category}-${idx}`)}
+                                  className="text-xs text-slate-400 hover:text-indigo-600 mt-1 pl-6"
                                 >
-                                  {itemPrice ? (
-                                    <div className="flex flex-col items-end">
-                                      <span className="text-[10px] text-slate-400">
-                                        ${itemPrice.toFixed(2)}{itemUnit ? `/${itemUnit}` : ''}
-                                      </span>
-                                      <span className="font-semibold text-slate-700">
-                                        ${totalPrice.toFixed(2)}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <span
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        fetchItemPrice(itemName, category);
-                                      }}
-                                      className="text-indigo-600 hover:underline"
-                                    >
-                                      Get price
-                                    </span>
-                                  )}
+                                  {itemNotes ? '✏️ Edit note' : '+ Add note'}
                                 </button>
                               )}
                             </div>

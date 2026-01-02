@@ -160,7 +160,19 @@ Provide:
         tags: [form.cuisine, form.dietary, form.difficulty]
       });
       
-      toast.success('Saved to favorites!');
+      // Also log to nutrition tracking
+      await base44.entities.NutritionLog.create({
+        recipe_name: generatedRecipe.name,
+        meal_type: form.mealType.toLowerCase(),
+        log_date: new Date().toISOString().split('T')[0],
+        calories: generatedRecipe.nutrition?.calories || 0,
+        protein: generatedRecipe.nutrition?.protein || 0,
+        carbs: generatedRecipe.nutrition?.carbs || 0,
+        fat: generatedRecipe.nutrition?.fat || 0,
+        servings: 1
+      });
+      
+      toast.success('Saved to favorites and logged!');
     } catch (error) {
       toast.error('Failed to save');
     }

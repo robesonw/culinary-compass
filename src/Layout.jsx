@@ -15,7 +15,8 @@ import {
   Search,
   FileText,
   Users,
-  Sparkles
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Health Diet Hub', href: 'HealthDietHub', icon: ChefHat },
   { name: 'AI Recipe Generator', href: 'AIRecipeGenerator', icon: Sparkles },
   { name: 'Meal Plans', href: 'MealPlans', icon: Calendar },
+  { name: 'Nutrition Tracking', href: 'NutritionTracking', icon: TrendingUp },
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
   { name: 'Community', href: 'Community', icon: Users },
   { name: 'Recipes', href: 'SharedRecipes', icon: ChefHat },

@@ -12,6 +12,7 @@ import SharedMealPlans from './pages/SharedMealPlans';
 import Forum from './pages/Forum';
 import SharedRecipes from './pages/SharedRecipes';
 import AIRecipeGenerator from './pages/AIRecipeGenerator';
+import NutritionTracking from './pages/NutritionTracking';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "Forum": Forum,
     "SharedRecipes": SharedRecipes,
     "AIRecipeGenerator": AIRecipeGenerator,
+    "NutritionTracking": NutritionTracking,
 }
 
 export const pagesConfig = {

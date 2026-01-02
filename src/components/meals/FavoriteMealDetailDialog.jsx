@@ -10,6 +10,7 @@ import { createPageUrl } from '../../utils';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import ReviewSection from '../reviews/ReviewSection';
 
 export default function FavoriteMealDetailDialog({ meal, open, onOpenChange }) {
   const [regenerating, setRegenerating] = useState(false);
@@ -130,11 +131,12 @@ export default function FavoriteMealDetailDialog({ meal, open, onOpenChange }) {
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="preparation">Preparation</TabsTrigger>
             <TabsTrigger value="grocery">Grocery List</TabsTrigger>
             <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -458,8 +460,12 @@ export default function FavoriteMealDetailDialog({ meal, open, onOpenChange }) {
               </div>
             )}
           </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
-  );
-}
+
+          <TabsContent value="reviews" className="space-y-4">
+            <ReviewSection targetId={localMeal.id} targetType="favorite_meal" />
+          </TabsContent>
+          </Tabs>
+          </DialogContent>
+          </Dialog>
+          );
+          }

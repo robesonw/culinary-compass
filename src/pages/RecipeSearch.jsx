@@ -10,6 +10,7 @@ import { Search, X, ChefHat, Heart, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FavoriteMealDetailDialog from '../components/meals/FavoriteMealDetailDialog';
 import SharedRecipeDetailDialog from '../components/community/SharedRecipeDetailDialog';
+import RecipeRating from '../components/recipes/RecipeRating';
 
 const cuisineTypes = [
   'All', 'Italian', 'Mexican', 'Chinese', 'Japanese', 'Indian', 'Thai', 
@@ -259,6 +260,12 @@ export default function RecipeSearch() {
                       </span>
                     )}
                   </div>
+
+                  <RecipeRating 
+                    recipeId={recipe.id} 
+                    targetType={recipe.source === 'favorite' ? 'favorite_meal' : 'shared_recipe'}
+                    compact 
+                  />
 
                   <div className="flex flex-wrap gap-1.5">
                     {recipe.meal_type && (

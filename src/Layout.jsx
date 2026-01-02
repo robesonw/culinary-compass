@@ -26,7 +26,6 @@ import { useQuery } from '@tanstack/react-query';
 import NotificationBell from './components/notifications/NotificationBell';
 
 const navigation = [
-  { name: 'Home', href: 'Home', icon: LayoutDashboard },
   { name: 'Dashboard', href: 'Dashboard', icon: LayoutDashboard },
   { name: 'Lab Results', href: 'LabResults', icon: FileText },
   { name: 'Health Diet Hub', href: 'HealthDietHub', icon: ChefHat },

@@ -14,6 +14,7 @@ import SharedRecipes from './pages/SharedRecipes';
 import AIRecipeGenerator from './pages/AIRecipeGenerator';
 import NutritionTracking from './pages/NutritionTracking';
 import Home from './pages/Home';
+import Index from './pages/Index';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "AIRecipeGenerator": AIRecipeGenerator,
     "NutritionTracking": NutritionTracking,
     "Home": Home,
+    "Index": Index,
 }
 
 export const pagesConfig = {

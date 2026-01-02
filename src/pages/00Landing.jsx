@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function Index() {
+export default function Landing() {
   const features = [
     {
       icon: Sparkles,

@@ -53,7 +53,7 @@ export default function Index() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm text-lg px-8 py-6">
+              <Button asChild size="lg" className="bg-white/20 backdrop-blur-md text-white border-2 border-white hover:bg-white hover:text-indigo-600 text-lg px-8 py-6">
                 <Link to={createPageUrl('Dashboard')}>
                   View Dashboard
                 </Link>

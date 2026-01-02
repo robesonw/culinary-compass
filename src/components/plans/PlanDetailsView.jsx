@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MealCard from '../meals/MealCard';
 import SharePlanDialog from '../share/SharePlanDialog';
+import ShareMealDialog from '../share/ShareMealDialog';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -39,6 +40,9 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [regeneratingDay, setRegeneratingDay] = useState(null);
   const [regeneratingImage, setRegeneratingImage] = useState(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareMealDialogOpen, setShareMealDialogOpen] = useState(false);
+  const [mealToShare, setMealToShare] = useState(null);
+  const [mealTypeToShare, setMealTypeToShare] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -261,6 +265,12 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
     } catch (error) {
       toast.error('Failed to save meal');
     }
+  };
+
+  const handleShareMeal = (meal, mealType) => {
+    setMealToShare(meal);
+    setMealTypeToShare(mealType);
+    setShareMealDialogOpen(true);
   };
 
   const regenerateMeal = async (dayIndex, mealType) => {
@@ -803,6 +813,14 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                         <Button
                                           variant="outline"
                                           size="sm"
+                                          onClick={() => handleShareMeal(meal, mealType)}
+                                        >
+                                          <Share2 className="w-4 h-4 mr-1" />
+                                          Share
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
                                           onClick={() => regenerateMeal(selectedDay, mealType)}
                                           disabled={regeneratingMeal === `${selectedDay}-${mealType}`}
                                         >
@@ -1212,6 +1230,13 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
         plan={plan}
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
+      />
+
+      <ShareMealDialog
+        meal={mealToShare}
+        mealType={mealTypeToShare}
+        open={shareMealDialogOpen}
+        onOpenChange={setShareMealDialogOpen}
       />
     </Dialog>
   );

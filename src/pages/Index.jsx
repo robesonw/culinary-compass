@@ -38,9 +38,9 @@ export default function Index() {
               ✨ AI-Powered Health & Nutrition Platform
             </Badge>
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              Your Personal Health
+              Welcome to VitaPlate
               <br />
-              <span className="text-yellow-200">& Nutrition Hub</span>
+              <span className="text-yellow-200">Your Smart Nutrition Hub</span>
             </h1>
             <p className="text-xl md:text-2xl text-white drop-shadow-lg mb-10 max-w-3xl mx-auto font-medium">
               Transform your eating habits with AI-powered meal planning, smart nutrition tracking, 

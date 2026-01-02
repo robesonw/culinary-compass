@@ -11,6 +11,7 @@ import { ChefHat, Heart, Eye, Users, TrendingUp, Search, Filter } from 'lucide-r
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import SharedRecipeDetailDialog from '../components/community/SharedRecipeDetailDialog';
+import RecipeRating from '../components/recipes/RecipeRating';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -306,6 +307,8 @@ function RecipeCard({ recipe, index, onLike, onSave, setSelectedRecipe, setDetai
               </Badge>
             )}
           </div>
+
+          <RecipeRating recipeId={recipe.id} targetType="shared_recipe" compact />
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-200">
             <div className="flex items-center gap-3 text-sm text-slate-600">

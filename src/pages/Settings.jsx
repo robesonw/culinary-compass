@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -10,13 +10,36 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Bell, Shield, Palette, LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Settings() {
+  const [darkMode, setDarkMode] = useState(false);
+
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
     retry: false,
   });
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = async (checked) => {
+    setDarkMode(checked);
+    if (checked) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+    toast.success(`Dark mode ${checked ? 'enabled' : 'disabled'}`);
+  };
 
   const handleLogout = () => {
     base44.auth.logout();
@@ -147,7 +170,7 @@ export default function Settings() {
                 <p className="font-medium text-slate-900">Dark Mode</p>
                 <p className="text-sm text-slate-500">Use dark theme throughout the app</p>
               </div>
-              <Switch />
+              <Switch checked={darkMode} onCheckedChange={toggleDarkMode} />
             </div>
 
             <Separator />

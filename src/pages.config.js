@@ -11,8 +11,8 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import SharedMealPlans from './pages/SharedMealPlans';
 import SharedRecipes from './pages/SharedRecipes';
-import AALandingPage from './pages/AALandingPage';
 import ZRecipeGenerator from './pages/ZRecipeGenerator';
+import AAAHome from './pages/AAAHome';
 import __Layout from './Layout.jsx';
 
 
@@ -30,8 +30,8 @@ export const PAGES = {
     "Settings": Settings,
     "SharedMealPlans": SharedMealPlans,
     "SharedRecipes": SharedRecipes,
-    "AALandingPage": AALandingPage,
     "ZRecipeGenerator": ZRecipeGenerator,
+    "AAAHome": AAAHome,
 }
 
 export const pagesConfig = {

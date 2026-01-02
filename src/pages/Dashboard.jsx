@@ -162,7 +162,7 @@ export default function Dashboard() {
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link to={createPageUrl('AALandingPage')}>
+          <Link to={createPageUrl('AAAHome')}>
             🏠 Home Page
           </Link>
         </Button>

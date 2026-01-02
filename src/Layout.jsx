@@ -127,6 +127,20 @@ export default function Layout({ children, currentPageName }) {
                   <MessageSquare className={`w-5 h-5 ${isActive('AdminFeedback') ? 'text-rose-600' : 'text-slate-400'}`} />
                   Admin Feedback
                 </Link>
+                <Link
+                  to={createPageUrl('AdminRecipeModeration')}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                    ${isActive('AdminRecipeModeration')
+                      ? 'bg-rose-50 text-rose-700' 
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <ChefHat className={`w-5 h-5 ${isActive('AdminRecipeModeration') ? 'text-rose-600' : 'text-slate-400'}`} />
+                  Recipe Moderation
+                </Link>
               </>
             )}
           </nav>

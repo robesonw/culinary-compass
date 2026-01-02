@@ -26,6 +26,7 @@ export default function SharedRecipes() {
   const [filterCuisine, setFilterCuisine] = useState('all');
   const [filterDietary, setFilterDietary] = useState('all');
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const queryClient = useQueryClient();
 
@@ -181,9 +182,15 @@ export default function SharedRecipes() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">My Recipes</h1>
-        <p className="text-slate-600 mt-1">Your saved and community-shared recipes</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">My Recipes</h1>
+          <p className="text-slate-600 mt-1">Your saved and community-shared recipes</p>
+        </div>
+        <Button onClick={() => setSubmitDialogOpen(true)} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Submit Recipe
+        </Button>
       </div>
 
       <Card className="border-slate-200">
@@ -351,6 +358,11 @@ export default function SharedRecipes() {
         open={detailDialogOpen}
         onOpenChange={setDetailDialogOpen}
         comments={recipeComments}
+      />
+
+      <SubmitRecipeDialog
+        open={submitDialogOpen}
+        onOpenChange={setSubmitDialogOpen}
       />
     </div>
   );

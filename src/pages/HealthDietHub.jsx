@@ -87,6 +87,7 @@ export default function HealthDietHub() {
   const [cookingTime, setCookingTime] = useState('any');
   const [skillLevel, setSkillLevel] = useState('intermediate');
   const [culturalStyle, setCulturalStyle] = useState('none');
+  const [customCulturalStyle, setCustomCulturalStyle] = useState('');
   const [lifeStage, setLifeStage] = useState('general');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
@@ -249,7 +250,8 @@ export default function HealthDietHub() {
     const cuisineText = cuisinePreferences.length > 0 ? `- Preferred Cuisines: ${cuisinePreferences.join(', ')}` : '';
     const timeText = cookingTime !== 'any' ? `- Cooking Time Preference: ${cookingTime}` : '';
     const skillText = `- Cooking Skill Level: ${skillLevel}`;
-    const culturalText = culturalStyle !== 'none' ? `- CULTURAL STYLE: ${culturalStyle.toUpperCase()} - All meals must be authentic to this cuisine with traditional ingredients, spices, and cooking methods` : '';
+    const effectiveCulturalStyle = customCulturalStyle.trim() || (culturalStyle !== 'none' ? culturalStyle : '');
+    const culturalText = effectiveCulturalStyle ? `- CULTURAL STYLE: ${effectiveCulturalStyle.toUpperCase()} - All meals must be authentic to this cuisine with traditional ingredients, spices, and cooking methods` : '';
     const lifeStageText = lifeStage !== 'general' ? `- LIFE STAGE: ${lifeStage.toUpperCase()} - Adjust portions, textures, and nutrients accordingly` : '';
 
     const prompt = `You are a professional nutritionist specializing in culturally authentic, health-focused meal planning. Create a ${daysCount}-day personalized meal plan.
@@ -276,7 +278,7 @@ IMPORTANT REQUIREMENTS:
 - Each meal must clearly show "Serves ${numPeople}" and calories PER PERSON
 - If muscle gain/athletic goal: prioritize high protein (1.6-2g/kg), show macro breakdown
 - NEVER include allergens: ${allergens.join(', ') || 'none specified'}
-${culturalStyle !== 'none' ? `- ALL meals must be ${culturalStyle} style with authentic spices, techniques, and presentation` : ''}
+${effectiveCulturalStyle ? `- ALL meals must be ${effectiveCulturalStyle} style with authentic spices, techniques, and presentation` : ''}
 ${lifeStage === 'children' ? '- Make meals fun, colorful, nutrient-dense, easy to eat' : ''}
 ${lifeStage === 'pregnancy' ? '- Focus on folate, iron, calcium, omega-3; avoid raw/undercooked foods' : ''}
 ${lifeStage === 'seniors' ? '- Easy to chew/digest, bone health focus, simple preparation' : ''}
@@ -383,7 +385,8 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       setGeneratedPlan(response);
       setCheckedItems(new Set());
 
-      const culturalLabel = culturalStyle !== 'none' ? ` ${culturalStyles.find(s => s.value === culturalStyle)?.label}` : '';
+      const effectiveCulturalLabel = customCulturalStyle.trim() || (culturalStyle !== 'none' ? culturalStyles.find(s => s.value === culturalStyle)?.label : '');
+      const culturalLabel = effectiveCulturalLabel ? ` ${effectiveCulturalLabel}` : '';
       const budgetText = weeklyBudget ? ` ($${weeklyBudget})` : '';
       const peopleText = numPeople > 1 ? ` for ${numPeople}` : '';
       setPlanName(`${goalDescription}${culturalLabel} Plan${peopleText}${budgetText} - ${new Date().toLocaleDateString()}`);
@@ -458,14 +461,14 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       : null;
     
     savePlanMutation.mutate({
-      name: planName,
-      diet_type: 'custom',
-      estimated_cost: generatedPlan.estimated_weekly_cost || null,
-      current_total_cost: currentTotalCost,
-      grocery_list: groceryList,
-      macros: generatedPlan.average_daily_macros || null,
-      cultural_style: culturalStyle,
-      life_stage: lifeStage,
+    name: planName,
+    diet_type: 'custom',
+    estimated_cost: generatedPlan.estimated_weekly_cost || null,
+    current_total_cost: currentTotalCost,
+    grocery_list: groceryList,
+    macros: generatedPlan.average_daily_macros || null,
+    cultural_style: customCulturalStyle.trim() || culturalStyle,
+    life_stage: lifeStage,
       days: generatedPlan.days.map(day => ({
         day: day.day || 'Day',
         breakfast: {
@@ -666,6 +669,16 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
             <p className="text-xs text-slate-500 mt-2">
               AI will adapt recipes to your selected cultural style while preserving health goals
             </p>
+            
+            {/* Custom Cultural Style Input */}
+            <div className="mt-3">
+              <Input
+                placeholder="Or specify any other cuisine (e.g., Ethiopian, Vietnamese, Peruvian...)"
+                value={customCulturalStyle}
+                onChange={(e) => setCustomCulturalStyle(e.target.value)}
+                className="text-sm"
+              />
+            </div>
           </div>
 
           {/* Life Stage */}

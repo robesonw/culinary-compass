@@ -567,7 +567,7 @@ export default function GroceryLists() {
               <Separator />
 
               {/* Cost Summary */}
-              {(selectedPlan.estimated_cost || selectedPlan.current_total_cost) && (
+              {selectedPlan && (selectedPlan.estimated_cost || selectedPlan.current_total_cost) && (
                 <div className="space-y-2">
                   <div className="text-sm font-medium text-slate-700 mb-2">Budget Summary</div>
                   {selectedPlan.estimated_cost && (
@@ -593,6 +593,19 @@ export default function GroceryLists() {
                       </span>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Standalone List Total */}
+              {selectedStandaloneList && groceryList && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-slate-700 mb-2">Total Cost</div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Current Total:</span>
+                    <span className="font-bold text-indigo-600">
+                      ${Object.values(groceryList).flat().reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               )}
             </CardContent>

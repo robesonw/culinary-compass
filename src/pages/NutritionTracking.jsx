@@ -410,26 +410,31 @@ export default function NutritionTracking() {
   const weeklyGoalHistory = useMemo(() => {
     if (!activeWeeklyGoal) return [];
     
-    const history = [];
     let startDate, endDate;
     
     if (weeklyGoalTimeRange === 'custom') {
-      startDate = weeklyGoalDateRange.from;
-      endDate = weeklyGoalDateRange.to;
+      startDate = new Date(weeklyGoalDateRange.from);
+      endDate = new Date(weeklyGoalDateRange.to);
     } else {
-      const days = weeklyGoalTimeRange === 'week' ? 7 : 30;
-      startDate = subDays(new Date(), days - 1);
+      const days = weeklyGoalTimeRange === 'week' ? 7 : 28;
+      startDate = subDays(new Date(), days);
       endDate = new Date();
     }
     
+    // Ensure start and end are at midnight
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+    
     // Group by weeks
     const weeks = [];
-    let currentWeekStart = startDate;
+    let currentWeekStart = new Date(startDate);
     
     while (currentWeekStart <= endDate) {
       const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
-      const actualWeekEnd = weekEnd > endDate ? endDate : weekEnd;
+      
+      // Don't let weekEnd go beyond the specified end date
+      const actualWeekEnd = weekEnd > endDate ? new Date(endDate) : weekEnd;
       
       const weekLogs = logs.filter(l => {
         const logDate = new Date(l.log_date);

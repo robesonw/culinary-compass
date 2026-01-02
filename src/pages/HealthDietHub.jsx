@@ -923,11 +923,26 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                     );
                   })}
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+
+                <Separator className="my-4" />
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">
+                    {checkedItems.size} of {Object.values(groceryList).flat().length} items checked
+                  </span>
+                  {generatedPlan?.grocery_prices && (
+                    <span className="font-semibold text-slate-900">
+                      Estimated Total: ${Object.values(generatedPlan.grocery_prices)
+                        .reduce((sum, item) => sum + (item.price || 0), 0)
+                        .toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                </CardContent>
+                </Card>
+                </motion.div>
+                )}
+                </AnimatePresence>
+                </div>
+                );
+                }

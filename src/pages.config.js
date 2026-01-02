@@ -10,6 +10,9 @@ import Settings from './pages/Settings';
 import SharedMealPlans from './pages/SharedMealPlans';
 import SharedRecipes from './pages/SharedRecipes';
 import AAAHome from './pages/AAAHome';
+import AIRecipeGenerator from './pages/AIRecipeGenerator';
+import Analytics from './pages/Analytics';
+import Community from './pages/Community';
 import __Layout from './Layout.jsx';
 
 
@@ -26,6 +29,9 @@ export const PAGES = {
     "SharedMealPlans": SharedMealPlans,
     "SharedRecipes": SharedRecipes,
     "AAAHome": AAAHome,
+    "AIRecipeGenerator": AIRecipeGenerator,
+    "Analytics": Analytics,
+    "Community": Community,
 }
 
 export const pagesConfig = {

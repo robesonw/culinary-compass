@@ -28,6 +28,7 @@ const navigation = [
   { name: 'Meal Plans', href: 'MealPlans', icon: Calendar },
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
   { name: 'Analytics', href: 'Analytics', icon: BarChart3 },
+  { name: 'My Profile', href: 'Profile', icon: User },
   { name: 'Settings', href: 'Settings', icon: Settings },
 ];
 

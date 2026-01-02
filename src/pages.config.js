@@ -6,6 +6,7 @@ import LabResults from './pages/LabResults';
 import MealPlanner from './pages/MealPlanner';
 import MealPlans from './pages/MealPlans';
 import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "MealPlanner": MealPlanner,
     "MealPlans": MealPlans,
     "Settings": Settings,
+    "Profile": Profile,
 }
 
 export const pagesConfig = {

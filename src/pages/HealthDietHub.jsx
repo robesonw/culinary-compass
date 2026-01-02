@@ -157,10 +157,25 @@ export default function HealthDietHub() {
   };
 
   const { data: userPrefs } = useQuery({
-    queryKey: ['userPrefs'],
+    queryKey: ['userPreferences'],
     queryFn: () => base44.entities.UserPreferences.list(),
     select: (data) => data?.[0] || null,
   });
+
+  // Auto-populate form from saved preferences
+  React.useEffect(() => {
+    if (userPrefs) {
+      if (userPrefs.health_goal) setHealthGoal(userPrefs.health_goal);
+      if (userPrefs.foods_liked) setFoodsLiked(userPrefs.foods_liked);
+      if (userPrefs.foods_avoided) setFoodsAvoided(userPrefs.foods_avoided);
+      if (userPrefs.allergens) setAllergens(userPrefs.allergens);
+      if (userPrefs.cuisine_preferences) setCuisinePreferences(userPrefs.cuisine_preferences);
+      if (userPrefs.cooking_time) setCookingTime(userPrefs.cooking_time);
+      if (userPrefs.skill_level) setSkillLevel(userPrefs.skill_level);
+      if (userPrefs.num_people) setNumPeople(userPrefs.num_people);
+      if (userPrefs.weekly_budget) setWeeklyBudget(userPrefs.weekly_budget);
+    }
+  }, [userPrefs]);
 
   const { data: labResults = [] } = useQuery({
     queryKey: ['labResults'],

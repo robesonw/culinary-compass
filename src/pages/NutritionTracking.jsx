@@ -15,7 +15,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { Target, TrendingUp, Calendar as CalendarIcon, Plus, Flame, Activity, Award, Edit, Save, Camera, Upload, Loader2, ChefHat, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { format, startOfWeek, endOfWeek, subDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subDays, addDays } from 'date-fns';
 import ShareProgressDialog from '../components/progress/ShareProgressDialog';
 
 export default function NutritionTracking() {
@@ -66,6 +66,9 @@ export default function NutritionTracking() {
     queryFn: () => base44.entities.NutritionGoal.filter({ created_by: user?.email }),
     enabled: !!user?.email,
   });
+
+  const activeDailyGoal = goals.find(g => g.is_active && g.goal_type === 'daily');
+  const activeWeeklyGoal = goals.find(g => g.is_active && g.goal_type === 'weekly');
 
   const { data: logs = [] } = useQuery({
     queryKey: ['nutritionLogs', user?.email],
@@ -122,7 +125,7 @@ export default function NutritionTracking() {
     },
   });
 
-  const activeGoal = goals.find(g => g.is_active && g.goal_type === 'daily');
+  const activeGoal = activeDailyGoal;
 
   const handleSaveGoal = () => {
     if (editingGoal) {

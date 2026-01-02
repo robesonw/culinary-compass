@@ -153,7 +153,7 @@ Provide:
     
     try {
       // Generate grocery list and get prices
-      const ingredientNames = generatedRecipe.ingredients?.map(ing => ing.item) || [];
+      const ingredientNames = generatedRecipe.ingredients?.map(ing => `${ing.quantity} ${ing.item}`) || [];
       
       let groceryList = {};
       let totalCost = 0;
@@ -177,7 +177,8 @@ Provide:
                       properties: {
                         name: { type: "string" },
                         price: { type: "number" },
-                        unit: { type: "string" }
+                        unit: { type: "string" },
+                        quantity: { type: "number" }
                       }
                     }
                   }
@@ -191,7 +192,7 @@ Provide:
             // Calculate total
             Object.values(groceryList).forEach(items => {
               items.forEach(item => {
-                totalCost += item.price || 0;
+                totalCost += (item.price || 0) * (item.quantity || 1);
               });
             });
           }
@@ -202,34 +203,33 @@ Provide:
       
       const cuisineName = form.cuisine === 'Other' ? form.customCuisine : form.cuisine;
       
-      // Save complete recipe with all details
-      await base44.entities.SharedRecipe.create({
+      // Save to FavoriteMeal with all details
+      await base44.entities.FavoriteMeal.create({
         name: generatedRecipe.name,
         meal_type: form.mealType.toLowerCase(),
-        description: generatedRecipe.description,
-        meal_data: {
-          ...generatedRecipe,
-          prepSteps: generatedRecipe.instructions,
-          prepTime: generatedRecipe.prepTime,
-          difficulty: form.difficulty,
-          equipment: [],
-          healthBenefit: generatedRecipe.healthBenefits,
-          cuisine: cuisineName,
-          servings: form.servings,
-          dietary: form.dietary,
-          grocery_list: groceryList,
-          estimated_cost: totalCost
-        },
         calories: `${generatedRecipe.nutrition?.calories || 0} kcal`,
         protein: generatedRecipe.nutrition?.protein || 0,
         carbs: generatedRecipe.nutrition?.carbs || 0,
         fat: generatedRecipe.nutrition?.fat || 0,
-        image_url: generatedRecipe.imageUrl,
-        tags: [cuisineName, form.dietary, form.difficulty].filter(Boolean)
+        nutrients: generatedRecipe.healthBenefits,
+        prepTip: generatedRecipe.tips,
+        prepTime: generatedRecipe.prepTime,
+        prepSteps: generatedRecipe.instructions || [],
+        difficulty: form.difficulty,
+        equipment: [],
+        healthBenefit: generatedRecipe.healthBenefits,
+        imageUrl: generatedRecipe.imageUrl,
+        cuisine: cuisineName,
+        cooking_time: generatedRecipe.cookTime,
+        tags: [cuisineName, form.dietary, form.difficulty].filter(Boolean),
+        source_type: 'ai_recipe',
+        ingredients: ingredientNames,
+        grocery_list: groceryList,
+        estimated_cost: totalCost
       });
       
       toast.dismiss();
-      toast.success('Recipe saved successfully!');
+      toast.success('Recipe saved to favorites!');
     } catch (error) {
       toast.dismiss();
       toast.error('Failed to save recipe');

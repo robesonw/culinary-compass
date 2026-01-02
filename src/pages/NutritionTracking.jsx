@@ -22,7 +22,8 @@ export default function NutritionTracking() {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [recipeBuilderOpen, setRecipeBuilderOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [timeRange, setTimeRange] = useState('week'); // 'week' or 'month'
+  const [timeRange, setTimeRange] = useState('week'); // 'week', 'month', 'custom'
+  const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 7), to: new Date() });
   const [editingGoal, setEditingGoal] = useState(null);
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const [logMethod, setLogMethod] = useState('manual'); // 'manual', 'photo', 'recipe'
@@ -285,15 +286,28 @@ export default function NutritionTracking() {
 
   // Prepare chart data
   const chartData = useMemo(() => {
-    const days = timeRange === 'week' ? 7 : 30;
-    const data = [];
+    let startDate, endDate;
     
-    for (let i = days - 1; i >= 0; i--) {
-      const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
-      const dayLogs = logs.filter(l => l.log_date === date);
+    if (timeRange === 'custom') {
+      startDate = dateRange.from;
+      endDate = dateRange.to;
+    } else {
+      const days = timeRange === 'week' ? 7 : 30;
+      startDate = subDays(new Date(), days - 1);
+      endDate = new Date();
+    }
+    
+    const data = [];
+    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    
+    for (let i = 0; i < daysDiff; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(currentDate.getDate() + i);
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      const dayLogs = logs.filter(l => l.log_date === dateStr);
       
       data.push({
-        date: format(subDays(new Date(), i), 'MMM d'),
+        date: format(currentDate, 'MMM d'),
         calories: dayLogs.reduce((sum, l) => sum + (l.calories * (l.servings || 1)), 0),
         protein: dayLogs.reduce((sum, l) => sum + (l.protein * (l.servings || 1)), 0),
         carbs: dayLogs.reduce((sum, l) => sum + (l.carbs * (l.servings || 1)), 0),
@@ -303,7 +317,7 @@ export default function NutritionTracking() {
     }
     
     return data;
-  }, [logs, timeRange, activeGoal]);
+  }, [logs, timeRange, dateRange, activeGoal]);
 
   const getProgressPercentage = (current, target) => {
     if (!target) return 0;
@@ -415,20 +429,59 @@ export default function NutritionTracking() {
       {/* Historical Data */}
       <Card className="border-slate-200">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-indigo-600" />
               Nutrition History
             </CardTitle>
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="week">Last 7 Days</SelectItem>
-                <SelectItem value="month">Last 30 Days</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">Last 7 Days</SelectItem>
+                  <SelectItem value="month">Last 30 Days</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+              {timeRange === 'custom' && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <CalendarIcon className="w-4 h-4 mr-2" />
+                      {dateRange.from && dateRange.to ? (
+                        `${format(dateRange.from, 'MMM d')} - ${format(dateRange.to, 'MMM d')}`
+                      ) : (
+                        'Select dates'
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <div className="p-3 space-y-3">
+                      <div>
+                        <Label className="text-xs">From</Label>
+                        <Calendar
+                          mode="single"
+                          selected={dateRange.from}
+                          onSelect={(date) => setDateRange({ ...dateRange, from: date })}
+                          disabled={(date) => date > new Date()}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">To</Label>
+                        <Calendar
+                          mode="single"
+                          selected={dateRange.to}
+                          onSelect={(date) => setDateRange({ ...dateRange, to: date })}
+                          disabled={(date) => date > new Date() || date < dateRange.from}
+                        />
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

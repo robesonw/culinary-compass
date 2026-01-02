@@ -42,11 +42,11 @@ export default function Community() {
       link: 'Forum',
     },
     {
-      title: 'Rate & Review',
-      description: 'Share your experience with meal plans and recipes',
+      title: 'Browse Recipes',
+      description: 'Explore individual recipes shared by the community',
       icon: Star,
       color: 'from-amber-500 to-orange-500',
-      link: 'SharedMealPlans',
+      link: 'SharedRecipes',
     },
   ];
 

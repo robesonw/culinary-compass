@@ -10,6 +10,7 @@ import Settings from './pages/Settings';
 import Community from './pages/Community';
 import SharedMealPlans from './pages/SharedMealPlans';
 import Forum from './pages/Forum';
+import SharedRecipes from './pages/SharedRecipes';
 import __Layout from './Layout.jsx';
 
 
@@ -26,6 +27,7 @@ export const PAGES = {
     "Community": Community,
     "SharedMealPlans": SharedMealPlans,
     "Forum": Forum,
+    "SharedRecipes": SharedRecipes,
 }
 
 export const pagesConfig = {

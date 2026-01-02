@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Star, Heart, Bookmark, Eye, Search, Plus, Share2 } from 'lucide-react';
+import { Star, Heart, Bookmark, Eye, Search, Plus, Share2, UserPlus, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import PlanDetailsView from '../components/plans/PlanDetailsView';
@@ -46,6 +46,12 @@ export default function SharedMealPlans() {
     queryFn: () => base44.entities.Review.list(),
   });
 
+  const { data: following = [] } = useQuery({
+    queryKey: ['following', user?.email],
+    queryFn: () => base44.entities.UserFollow.filter({ created_by: user?.email }),
+    enabled: !!user?.email,
+  });
+
   const sharePlanMutation = useMutation({
     mutationFn: (data) => base44.entities.SharedMealPlan.create(data),
     onSuccess: () => {
@@ -63,6 +69,31 @@ export default function SharedMealPlans() {
       toast.success('Review added!');
       setRatingDialogOpen(false);
       setRatingForm({ rating: 5, comment: '' });
+    },
+  });
+
+  const followMutation = useMutation({
+    mutationFn: (data) => base44.entities.UserFollow.create(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['following'] });
+      toast.success(`Following ${variables.following_user_name}`);
+      
+      // Create notification
+      base44.entities.Notification.create({
+        recipient_email: variables.following_user_email,
+        type: 'new_follower',
+        title: 'New Follower',
+        message: `${user?.full_name || 'Someone'} started following you`,
+        actor_name: user?.full_name || 'Anonymous',
+      });
+    },
+  });
+
+  const unfollowMutation = useMutation({
+    mutationFn: (followId) => base44.entities.UserFollow.delete(followId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['following'] });
+      toast.success('Unfollowed');
     },
   });
 
@@ -91,13 +122,44 @@ export default function SharedMealPlans() {
     });
   };
 
-  const handleLike = (planId) => {
+  const handleLike = (plan) => {
     interactionMutation.mutate({
-      target_id: planId,
+      target_id: plan.id,
       target_type: 'shared_plan',
       interaction_type: 'like',
     });
+    
+    // Create notification for author
+    if (plan.created_by && plan.created_by !== user?.email) {
+      base44.entities.Notification.create({
+        recipient_email: plan.created_by,
+        type: 'plan_like',
+        title: 'Meal Plan Liked',
+        message: `${user?.full_name || 'Someone'} liked your meal plan "${plan.title}"`,
+        actor_name: user?.full_name || 'Anonymous',
+      });
+    }
+    
     toast.success('Liked!');
+  };
+
+  const isFollowing = (userEmail) => {
+    return following.some(f => f.following_user_email === userEmail);
+  };
+
+  const handleFollow = (plan) => {
+    if (!plan.created_by) return;
+    
+    const existingFollow = following.find(f => f.following_user_email === plan.created_by);
+    
+    if (existingFollow) {
+      unfollowMutation.mutate(existingFollow.id);
+    } else {
+      followMutation.mutate({
+        following_user_email: plan.created_by,
+        following_user_name: plan.author_name,
+      });
+    }
   };
 
   const handleSave = (plan) => {
@@ -236,9 +298,34 @@ export default function SharedMealPlans() {
                       {plan.saves_count || 0}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500">
-                    by {plan.author_name} • {new Date(plan.created_date).toLocaleDateString()}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500">
+                      by {plan.author_name}
+                    </p>
+                    {plan.created_by && plan.created_by !== user?.email && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollow(plan);
+                        }}
+                        className="h-6 text-xs"
+                      >
+                        {isFollowing(plan.created_by) ? (
+                          <>
+                            <UserCheck className="w-3 h-3 mr-1" />
+                            Following
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-3 h-3 mr-1" />
+                            Follow
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                   {plan.tags?.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {plan.tags.slice(0, 3).map((tag, i) => (
@@ -249,7 +336,7 @@ export default function SharedMealPlans() {
                     </div>
                   )}
                   <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleLike(plan.id)}>
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleLike(plan)}>
                       <Heart className="w-3 h-3 mr-1" />
                       Like
                     </Button>

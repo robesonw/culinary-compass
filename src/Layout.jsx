@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import NotificationBell from './components/notifications/NotificationBell';
 
 const navigation = [
   { name: 'Dashboard', href: 'Dashboard', icon: LayoutDashboard },
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Meal Plans', href: 'MealPlans', icon: Calendar },
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
   { name: 'Community', href: 'Community', icon: Users },
+  { name: 'Recipes', href: 'SharedRecipes', icon: ChefHat },
   { name: 'Analytics', href: 'Analytics', icon: BarChart3 },
   { name: 'My Profile', href: 'Profile', icon: User },
   { name: 'Settings', href: 'Settings', icon: Settings },
@@ -144,10 +146,7 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5 text-slate-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full"></span>
-              </Button>
+              <NotificationBell />
               
               <Button 
                 asChild

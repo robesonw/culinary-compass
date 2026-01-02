@@ -364,71 +364,96 @@ export default function NutritionTracking() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-indigo-600" />
-            Today's Progress
+            Today's Progress {activeGoal && '- Daily Goals'}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-4 gap-4 mb-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-slate-900">{Math.round(todayTotals.calories)}</div>
-              <div className="text-sm text-slate-600">
-                {activeGoal ? `/ ${activeGoal.target_calories} kcal` : 'Calories'}
-              </div>
-              {activeGoal && (
-                <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${getProgressColor(getProgressPercentage(todayTotals.calories, activeGoal.target_calories))}`}
-                    style={{ width: `${getProgressPercentage(todayTotals.calories, activeGoal.target_calories)}%` }}
-                  />
-                </div>
-              )}
+          {!activeGoal ? (
+            <div className="text-center py-8">
+              <Target className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-600 mb-4">Set your nutrition goals to track progress</p>
+              <Button onClick={() => setGoalDialogOpen(true)} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+                <Target className="w-4 h-4 mr-2" />
+                Set Goals
+              </Button>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-700">{Math.round(todayTotals.protein)}g</div>
-              <div className="text-sm text-slate-600">
-                {activeGoal ? `/ ${activeGoal.target_protein}g` : 'Protein'}
-              </div>
-              {activeGoal && (
-                <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${getProgressColor(getProgressPercentage(todayTotals.protein, activeGoal.target_protein))}`}
-                    style={{ width: `${getProgressPercentage(todayTotals.protein, activeGoal.target_protein)}%` }}
-                  />
+          ) : (
+            <>
+              <div className="grid md:grid-cols-4 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-slate-900">{Math.round(todayTotals.calories)}</div>
+                  <div className="text-sm text-slate-600">/ {activeGoal.target_calories} kcal</div>
+                  <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${getProgressColor(getProgressPercentage(todayTotals.calories, activeGoal.target_calories))}`}
+                      style={{ width: `${getProgressPercentage(todayTotals.calories, activeGoal.target_calories)}%` }}
+                    />
+                  </div>
+                  <div className="text-xs mt-1 font-medium">
+                    {getProgressPercentage(todayTotals.calories, activeGoal.target_calories) >= 100 ? (
+                      <span className="text-emerald-600">✓ Goal Met</span>
+                    ) : (
+                      <span className="text-slate-500">{activeGoal.target_calories - Math.round(todayTotals.calories)} kcal left</span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-amber-700">{Math.round(todayTotals.carbs)}g</div>
-              <div className="text-sm text-slate-600">
-                {activeGoal ? `/ ${activeGoal.target_carbs}g` : 'Carbs'}
-              </div>
-              {activeGoal && (
-                <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${getProgressColor(getProgressPercentage(todayTotals.carbs, activeGoal.target_carbs))}`}
-                    style={{ width: `${getProgressPercentage(todayTotals.carbs, activeGoal.target_carbs)}%` }}
-                  />
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-700">{Math.round(todayTotals.protein)}g</div>
+                  <div className="text-sm text-slate-600">/ {activeGoal.target_protein}g</div>
+                  <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${getProgressColor(getProgressPercentage(todayTotals.protein, activeGoal.target_protein))}`}
+                      style={{ width: `${getProgressPercentage(todayTotals.protein, activeGoal.target_protein)}%` }}
+                    />
+                  </div>
+                  <div className="text-xs mt-1 font-medium">
+                    {getProgressPercentage(todayTotals.protein, activeGoal.target_protein) >= 100 ? (
+                      <span className="text-emerald-600">✓ Goal Met</span>
+                    ) : (
+                      <span className="text-slate-500">{activeGoal.target_protein - Math.round(todayTotals.protein)}g left</span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-rose-700">{Math.round(todayTotals.fat)}g</div>
-              <div className="text-sm text-slate-600">
-                {activeGoal ? `/ ${activeGoal.target_fat}g` : 'Fat'}
-              </div>
-              {activeGoal && (
-                <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${getProgressColor(getProgressPercentage(todayTotals.fat, activeGoal.target_fat))}`}
-                    style={{ width: `${getProgressPercentage(todayTotals.fat, activeGoal.target_fat)}%` }}
-                  />
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-amber-700">{Math.round(todayTotals.carbs)}g</div>
+                  <div className="text-sm text-slate-600">/ {activeGoal.target_carbs}g</div>
+                  <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${getProgressColor(getProgressPercentage(todayTotals.carbs, activeGoal.target_carbs))}`}
+                      style={{ width: `${getProgressPercentage(todayTotals.carbs, activeGoal.target_carbs)}%` }}
+                    />
+                  </div>
+                  <div className="text-xs mt-1 font-medium">
+                    {getProgressPercentage(todayTotals.carbs, activeGoal.target_carbs) >= 100 ? (
+                      <span className="text-emerald-600">✓ Goal Met</span>
+                    ) : (
+                      <span className="text-slate-500">{activeGoal.target_carbs - Math.round(todayTotals.carbs)}g left</span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-          <div className="text-center text-sm text-slate-600">
-            {todayTotals.meals} meals logged today
-          </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-rose-700">{Math.round(todayTotals.fat)}g</div>
+                  <div className="text-sm text-slate-600">/ {activeGoal.target_fat}g</div>
+                  <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${getProgressColor(getProgressPercentage(todayTotals.fat, activeGoal.target_fat))}`}
+                      style={{ width: `${getProgressPercentage(todayTotals.fat, activeGoal.target_fat)}%` }}
+                    />
+                  </div>
+                  <div className="text-xs mt-1 font-medium">
+                    {getProgressPercentage(todayTotals.fat, activeGoal.target_fat) >= 100 ? (
+                      <span className="text-emerald-600">✓ Goal Met</span>
+                    ) : (
+                      <span className="text-slate-500">{activeGoal.target_fat - Math.round(todayTotals.fat)}g left</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="text-center text-sm text-slate-600">
+                {todayTotals.meals} meals logged today
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChefHat, Heart, Eye, Users, TrendingUp, Search, Filter } from 'lucide-react';
+import { ChefHat, Heart, Eye, Users, TrendingUp, Search, Filter, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import SharedRecipeDetailDialog from '../components/community/SharedRecipeDetailDialog';
 import RecipeRating from '../components/recipes/RecipeRating';
+import SubmitRecipeDialog from '../components/community/SubmitRecipeDialog';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -35,10 +36,13 @@ export default function SharedRecipes() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: allRecipes = [], isLoading } = useQuery({
+  const { data: allSharedRecipes = [], isLoading } = useQuery({
     queryKey: ['sharedRecipes'],
     queryFn: () => base44.entities.SharedRecipe.list('-created_date'),
   });
+
+  // Filter to show only approved recipes
+  const allRecipes = allSharedRecipes.filter(r => r.status === 'approved');
 
   const { data: recipeComments = [] } = useQuery({
     queryKey: ['recipeComments'],

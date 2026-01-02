@@ -5,11 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, Heart, Bookmark, Eye, Search, ChefHat } from 'lucide-react';
+import { ChefHat, Heart, Eye, Users, TrendingUp, Search, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import SharedRecipeDetailDialog from '../components/community/SharedRecipeDetailDialog';
+
+const mealIcons = {
+  breakfast: '🌅',
+  lunch: '☀️',
+  dinner: '🌙',
+  snacks: '🍎'
+};
 
 export default function SharedRecipes() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,20 +31,19 @@ export default function SharedRecipes() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: sharedRecipes = [] } = useQuery({
+  const { data: allRecipes = [], isLoading } = useQuery({
     queryKey: ['sharedRecipes'],
     queryFn: () => base44.entities.SharedRecipe.list('-created_date'),
-  });
-
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['reviews'],
-    queryFn: () => base44.entities.Review.list(),
   });
 
   const { data: recipeComments = [] } = useQuery({
     queryKey: ['recipeComments'],
     queryFn: () => base44.entities.RecipeComment.list('-created_date'),
   });
+
+  // Separate user's recipes from community recipes
+  const myRecipes = allRecipes.filter(r => r.created_by === user?.email);
+  const sharedRecipes = allRecipes.filter(r => r.created_by !== user?.email);
 
   const interactionMutation = useMutation({
     mutationFn: (data) => base44.entities.UserInteraction.create(data),
@@ -52,7 +59,6 @@ export default function SharedRecipes() {
       interaction_type: 'like',
     });
     
-    // Create notification for author
     if (authorEmail && authorEmail !== user?.email) {
       base44.entities.Notification.create({
         recipient_email: authorEmail,
@@ -74,6 +80,16 @@ export default function SharedRecipes() {
       protein: recipe.protein,
       carbs: recipe.carbs,
       fat: recipe.fat,
+      prepTip: recipe.meal_data?.tips || recipe.description,
+      prepSteps: recipe.meal_data?.instructions || [],
+      difficulty: recipe.meal_data?.difficulty,
+      equipment: recipe.meal_data?.equipment || [],
+      healthBenefit: recipe.meal_data?.health_benefits,
+      imageUrl: recipe.image_url,
+      source_type: 'shared_recipe',
+      source_recipe_id: recipe.id,
+      ingredients: recipe.meal_data?.ingredients || [],
+      estimated_cost: recipe.meal_data?.estimated_cost,
     });
     
     interactionMutation.mutate({
@@ -85,31 +101,25 @@ export default function SharedRecipes() {
     toast.success('Saved to favorites!');
   };
 
-  const filteredRecipes = sharedRecipes.filter(recipe => {
+  const filteredRecipes = allRecipes.filter(recipe => {
     const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterMealType === 'all' || recipe.meal_type === filterMealType;
     return matchesSearch && matchesFilter;
   });
 
-  const getRecipeRating = (recipeId) => {
-    const recipeReviews = reviews.filter(r => r.target_id === recipeId);
-    if (recipeReviews.length === 0) return null;
-    const avg = recipeReviews.reduce((sum, r) => sum + r.rating, 0) / recipeReviews.length;
-    return { average: avg, count: recipeReviews.length };
-  };
-
-  const mealTypeColors = {
-    breakfast: 'bg-orange-100 text-orange-700',
-    lunch: 'bg-blue-100 text-blue-700',
-    dinner: 'bg-purple-100 text-purple-700',
-    snacks: 'bg-green-100 text-green-700',
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Community Recipes</h1>
-        <p className="text-slate-600 mt-1">Discover delicious recipes shared by the community</p>
+        <h1 className="text-3xl font-bold text-slate-900">My Recipes</h1>
+        <p className="text-slate-600 mt-1">Your saved and community-shared recipes</p>
       </div>
 
       <Card className="border-slate-200">
@@ -140,111 +150,98 @@ export default function SharedRecipes() {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredRecipes.map((recipe, index) => {
-          const rating = getRecipeRating(recipe.id);
-          return (
-            <motion.div
-              key={recipe.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card 
-                className="border-slate-200 hover:shadow-lg transition-all overflow-hidden cursor-pointer"
-                onClick={() => {
-                  setSelectedRecipe(recipe);
-                  setDetailDialogOpen(true);
-                }}
-              >
-                {recipe.image_url && (
-                  <img
-                    src={recipe.image_url}
-                    alt={recipe.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant="secondary" className={`${mealTypeColors[recipe.meal_type]} capitalize`}>
-                      {recipe.meal_type}
-                    </Badge>
-                    {rating && (
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                        <span className="text-sm font-medium">{rating.average.toFixed(1)}</span>
-                      </div>
-                    )}
-                  </div>
-                  <CardTitle className="text-lg">{recipe.name}</CardTitle>
-                  {recipe.description && (
-                    <p className="text-sm text-slate-600 line-clamp-2 mt-1">{recipe.description}</p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex gap-2 text-xs">
-                    {recipe.protein && <Badge variant="outline">P: {recipe.protein}g</Badge>}
-                    {recipe.carbs && <Badge variant="outline">C: {recipe.carbs}g</Badge>}
-                    {recipe.fat && <Badge variant="outline">F: {recipe.fat}g</Badge>}
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3 h-3" />
-                      {recipe.views_count || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-3 h-3" />
-                      {recipe.likes_count || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Bookmark className="w-3 h-3" />
-                      {recipe.saves_count || 0}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    by {recipe.author_name}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLike(recipe.id, recipe.created_by);
-                      }}
-                    >
-                      <Heart className="w-3 h-3 mr-1" />
-                      Like
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSave(recipe);
-                      }}
-                    >
-                      <Bookmark className="w-3 h-3 mr-1" />
-                      Save
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
+      <Tabs defaultValue="my" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="my">My Recipes ({myRecipes.length})</TabsTrigger>
+          <TabsTrigger value="community">Community ({sharedRecipes.length})</TabsTrigger>
+          <TabsTrigger value="all">All Recipes</TabsTrigger>
+        </TabsList>
 
-      {filteredRecipes.length === 0 && (
-        <Card className="border-slate-200 border-dashed">
-          <CardContent className="p-12 text-center">
-            <ChefHat className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600">No recipes found</p>
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="my" className="space-y-6">
+          {myRecipes.length === 0 ? (
+            <Card className="border-slate-200 border-dashed">
+              <CardContent className="p-12 text-center">
+                <ChefHat className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  No Recipes Yet
+                </h3>
+                <p className="text-slate-600">
+                  Create your first recipe using the AI Recipe Generator
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {myRecipes.map((recipe, index) => (
+                <RecipeCard 
+                  key={recipe.id} 
+                  recipe={recipe} 
+                  index={index}
+                  onLike={handleLike}
+                  onSave={handleSave}
+                  setSelectedRecipe={setSelectedRecipe}
+                  setDetailDialogOpen={setDetailDialogOpen}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="community" className="space-y-6">
+          {sharedRecipes.length === 0 ? (
+            <Card className="border-slate-200 border-dashed">
+              <CardContent className="p-12 text-center">
+                <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  No Community Recipes
+                </h3>
+                <p className="text-slate-600">
+                  Be the first to share a recipe with the community!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sharedRecipes.map((recipe, index) => (
+                <RecipeCard 
+                  key={recipe.id} 
+                  recipe={recipe} 
+                  index={index}
+                  onLike={handleLike}
+                  onSave={handleSave}
+                  setSelectedRecipe={setSelectedRecipe}
+                  setDetailDialogOpen={setDetailDialogOpen}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="all" className="space-y-6">
+          {filteredRecipes.length === 0 ? (
+            <Card className="border-slate-200 border-dashed">
+              <CardContent className="p-12 text-center">
+                <ChefHat className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-600">No recipes found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredRecipes.map((recipe, index) => (
+                <RecipeCard 
+                  key={recipe.id} 
+                  recipe={recipe} 
+                  index={index}
+                  onLike={handleLike}
+                  onSave={handleSave}
+                  setSelectedRecipe={setSelectedRecipe}
+                  setDetailDialogOpen={setDetailDialogOpen}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <SharedRecipeDetailDialog
         recipe={selectedRecipe}
@@ -253,5 +250,80 @@ export default function SharedRecipes() {
         comments={recipeComments}
       />
     </div>
+  );
+}
+
+function RecipeCard({ recipe, index, onLike, onSave, setSelectedRecipe, setDetailDialogOpen }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+    >
+      <Card className="overflow-hidden border-slate-200 hover:shadow-lg transition-all cursor-pointer group"
+        onClick={() => {
+          setSelectedRecipe(recipe);
+          setDetailDialogOpen(true);
+        }}
+      >
+        <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+          {recipe.image_url ? (
+            <img 
+              src={recipe.image_url} 
+              alt={recipe.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => e.target.style.display = 'none'}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ChefHat className="w-16 h-16 text-slate-300" />
+            </div>
+          )}
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-white/90 backdrop-blur-sm text-slate-900 capitalize">
+              {mealIcons[recipe.meal_type]} {recipe.meal_type}
+            </Badge>
+          </div>
+        </div>
+
+        <CardContent className="p-4 space-y-3">
+          <div>
+            <h3 className="font-semibold text-lg text-slate-900 line-clamp-1">
+              {recipe.name}
+            </h3>
+            {recipe.description && (
+              <p className="text-sm text-slate-600 line-clamp-2 mt-1">
+                {recipe.description}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">🔥 {recipe.calories}</Badge>
+            {recipe.protein > 0 && (
+              <Badge variant="outline" className="text-blue-600">
+                P: {recipe.protein}g
+              </Badge>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+            <div className="flex items-center gap-3 text-sm text-slate-600">
+              <span className="flex items-center gap-1">
+                <Heart className="w-4 h-4" />
+                {recipe.likes_count || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <Eye className="w-4 h-4" />
+                {recipe.views_count || 0}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              by {recipe.author_name}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

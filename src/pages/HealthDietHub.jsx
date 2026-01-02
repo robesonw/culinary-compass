@@ -30,6 +30,25 @@ const healthGoals = [
   { value: 'general_wellness', label: 'General Wellness', icon: Sparkles, color: 'purple' },
 ];
 
+const culturalStyles = [
+  { value: 'none', label: 'Any / Mixed', emoji: '🌍' },
+  { value: 'mediterranean', label: 'Mediterranean', emoji: '🫒' },
+  { value: 'asian', label: 'Asian', emoji: '🍜' },
+  { value: 'indian', label: 'Indian', emoji: '🍛' },
+  { value: 'latin_american', label: 'Latin American', emoji: '🌮' },
+  { value: 'african', label: 'African', emoji: '🥘' },
+  { value: 'middle_eastern', label: 'Middle Eastern', emoji: '🧆' },
+  { value: 'european', label: 'European', emoji: '🥖' },
+  { value: 'fusion', label: 'Fusion', emoji: '✨' },
+];
+
+const lifeStages = [
+  { value: 'general', label: 'General Adult' },
+  { value: 'children', label: 'Children (Nutrient-Dense)' },
+  { value: 'pregnancy', label: 'Pregnancy (Folate/Iron Focus)' },
+  { value: 'seniors', label: 'Seniors (Easy Prep, Bone Health)' },
+];
+
 const groceryCategories = ['Proteins', 'Vegetables', 'Fruits', 'Grains', 'Dairy/Alternatives', 'Other'];
 
 const commonAllergens = [
@@ -67,8 +86,11 @@ export default function HealthDietHub() {
   const [cuisinePreferences, setCuisinePreferences] = useState([]);
   const [cookingTime, setCookingTime] = useState('any');
   const [skillLevel, setSkillLevel] = useState('intermediate');
+  const [culturalStyle, setCulturalStyle] = useState('none');
+  const [lifeStage, setLifeStage] = useState('general');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
+  const [generatingImages, setGeneratingImages] = useState(false);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const [planName, setPlanName] = useState('');
   const [isFetchingPrices, setIsFetchingPrices] = useState(false);
@@ -227,14 +249,18 @@ export default function HealthDietHub() {
     const cuisineText = cuisinePreferences.length > 0 ? `- Preferred Cuisines: ${cuisinePreferences.join(', ')}` : '';
     const timeText = cookingTime !== 'any' ? `- Cooking Time Preference: ${cookingTime}` : '';
     const skillText = `- Cooking Skill Level: ${skillLevel}`;
+    const culturalText = culturalStyle !== 'none' ? `- CULTURAL STYLE: ${culturalStyle.toUpperCase()} - All meals must be authentic to this cuisine with traditional ingredients, spices, and cooking methods` : '';
+    const lifeStageText = lifeStage !== 'general' ? `- LIFE STAGE: ${lifeStage.toUpperCase()} - Adjust portions, textures, and nutrients accordingly` : '';
 
-    const prompt = `You are a professional nutritionist. Create a ${daysCount}-day personalized meal plan.
+    const prompt = `You are a professional nutritionist specializing in culturally authentic, health-focused meal planning. Create a ${daysCount}-day personalized meal plan.
 
 HEALTH PROFILE:
 - Primary Goal: ${goalDescription}
 - ${healthContext}
 - Number of people: ${numPeople}
 - Plan Budget Target: $${weeklyBudget}
+${culturalText}
+${lifeStageText}
 ${allergenText}
 ${cuisineText}
 ${timeText}
@@ -250,15 +276,28 @@ IMPORTANT REQUIREMENTS:
 - Each meal must clearly show "Serves ${numPeople}" and calories PER PERSON
 - If muscle gain/athletic goal: prioritize high protein (1.6-2g/kg), show macro breakdown
 - NEVER include allergens: ${allergens.join(', ') || 'none specified'}
+${culturalStyle !== 'none' ? `- ALL meals must be ${culturalStyle} style with authentic spices, techniques, and presentation` : ''}
+${lifeStage === 'children' ? '- Make meals fun, colorful, nutrient-dense, easy to eat' : ''}
+${lifeStage === 'pregnancy' ? '- Focus on folate, iron, calcium, omega-3; avoid raw/undercooked foods' : ''}
+${lifeStage === 'seniors' ? '- Easy to chew/digest, bone health focus, simple preparation' : ''}
 
 For each day, provide:
 - Breakfast, Lunch, Dinner, and Snacks
-- Each meal: name, brief description, calories PER PERSON, protein/carbs/fat grams, and health benefit note
-- Make meals practical, budget-friendly, and aligned with their health goals
+- Each meal MUST include: 
+  * name (culturally appropriate)
+  * description
+  * calories PER PERSON (as string like "400 kcal")
+  * protein, carbs, fat (in grams, as numbers)
+  * prepSteps (array of 3-5 clear cooking steps)
+  * prepTime (e.g., "15 minutes")
+  * difficulty (Easy/Medium/Hard)
+  * equipment (array, e.g., ["skillet", "cutting board"])
+  * healthBenefit (specific health benefit for the goal, e.g., "Turmeric supports liver detoxification")
 
 Return a JSON object with the meal plan, health notes, estimated weekly cost, and average daily macros.`;
 
     try {
+      // Generate meal plan
       const response = await base44.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: {
@@ -344,18 +383,64 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       setGeneratedPlan(response);
       setCheckedItems(new Set());
 
+      const culturalLabel = culturalStyle !== 'none' ? ` ${culturalStyles.find(s => s.value === culturalStyle)?.label}` : '';
       const budgetText = weeklyBudget ? ` ($${weeklyBudget})` : '';
       const peopleText = numPeople > 1 ? ` for ${numPeople}` : '';
-      setPlanName(`${goalDescription} Plan${peopleText}${budgetText} - ${new Date().toLocaleDateString()}`);
+      setPlanName(`${goalDescription}${culturalLabel} Plan${peopleText}${budgetText} - ${new Date().toLocaleDateString()}`);
 
       // Fetch real grocery prices
       fetchGroceryPrices(response);
-    } catch (error) {
+
+      // Generate images for meals in background
+      generateMealImages(response);
+      } catch (error) {
       toast.error('Failed to generate meal plan');
       console.error(error);
-    } finally {
+      } finally {
       setIsGenerating(false);
-    }
+      }
+      };
+
+      const generateMealImages = async (plan) => {
+      if (!plan?.days) return;
+
+      setGeneratingImages(true);
+      const updatedDays = [...plan.days];
+
+      try {
+      // Generate images for first 3 meals to start
+      const imagesToGenerate = [];
+      for (let i = 0; i < Math.min(2, plan.days.length); i++) {
+        const day = plan.days[i];
+        ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+          if (day[mealType]?.name) {
+            imagesToGenerate.push({ dayIndex: i, mealType, mealName: day[mealType].name });
+          }
+        });
+      }
+
+      // Generate images one by one (to avoid rate limits)
+      for (const { dayIndex, mealType, mealName } of imagesToGenerate.slice(0, 3)) {
+        try {
+          const culturalContext = culturalStyle !== 'none' ? `${culturalStyle} style ` : '';
+          const result = await base44.integrations.Core.GenerateImage({
+            prompt: `Professional food photography of ${culturalContext}${mealName}, appetizing presentation, natural lighting, high quality, restaurant style plating`
+          });
+
+          if (result?.url) {
+            updatedDays[dayIndex][mealType].imageUrl = result.url;
+            setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
+          }
+        } catch (err) {
+          console.log('Image generation skipped for', mealName);
+        }
+      }
+      } catch (error) {
+      console.log('Image generation completed with some skips');
+      } finally {
+      setGeneratingImages(false);
+      }
+      };
   };
 
   const handleSavePlan = async () => {
@@ -380,31 +465,69 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       current_total_cost: currentTotalCost,
       grocery_list: groceryList,
       macros: generatedPlan.average_daily_macros || null,
+      cultural_style: culturalStyle,
+      life_stage: lifeStage,
       days: generatedPlan.days.map(day => ({
         day: day.day || 'Day',
         breakfast: {
           name: day.breakfast?.name || 'Breakfast',
           calories: day.breakfast?.calories || '400 kcal',
-          nutrients: day.breakfast?.health_benefit || '',
-          prepTip: day.breakfast?.description || ''
+          protein: day.breakfast?.protein,
+          carbs: day.breakfast?.carbs,
+          fat: day.breakfast?.fat,
+          nutrients: day.breakfast?.healthBenefit || '',
+          prepTip: day.breakfast?.description || '',
+          prepSteps: day.breakfast?.prepSteps || [],
+          prepTime: day.breakfast?.prepTime || '',
+          difficulty: day.breakfast?.difficulty || '',
+          equipment: day.breakfast?.equipment || [],
+          healthBenefit: day.breakfast?.healthBenefit || '',
+          imageUrl: day.breakfast?.imageUrl || ''
         },
         lunch: {
           name: day.lunch?.name || 'Lunch',
           calories: day.lunch?.calories || '500 kcal',
-          nutrients: day.lunch?.health_benefit || '',
-          prepTip: day.lunch?.description || ''
+          protein: day.lunch?.protein,
+          carbs: day.lunch?.carbs,
+          fat: day.lunch?.fat,
+          nutrients: day.lunch?.healthBenefit || '',
+          prepTip: day.lunch?.description || '',
+          prepSteps: day.lunch?.prepSteps || [],
+          prepTime: day.lunch?.prepTime || '',
+          difficulty: day.lunch?.difficulty || '',
+          equipment: day.lunch?.equipment || [],
+          healthBenefit: day.lunch?.healthBenefit || '',
+          imageUrl: day.lunch?.imageUrl || ''
         },
         dinner: {
           name: day.dinner?.name || 'Dinner',
           calories: day.dinner?.calories || '600 kcal',
+          protein: day.dinner?.protein,
+          carbs: day.dinner?.carbs,
+          fat: day.dinner?.fat,
           nutrients: day.dinner?.health_benefit || '',
-          prepTip: day.dinner?.description || ''
+          prepTip: day.dinner?.description || '',
+          prepSteps: day.dinner?.prepSteps || [],
+          prepTime: day.dinner?.prepTime || '',
+          difficulty: day.dinner?.difficulty || '',
+          equipment: day.dinner?.equipment || [],
+          healthBenefit: day.dinner?.healthBenefit || '',
+          imageUrl: day.dinner?.imageUrl || ''
         },
         snacks: {
           name: day.snacks?.name || 'Mixed nuts',
           calories: day.snacks?.calories || '150-200 kcal',
-          nutrients: day.snacks?.health_benefit || 'Healthy fats',
-          prepTip: day.snacks?.description || 'Portion control'
+          protein: day.snacks?.protein,
+          carbs: day.snacks?.carbs,
+          fat: day.snacks?.fat,
+          nutrients: day.snacks?.healthBenefit || 'Healthy fats',
+          prepTip: day.snacks?.description || 'Portion control',
+          prepSteps: day.snacks?.prepSteps || [],
+          prepTime: day.snacks?.prepTime || '',
+          difficulty: day.snacks?.difficulty || '',
+          equipment: day.snacks?.equipment || [],
+          healthBenefit: day.snacks?.healthBenefit || '',
+          imageUrl: day.snacks?.imageUrl || ''
         }
       })),
       preferences: {
@@ -515,6 +638,52 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                 );
               })}
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Cultural Style */}
+          <div>
+            <Label className="mb-3 block flex items-center gap-2">
+              <span className="text-lg">🌍</span>
+              Cultural Cuisine Style
+            </Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {culturalStyles.map(style => (
+                <button
+                  key={style.value}
+                  onClick={() => setCulturalStyle(style.value)}
+                  className={`p-3 rounded-lg border-2 transition-all text-left ${
+                    culturalStyle === style.value
+                      ? 'border-indigo-600 bg-indigo-50'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{style.emoji}</div>
+                  <div className="text-sm font-medium">{style.label}</div>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              AI will adapt recipes to your selected cultural style while preserving health goals
+            </p>
+          </div>
+
+          {/* Life Stage */}
+          <div>
+            <Label className="mb-2 block">Life Stage / Age Group</Label>
+            <Select value={lifeStage} onValueChange={setLifeStage}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {lifeStages.map(stage => (
+                  <SelectItem key={stage.value} value={stage.value}>
+                    {stage.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Separator />

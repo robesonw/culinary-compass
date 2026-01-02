@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles } from 'lucide-react';
+import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles, Clock, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import MealCard from '../meals/MealCard';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -382,6 +383,18 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
     'custom': 'bg-purple-100 text-purple-700 border-purple-200',
   };
 
+  const culturalEmojis = {
+    mediterranean: '🫒',
+    asian: '🍜',
+    indian: '🍛',
+    latin_american: '🌮',
+    african: '🥘',
+    middle_eastern: '🧆',
+    european: '🥖',
+    fusion: '✨',
+    none: '🌍'
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -389,10 +402,20 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
           <div className="flex items-start justify-between">
             <div>
               <DialogTitle className="text-2xl mb-2">{plan.name}</DialogTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary" className={`${dietColors[plan.diet_type]} border capitalize`}>
                   {plan.diet_type?.replace(/-/g, ' ')}
                 </Badge>
+                {plan.cultural_style && plan.cultural_style !== 'none' && (
+                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 border-indigo-200 capitalize">
+                    {culturalEmojis[plan.cultural_style]} {plan.cultural_style?.replace(/_/g, ' ')}
+                  </Badge>
+                )}
+                {plan.life_stage && plan.life_stage !== 'general' && (
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200 capitalize">
+                    {plan.life_stage}
+                  </Badge>
+                )}
                 <span className="text-sm text-slate-500">
                   {plan.days?.length || 0} days
                 </span>
@@ -735,34 +758,72 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                             </div>
                                           )}
 
-                                          <div className="space-y-3">
-                                            <div className="flex gap-3">
-                                              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                                                <Pill className="w-4 h-4 text-emerald-600" />
+                                          <div className="space-y-4">
+                                            {/* Health Benefit */}
+                                            {meal.healthBenefit && (
+                                              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                                                <div className="flex items-start gap-2">
+                                                  <Heart className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                                  <div>
+                                                    <p className="text-xs font-medium text-emerald-900 mb-0.5">Why This Helps</p>
+                                                    <p className="text-sm text-emerald-700">{meal.healthBenefit}</p>
+                                                  </div>
+                                                </div>
                                               </div>
-                                              <div>
-                                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                                  Nutrients
-                                                </p>
-                                                <p className="text-sm text-slate-700 leading-relaxed">
-                                                  {meal.nutrients}
-                                                </p>
-                                              </div>
+                                            )}
+
+                                            {/* Prep Info */}
+                                            <div className="grid grid-cols-3 gap-2 text-xs">
+                                              {meal.prepTime && (
+                                                <div className="flex items-center gap-1 text-slate-600">
+                                                  <Clock className="w-3 h-3" />
+                                                  {meal.prepTime}
+                                                </div>
+                                              )}
+                                              {meal.difficulty && (
+                                                <div className="flex items-center gap-1 text-slate-600">
+                                                  <ChefHat className="w-3 h-3" />
+                                                  {meal.difficulty}
+                                                </div>
+                                              )}
+                                              {meal.equipment?.length > 0 && (
+                                                <div className="flex items-center gap-1 text-slate-600">
+                                                  <Wrench className="w-3 h-3" />
+                                                  {meal.equipment.length} tools
+                                                </div>
+                                              )}
                                             </div>
 
-                                            <div className="flex gap-3">
-                                              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0">
-                                                <ChefHat className="w-4 h-4 text-violet-600" />
-                                              </div>
+                                            {/* Prep Steps */}
+                                            {meal.prepSteps?.length > 0 && (
                                               <div>
-                                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                                  Prep Tip
-                                                </p>
-                                                <p className="text-sm text-slate-700 leading-relaxed">
-                                                  {meal.prepTip}
-                                                </p>
+                                                <p className="text-xs font-medium text-slate-700 mb-2">Preparation Steps</p>
+                                                <ol className="space-y-1.5 text-sm text-slate-600">
+                                                  {meal.prepSteps.map((step, idx) => (
+                                                    <li key={idx} className="flex gap-2">
+                                                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-medium">
+                                                        {idx + 1}
+                                                      </span>
+                                                      <span className="flex-1">{step}</span>
+                                                    </li>
+                                                  ))}
+                                                </ol>
                                               </div>
-                                            </div>
+                                            )}
+
+                                            {/* Equipment */}
+                                            {meal.equipment?.length > 0 && (
+                                              <div>
+                                                <p className="text-xs font-medium text-slate-700 mb-1">Equipment Needed</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                  {meal.equipment.map((item, idx) => (
+                                                    <Badge key={idx} variant="secondary" className="text-xs">
+                                                      {item}
+                                                    </Badge>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       </div>

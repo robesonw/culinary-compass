@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Loader2, Heart, Users, Calendar, ShoppingCart, Save, Flame, Salad } from 'lucide-react';
+import { Sparkles, Loader2, Heart, Users, Calendar, ShoppingCart, Save, Flame, Salad, DollarSign, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const healthGoals = [
@@ -32,6 +32,17 @@ const healthGoals = [
 
 const groceryCategories = ['Proteins', 'Vegetables', 'Fruits', 'Grains', 'Dairy/Alternatives', 'Other'];
 
+const commonAllergens = [
+  { value: 'nuts', label: 'Nuts' },
+  { value: 'dairy', label: 'Dairy' },
+  { value: 'gluten', label: 'Gluten' },
+  { value: 'shellfish', label: 'Shellfish' },
+  { value: 'eggs', label: 'Eggs' },
+  { value: 'soy', label: 'Soy' },
+  { value: 'fish', label: 'Fish' },
+  { value: 'sesame', label: 'Sesame' },
+];
+
 export default function HealthDietHub() {
   const [healthGoal, setHealthGoal] = useState('liver_health');
   const [foodsLiked, setFoodsLiked] = useState('');
@@ -39,6 +50,8 @@ export default function HealthDietHub() {
   const [customRequirements, setCustomRequirements] = useState('');
   const [duration, setDuration] = useState('week');
   const [numPeople, setNumPeople] = useState(1);
+  const [weeklyBudget, setWeeklyBudget] = useState(100);
+  const [allergens, setAllergens] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [checkedItems, setCheckedItems] = useState(new Set());
@@ -98,24 +111,34 @@ export default function HealthDietHub() {
     const healthContext = getHealthContext();
     const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
     
+    const allergenText = allergens.length > 0 ? `- STRICT ALLERGEN RESTRICTIONS (NEVER include): ${allergens.join(', ')}` : '';
+    
     const prompt = `You are a professional nutritionist. Create a ${daysCount}-day personalized meal plan.
 
 HEALTH PROFILE:
 - Primary Goal: ${goalDescription}
 - ${healthContext}
 - Number of people: ${numPeople}
+- Weekly Budget Target: $${weeklyBudget}
+${allergenText}
 ${customRequirements ? `- Custom Requirements: ${customRequirements}` : ''}
 ${foodsLiked ? `- Foods they enjoy: ${foodsLiked}` : ''}
 ${foodsAvoided ? `- Foods to avoid: ${foodsAvoided}` : ''}
 ${userPrefs?.dietary_restrictions ? `- Dietary restrictions: ${userPrefs.dietary_restrictions}` : ''}
 
+IMPORTANT REQUIREMENTS:
+- Scale ALL portions and ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
+- Keep total weekly cost around $${weeklyBudget} by using affordable, seasonal ingredients
+- Each meal must clearly show "Serves ${numPeople}" and calories PER PERSON
+- If muscle gain/athletic goal: prioritize high protein (1.6-2g/kg), show macro breakdown
+- NEVER include allergens: ${allergens.join(', ') || 'none specified'}
+
 For each day, provide:
 - Breakfast, Lunch, Dinner, and Snacks
-- Each meal should include: name, brief description (1 sentence), calories (range like "400-450 kcal"), and a health benefit note
-- Make meals practical, delicious, and aligned with their health goals
-- Scale ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
+- Each meal: name, brief description, calories PER PERSON, protein/carbs/fat grams, and health benefit note
+- Make meals practical, budget-friendly, and aligned with their health goals
 
-Return a JSON object with the meal plan and health notes.`;
+Return a JSON object with the meal plan, health notes, estimated weekly cost, and average daily macros.`;
 
     try {
       const response = await base44.integrations.Core.InvokeLLM({
@@ -126,6 +149,18 @@ Return a JSON object with the meal plan and health notes.`;
             health_notes: {
               type: "string",
               description: "2-3 sentences about how this plan supports their health goals"
+            },
+            estimated_weekly_cost: {
+              type: "number",
+              description: "Estimated total cost for the week in dollars"
+            },
+            average_daily_macros: {
+              type: "object",
+              properties: {
+                protein: { type: "number", description: "Grams per person per day" },
+                carbs: { type: "number", description: "Grams per person per day" },
+                fat: { type: "number", description: "Grams per person per day" }
+              }
             },
             days: {
               type: "array",
@@ -178,7 +213,10 @@ Return a JSON object with the meal plan and health notes.`;
 
       setGeneratedPlan(response);
       setCheckedItems(new Set());
-      setPlanName(`${goalDescription} Plan - ${new Date().toLocaleDateString()}`);
+
+      const budgetText = weeklyBudget ? ` ($${weeklyBudget}/wk)` : '';
+      const peopleText = numPeople > 1 ? ` for ${numPeople}` : '';
+      setPlanName(`${goalDescription} Plan${peopleText}${budgetText} - ${new Date().toLocaleDateString()}`);
     } catch (error) {
       toast.error('Failed to generate meal plan');
       console.error(error);
@@ -201,6 +239,8 @@ Return a JSON object with the meal plan and health notes.`;
     savePlanMutation.mutate({
       name: planName,
       diet_type: 'custom',
+      estimated_cost: generatedPlan.estimated_weekly_cost || null,
+      macros: generatedPlan.average_daily_macros || null,
       days: generatedPlan.days.map(day => ({
         day: day.day || 'Day',
         breakfast: {
@@ -232,7 +272,9 @@ Return a JSON object with the meal plan and health notes.`;
         health_goal: healthGoal,
         foods_liked: foodsLiked,
         foods_avoided: foodsAvoided,
-        num_people: numPeople
+        num_people: numPeople,
+        weekly_budget: weeklyBudget,
+        allergens: allergens
       }
     });
   };
@@ -346,7 +388,7 @@ Return a JSON object with the meal plan and health notes.`;
 
           <Separator />
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
             {/* Duration */}
             <div>
               <Label className="flex items-center gap-2 mb-2">
@@ -379,9 +421,57 @@ Return a JSON object with the meal plan and health notes.`;
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                     <SelectItem key={n} value={String(n)}>{n} {n === 1 ? 'person' : 'people'}</SelectItem>
                   ))}
-                  <SelectItem value="10+">10+ people</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Weekly Budget */}
+            <div>
+              <Label className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-4 h-4" />
+                Weekly Budget: ${weeklyBudget}
+              </Label>
+              <Input
+                type="range"
+                min="30"
+                max="300"
+                step="10"
+                value={weeklyBudget}
+                onChange={(e) => setWeeklyBudget(Number(e.target.value))}
+                className="cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <span>$30</span>
+                <span>$300</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Allergens */}
+          <div>
+            <Label className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-rose-500" />
+              Strict Allergen Restrictions
+            </Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {commonAllergens.map(allergen => (
+                <div key={allergen.value} className="flex items-center gap-2">
+                  <Checkbox
+                    id={allergen.value}
+                    checked={allergens.includes(allergen.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setAllergens([...allergens, allergen.value]);
+                      } else {
+                        setAllergens(allergens.filter(a => a !== allergen.value));
+                      }
+                    }}
+                  />
+                  <Label htmlFor={allergen.value} className="cursor-pointer text-sm">
+                    {allergen.label}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -436,13 +526,73 @@ Return a JSON object with the meal plan and health notes.`;
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {/* Health Notes */}
-            <Card className="border-emerald-200 bg-emerald-50">
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-emerald-900 mb-2">Health Benefits</h3>
-                <p className="text-sm text-emerald-700">{generatedPlan.health_notes}</p>
-              </CardContent>
-            </Card>
+            {/* Summary Cards */}
+            <div className="grid md:grid-cols-3 gap-4">
+              {/* Health Notes */}
+              <Card className="border-emerald-200 bg-emerald-50 md:col-span-2">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-emerald-900 mb-2 flex items-center gap-2">
+                    <Heart className="w-4 h-4" />
+                    Health Benefits
+                  </h3>
+                  <p className="text-sm text-emerald-700">{generatedPlan.health_notes}</p>
+                </CardContent>
+              </Card>
+
+              {/* Budget Summary */}
+              {generatedPlan.estimated_weekly_cost && (
+                <Card className={`border-2 ${
+                  generatedPlan.estimated_weekly_cost <= weeklyBudget 
+                    ? 'border-emerald-500 bg-emerald-50' 
+                    : 'border-amber-500 bg-amber-50'
+                }`}>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <DollarSign className="w-4 h-4" />
+                      Budget
+                    </h3>
+                    <div className="text-2xl font-bold mb-1">
+                      ${generatedPlan.estimated_weekly_cost}
+                      <span className="text-sm font-normal text-slate-600">/week</span>
+                    </div>
+                    <p className="text-xs">
+                      {generatedPlan.estimated_weekly_cost <= weeklyBudget 
+                        ? `✓ Under your $${weeklyBudget} goal` 
+                        : `${Math.round(((generatedPlan.estimated_weekly_cost - weeklyBudget) / weeklyBudget) * 100)}% over budget`}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Macros Summary */}
+            {generatedPlan.average_daily_macros && (
+              <Card className="border-slate-200">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-3">Average Daily Macros (per person)</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-3 rounded-lg bg-blue-50">
+                      <div className="text-2xl font-bold text-blue-700">
+                        {generatedPlan.average_daily_macros.protein}g
+                      </div>
+                      <div className="text-xs text-slate-600">Protein</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-amber-50">
+                      <div className="text-2xl font-bold text-amber-700">
+                        {generatedPlan.average_daily_macros.carbs}g
+                      </div>
+                      <div className="text-xs text-slate-600">Carbs</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-rose-50">
+                      <div className="text-2xl font-bold text-rose-700">
+                        {generatedPlan.average_daily_macros.fat}g
+                      </div>
+                      <div className="text-xs text-slate-600">Fat</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Plan Name */}
             <Card className="border-slate-200">
@@ -518,13 +668,36 @@ Return a JSON object with the meal plan and health notes.`;
                                   <div className="flex-1">
                                     <div className="flex items-center justify-between mb-2">
                                       <h4 className="font-semibold text-slate-900 capitalize">{mealType}</h4>
-                                      <Badge variant="outline" className="flex items-center gap-1">
-                                        <Flame className="w-3 h-3 text-orange-500" />
-                                        {meal.calories}
-                                      </Badge>
+                                      <div className="flex gap-2">
+                                        <Badge variant="outline" className="flex items-center gap-1">
+                                          <Flame className="w-3 h-3 text-orange-500" />
+                                          {meal.calories}
+                                        </Badge>
+                                        {numPeople > 1 && (
+                                          <Badge variant="outline" className="text-xs">
+                                            Serves {numPeople}
+                                          </Badge>
+                                        )}
+                                      </div>
                                     </div>
                                     <p className="font-medium text-slate-800 mb-1">{meal.name}</p>
                                     <p className="text-sm text-slate-600 mb-2">{meal.description}</p>
+
+                                    {/* Macros if available */}
+                                    {(meal.protein || meal.carbs || meal.fat) && (
+                                      <div className="flex gap-3 mb-2 text-xs">
+                                        {meal.protein && (
+                                          <span className="text-blue-700">P: {meal.protein}g</span>
+                                        )}
+                                        {meal.carbs && (
+                                          <span className="text-amber-700">C: {meal.carbs}g</span>
+                                        )}
+                                        {meal.fat && (
+                                          <span className="text-rose-700">F: {meal.fat}g</span>
+                                        )}
+                                      </div>
+                                    )}
+
                                     <div className="flex items-start gap-2 text-xs">
                                       <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
                                         💚 {meal.health_benefit}
@@ -545,11 +718,32 @@ Return a JSON object with the meal plan and health notes.`;
 
             {/* Grocery List */}
             <Card className="border-slate-200">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5" />
                   Grocery List
+                  {numPeople > 1 && (
+                    <Badge variant="outline" className="ml-2">
+                      Scaled for {numPeople} people
+                    </Badge>
+                  )}
                 </CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const items = Object.entries(groceryList)
+                        .filter(([_, items]) => items.length > 0)
+                        .map(([category, items]) => `${category}:\n${items.map(item => `  • ${item}`).join('\n')}`)
+                        .join('\n\n');
+                      navigator.clipboard.writeText(items);
+                      toast.success('Copied to clipboard');
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-6">

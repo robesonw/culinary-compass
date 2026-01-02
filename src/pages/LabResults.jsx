@@ -230,6 +230,15 @@ export default function LabResults() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <p className="text-sm text-blue-900 font-medium mb-2">📋 Accepted File Types & Analysis</p>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• <strong>PDF files only</strong> (.pdf format)</li>
+              <li>• Our AI automatically extracts biomarkers: ALT, AST, Glucose, Sodium, Potassium, eGFR, BUN, Creatinine</li>
+              <li>• Supports multiple test dates in a single PDF (historical data)</li>
+              <li>• Identifies abnormal values and trends over time</li>
+            </ul>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">

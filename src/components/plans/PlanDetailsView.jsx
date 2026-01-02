@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles, Clock, Wrench, Utensils, X } from 'lucide-react';
+import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles, Clock, Wrench, Utensils, X, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
@@ -46,6 +46,10 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [mealTypeToShare, setMealTypeToShare] = useState(null);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
   const [addRecipeTarget, setAddRecipeTarget] = useState(null);
+  const [showAdjustDialog, setShowAdjustDialog] = useState(false);
+  const [adjustmentType, setAdjustmentType] = useState('');
+  const [adjustmentDetails, setAdjustmentDetails] = useState('');
+  const [isAdjusting, setIsAdjusting] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -449,6 +453,163 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
     }
   };
 
+  const handleAdjustPlan = async () => {
+    if (!adjustmentDetails.trim()) {
+      toast.error('Please provide adjustment details');
+      return;
+    }
+
+    setIsAdjusting(true);
+    try {
+      let prompt = '';
+      const currentPlanContext = JSON.stringify({
+        name: plan.name,
+        days: localDays,
+        macros: plan.macros,
+        budget: plan.estimated_cost,
+        preferences: plan.preferences
+      });
+
+      switch (adjustmentType) {
+        case 'nutrients':
+          prompt = `Adjust this meal plan to optimize for specific nutrients: ${adjustmentDetails}
+          Current plan: ${currentPlanContext}
+          
+          Modify the existing meals or suggest new ones to better meet the nutrient targets while maintaining similar calorie counts and variety.
+          Return the full adjusted meal plan with all ${localDays.length} days.`;
+          break;
+
+        case 'budget':
+          prompt = `Adjust this meal plan to fit the budget constraint: ${adjustmentDetails}
+          Current plan: ${currentPlanContext}
+          
+          Suggest cost-effective substitutions and adjustments to reduce the total cost while maintaining nutritional quality.
+          Return the full adjusted meal plan with all ${localDays.length} days.`;
+          break;
+
+        case 'substitutions':
+          prompt = `Make substitutions in this meal plan based on: ${adjustmentDetails}
+          Current plan: ${currentPlanContext}
+          
+          Replace the specified meals or ingredients with suitable alternatives that match the dietary requirements and preferences.
+          Return the full adjusted meal plan with all ${localDays.length} days.`;
+          break;
+
+        case 'feedback':
+          prompt = `Adjust this meal plan based on user feedback: ${adjustmentDetails}
+          Current plan: ${currentPlanContext}
+          
+          Make appropriate modifications to address the feedback while maintaining the plan's overall structure and nutritional goals.
+          Return the full adjusted meal plan with all ${localDays.length} days.`;
+          break;
+
+        default:
+          toast.error('Invalid adjustment type');
+          return;
+      }
+
+      const adjustedPlan = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            days: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  day: { type: "string" },
+                  breakfast: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      calories: { type: "string" },
+                      protein: { type: "number" },
+                      carbs: { type: "number" },
+                      fat: { type: "number" },
+                      nutrients: { type: "string" },
+                      prepTip: { type: "string" },
+                      prepSteps: { type: "array", items: { type: "string" } },
+                      prepTime: { type: "string" },
+                      difficulty: { type: "string" },
+                      equipment: { type: "array", items: { type: "string" } },
+                      healthBenefit: { type: "string" }
+                    }
+                  },
+                  lunch: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      calories: { type: "string" },
+                      protein: { type: "number" },
+                      carbs: { type: "number" },
+                      fat: { type: "number" },
+                      nutrients: { type: "string" },
+                      prepTip: { type: "string" },
+                      prepSteps: { type: "array", items: { type: "string" } },
+                      prepTime: { type: "string" },
+                      difficulty: { type: "string" },
+                      equipment: { type: "array", items: { type: "string" } },
+                      healthBenefit: { type: "string" }
+                    }
+                  },
+                  dinner: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      calories: { type: "string" },
+                      protein: { type: "number" },
+                      carbs: { type: "number" },
+                      fat: { type: "number" },
+                      nutrients: { type: "string" },
+                      prepTip: { type: "string" },
+                      prepSteps: { type: "array", items: { type: "string" } },
+                      prepTime: { type: "string" },
+                      difficulty: { type: "string" },
+                      equipment: { type: "array", items: { type: "string" } },
+                      healthBenefit: { type: "string" }
+                    }
+                  },
+                  snacks: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      calories: { type: "string" },
+                      protein: { type: "number" },
+                      carbs: { type: "number" },
+                      fat: { type: "number" },
+                      nutrients: { type: "string" },
+                      prepTip: { type: "string" },
+                      prepSteps: { type: "array", items: { type: "string" } },
+                      prepTime: { type: "string" },
+                      difficulty: { type: "string" },
+                      equipment: { type: "array", items: { type: "string" } },
+                      healthBenefit: { type: "string" }
+                    }
+                  }
+                }
+              }
+            },
+            adjustment_summary: { type: "string" }
+          }
+        }
+      });
+
+      if (adjustedPlan?.days) {
+        setLocalDays(adjustedPlan.days);
+        await updatePlanMutation.mutateAsync({ days: adjustedPlan.days });
+        toast.success(adjustedPlan.adjustment_summary || 'Plan adjusted successfully!');
+        setShowAdjustDialog(false);
+        setAdjustmentDetails('');
+      }
+    } catch (error) {
+      toast.error('Failed to adjust plan');
+      console.error(error);
+    } finally {
+      setIsAdjusting(false);
+    }
+  };
+
   const regenerateDay = async (dayIndex) => {
     setRegeneratingDay(dayIndex);
     try {
@@ -577,6 +738,15 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
             </div>
             
             <div className="flex gap-2">
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                onClick={() => setShowAdjustDialog(true)}
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                AI Adjust
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
@@ -1369,6 +1539,95 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
         open={shareMealDialogOpen}
         onOpenChange={setShareMealDialogOpen}
       />
+
+      {/* AI Adjust Plan Dialog */}
+      <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-purple-600" />
+              AI Plan Adjustment
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Adjustment Type</Label>
+              <Select value={adjustmentType} onValueChange={setAdjustmentType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select adjustment type..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nutrients">Optimize for Nutrients</SelectItem>
+                  <SelectItem value="budget">Adjust for Budget</SelectItem>
+                  <SelectItem value="substitutions">Substitute Meals/Ingredients</SelectItem>
+                  <SelectItem value="feedback">Apply User Feedback</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Details</Label>
+              {adjustmentType === 'nutrients' && (
+                <Input
+                  placeholder="e.g., increase protein to 150g/day, reduce carbs"
+                  value={adjustmentDetails}
+                  onChange={(e) => setAdjustmentDetails(e.target.value)}
+                />
+              )}
+              {adjustmentType === 'budget' && (
+                <Input
+                  placeholder="e.g., reduce to $75/week, use cheaper proteins"
+                  value={adjustmentDetails}
+                  onChange={(e) => setAdjustmentDetails(e.target.value)}
+                />
+              )}
+              {adjustmentType === 'substitutions' && (
+                <Input
+                  placeholder="e.g., replace all chicken with fish, no dairy"
+                  value={adjustmentDetails}
+                  onChange={(e) => setAdjustmentDetails(e.target.value)}
+                />
+              )}
+              {adjustmentType === 'feedback' && (
+                <Input
+                  placeholder="e.g., Day 3 dinner is too spicy, need quicker breakfast options"
+                  value={adjustmentDetails}
+                  onChange={(e) => setAdjustmentDetails(e.target.value)}
+                />
+              )}
+              <p className="text-xs text-slate-500 mt-2">
+                {adjustmentType === 'nutrients' && 'Specify target macros or micronutrients (e.g., high protein, low sodium)'}
+                {adjustmentType === 'budget' && 'Provide budget constraints or cost-saving preferences'}
+                {adjustmentType === 'substitutions' && 'List specific foods to replace or avoid'}
+                {adjustmentType === 'feedback' && 'Describe issues or preferences for specific meals or days'}
+              </p>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <Button variant="outline" onClick={() => setShowAdjustDialog(false)} disabled={isAdjusting}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAdjustPlan} 
+                disabled={isAdjusting || !adjustmentType || !adjustmentDetails.trim()}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              >
+                {isAdjusting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Adjusting Plan...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Apply Adjustment
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Recipe to Plan Dialog */}
       <Dialog open={showAddRecipeDialog} onOpenChange={setShowAddRecipeDialog}>

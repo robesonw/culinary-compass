@@ -13,6 +13,7 @@ import Settings from './pages/Settings';
 import SharedMealPlans from './pages/SharedMealPlans';
 import SharedRecipes from './pages/SharedRecipes';
 import Home from './pages/Home';
+import Index from './pages/Index';
 import __Layout from './Layout.jsx';
 
 
@@ -32,6 +33,7 @@ export const PAGES = {
     "SharedMealPlans": SharedMealPlans,
     "SharedRecipes": SharedRecipes,
     "Home": Home,
+    "Index": Index,
 }
 
 export const pagesConfig = {

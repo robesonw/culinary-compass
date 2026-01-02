@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2 } from 'lucide-react';
+import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2, Share2, Mail, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function GroceryLists() {
@@ -22,6 +24,8 @@ export default function GroceryLists() {
   const [addingItem, setAddingItem] = useState(null);
   const [newItemName, setNewItemName] = useState('');
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [organizationMode, setOrganizationMode] = useState('category'); // 'category' or 'aisle'
 
   const queryClient = useQueryClient();
 
@@ -218,18 +222,91 @@ export default function GroceryLists() {
   const totalItems = groceryList ? Object.values(groceryList).flat().length : 0;
   const checkedCount = checkedItems.size;
 
-  const copyToClipboard = () => {
-    const allItems = Object.entries(groceryList || {})
-      .map(([category, items]) => 
-        items.length > 0 
-          ? `${category}:\n${items.map(i => `  □ ${i.name}${i.price ? ` - $${i.price.toFixed(2)}` : ''}`).join('\n')}`
-          : ''
-      )
+  const aisleMapping = {
+    'Proteins': 'Meat & Seafood',
+    'Vegetables': 'Produce',
+    'Fruits': 'Produce',
+    'Grains': 'Bakery & Grains',
+    'Dairy/Alternatives': 'Dairy & Refrigerated',
+    'Other': 'Pantry & Other'
+  };
+
+  const organizedList = useMemo(() => {
+    if (!groceryList) return {};
+    
+    if (organizationMode === 'aisle') {
+      const aisleList = {};
+      Object.entries(groceryList).forEach(([category, items]) => {
+        const aisle = aisleMapping[category] || 'Pantry & Other';
+        if (!aisleList[aisle]) aisleList[aisle] = [];
+        aisleList[aisle].push(...items);
+      });
+      return aisleList;
+    }
+    
+    return groceryList;
+  }, [groceryList, organizationMode]);
+
+  const formatGroceryList = (includeChecked = true) => {
+    const items = Object.entries(organizedList || {})
+      .map(([category, items]) => {
+        const filteredItems = includeChecked 
+          ? items 
+          : items.filter(i => !checkedItems.has(i.name));
+        
+        if (filteredItems.length === 0) return '';
+        
+        return `${category}:\n${filteredItems.map(i => {
+          const check = checkedItems.has(i.name) ? '☑' : '☐';
+          const qty = i.quantity && i.quantity !== 1 ? ` (${i.quantity}${i.unit ? ' ' + i.unit : ''})` : '';
+          const price = i.price ? ` - $${(i.price * (i.quantity || 1)).toFixed(2)}` : '';
+          const notes = i.notes ? ` [${i.notes}]` : '';
+          return `  ${check} ${i.name}${qty}${price}${notes}`;
+        }).join('\n')}`;
+      })
       .filter(Boolean)
       .join('\n\n');
     
-    navigator.clipboard.writeText(allItems);
+    const totalCost = Object.values(groceryList || {})
+      .flat()
+      .reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+    
+    return `${items}\n\n--- Total: $${totalCost.toFixed(2)} ---`;
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(formatGroceryList());
     toast.success('Copied to clipboard');
+  };
+
+  const shareViaEmail = () => {
+    const subject = encodeURIComponent(`Grocery List - ${selectedPlan?.name || 'Shopping List'}`);
+    const body = encodeURIComponent(formatGroceryList());
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+  };
+
+  const shareViaSMS = () => {
+    const body = encodeURIComponent(formatGroceryList(false)); // Only unchecked items
+    window.open(`sms:?body=${body}`, '_blank');
+  };
+
+  const downloadAsPDF = async () => {
+    try {
+      toast.info('Generating PDF...');
+      const content = formatGroceryList();
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `grocery-list-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Downloaded!');
+    } catch (error) {
+      toast.error('Failed to download');
+    }
   };
 
   return (
@@ -268,11 +345,11 @@ export default function GroceryLists() {
 
             {selectedPlan && (
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={copyToClipboard}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy
+                <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={downloadAsPDF}>
                   <Download className="w-4 h-4 mr-2" />
                   Export
                 </Button>
@@ -281,6 +358,26 @@ export default function GroceryLists() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Organization Toggle */}
+      {selectedPlan && groceryList && (
+        <Card className="border-slate-200 bg-slate-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Organize By:</Label>
+              <Select value={organizationMode} onValueChange={setOrganizationMode}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="category">Food Category</SelectItem>
+                  <SelectItem value="aisle">Store Aisle</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Grocery List */}
       {selectedPlan && groceryList ? (
@@ -361,7 +458,7 @@ export default function GroceryLists() {
 
           {/* Items List */}
           <div className="lg:col-span-2 space-y-4">
-            {Object.entries(groceryList).map(([category, items]) => {
+            {Object.entries(organizedList).map(([category, items]) => {
               if (!items || items.length === 0) return null;
               const colors = categoryColors[category];
               const allChecked = items.every(item => checkedItems.has(item.name));
@@ -633,6 +730,68 @@ export default function GroceryLists() {
           <span className="text-sm text-slate-700">Fetching price...</span>
         </div>
       )}
-    </div>
-  );
-}
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share Grocery List</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                copyToClipboard();
+                setShareDialogOpen(false);
+              }}
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy to Clipboard
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                shareViaEmail();
+                setShareDialogOpen(false);
+              }}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Share via Email
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                shareViaSMS();
+                setShareDialogOpen(false);
+              }}
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Share via SMS (Unchecked Items)
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                downloadAsPDF();
+                setShareDialogOpen(false);
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download as Text File
+            </Button>
+            <Separator />
+            <div className="text-xs text-slate-500 space-y-1">
+              <p>• Copy: All items with checkboxes and prices</p>
+              <p>• Email: Full list with all details</p>
+              <p>• SMS: Only unchecked items (what you still need)</p>
+              <p>• Download: Complete list as text file</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      </div>
+      );
+      }

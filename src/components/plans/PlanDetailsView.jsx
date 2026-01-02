@@ -821,19 +821,45 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                     <ShoppingCart className="w-5 h-5 text-indigo-600" />
                     <CardTitle>Grocery List</CardTitle>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const items = Object.entries(groceryList || {})
-                        .map(([cat, items]) => `${cat}:\n${items.map(i => `  • ${i.name}${i.price ? ` - $${i.price.toFixed(2)}` : ''}`).join('\n')}`)
-                        .join('\n\n');
-                      navigator.clipboard.writeText(items);
-                      toast.success('Copied to clipboard');
-                    }}
-                  >
-                    Copy List
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const items = Object.entries(groceryList || {})
+                          .map(([cat, items]) => {
+                            const itemsList = items.map(i => {
+                              const qty = i.quantity && i.quantity !== 1 ? ` (${i.quantity}${i.unit ? ' ' + i.unit : ''})` : '';
+                              const price = i.price ? ` - $${(i.price * (i.quantity || 1)).toFixed(2)}` : '';
+                              const notes = i.notes ? ` [${i.notes}]` : '';
+                              return `  • ${i.name}${qty}${price}${notes}`;
+                            }).join('\n');
+                            return `${cat}:\n${itemsList}`;
+                          })
+                          .join('\n\n');
+                        const total = Object.values(groceryList || {}).flat().reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+                        navigator.clipboard.writeText(`${items}\n\n--- Total: $${total.toFixed(2)} ---`);
+                        toast.success('Copied to clipboard');
+                      }}
+                    >
+                      Copy List
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const content = Object.entries(groceryList || {})
+                          .map(([cat, items]) => `${cat}:\n${items.map(i => `  • ${i.name}`).join('\n')}`)
+                          .join('\n\n');
+                        const subject = encodeURIComponent(`Grocery List - ${plan.name}`);
+                        const body = encodeURIComponent(content);
+                        window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+                      }}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Cost Summary */}

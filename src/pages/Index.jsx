@@ -4,7 +4,7 @@ import { createPageUrl } from '../utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, TrendingUp, Calendar, ArrowRight } from 'lucide-react';
+import { Sparkles, TrendingUp, Calendar, ArrowRight, Star, Quote } from 'lucide-react';
 
 export default function Index() {
   const features = [
@@ -42,7 +42,7 @@ export default function Index() {
               <br />
               <span className="text-yellow-200">& Nutrition Hub</span>
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-white drop-shadow-lg mb-10 max-w-3xl mx-auto font-medium">
               Transform your eating habits with AI-powered meal planning, smart nutrition tracking, 
               and a supportive community—all in one beautiful platform
             </p>
@@ -107,13 +107,66 @@ export default function Index() {
         </div>
       </section>
 
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-indigo-100 text-indigo-700">Testimonials</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+              What Our Users Say
+            </h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Join thousands of happy users transforming their health
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                name: 'Sarah Mitchell',
+                role: 'Health Enthusiast',
+                content: 'This platform completely changed how I approach meal planning. The AI recipes are creative and perfectly suited to my dietary needs!',
+                rating: 5
+              },
+              {
+                name: 'James Chen',
+                role: 'Fitness Coach',
+                content: 'I recommend this to all my clients. The nutrition tracking is accurate and the meal plans save so much time. Absolutely game-changing!',
+                rating: 5
+              },
+              {
+                name: 'Maria Rodriguez',
+                role: 'Busy Professional',
+                content: 'As someone with a hectic schedule, having AI-generated meal plans that fit my lifestyle is incredible. I\'ve never eaten healthier!',
+                rating: 5
+              }
+            ].map((review, i) => (
+              <Card key={i} className="border-slate-200 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(review.rating)].map((_, j) => (
+                      <Star key={j} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <Quote className="w-8 h-8 text-indigo-200 mb-3" />
+                  <p className="text-slate-700 mb-4 italic">"{review.content}"</p>
+                  <div className="pt-4 border-t border-slate-100">
+                    <p className="font-semibold text-slate-900">{review.name}</p>
+                    <p className="text-sm text-slate-500">{review.role}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg mb-6">
             Ready to Transform Your Health?
           </h2>
-          <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl text-white drop-shadow-md mb-10 max-w-2xl mx-auto font-medium">
             Join thousands of people achieving their health goals with our platform
           </p>
           <Button asChild size="lg" className="bg-white text-indigo-600 hover:bg-white/90 shadow-xl text-lg px-10 py-6">

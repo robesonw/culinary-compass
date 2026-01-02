@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -29,8 +30,16 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [addingItem, setAddingItem] = useState(null);
   const [newItemName, setNewItemName] = useState('');
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  const [viewMode, setViewMode] = useState('calendar'); // 'calendar' or 'detailed'
+  const [localDays, setLocalDays] = useState(null);
 
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    if (plan?.days) {
+      setLocalDays(plan.days);
+    }
+  }, [plan]);
 
   React.useEffect(() => {
     if (plan?.grocery_list) {
@@ -162,6 +171,72 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
     saveGroceryList();
   };
 
+  const handleDragEnd = (result) => {
+    if (!result.destination || !localDays) return;
+
+    const { source, destination } = result;
+    
+    // Parse the droppableId format: "day-{dayIndex}-{mealType}"
+    const sourceDay = parseInt(source.droppableId.split('-')[1]);
+    const sourceMeal = source.droppableId.split('-')[2];
+    const destDay = parseInt(destination.droppableId.split('-')[1]);
+    const destMeal = destination.droppableId.split('-')[2];
+
+    const newDays = [...localDays];
+    const sourceMealData = { ...newDays[sourceDay][sourceMeal] };
+    const destMealData = { ...newDays[destDay][destMeal] };
+
+    // Swap meals
+    newDays[sourceDay][sourceMeal] = destMealData;
+    newDays[destDay][destMeal] = sourceMealData;
+
+    setLocalDays(newDays);
+    
+    // Save to backend
+    updatePlanMutation.mutate({ days: newDays });
+    toast.success('Meals swapped successfully');
+  };
+
+  const calculateTotalNutrition = () => {
+    if (!localDays) return null;
+    
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    let mealCount = 0;
+
+    localDays.forEach(day => {
+      ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+        const meal = day[mealType];
+        if (meal) {
+          // Parse calories from string like "400 kcal"
+          const caloriesMatch = meal.calories?.match(/(\d+)/);
+          if (caloriesMatch) {
+            totalCalories += parseInt(caloriesMatch[1]);
+            mealCount++;
+          }
+          if (meal.protein) totalProtein += meal.protein;
+          if (meal.carbs) totalCarbs += meal.carbs;
+          if (meal.fat) totalFat += meal.fat;
+        }
+      });
+    });
+
+    return {
+      totalCalories,
+      avgCalories: mealCount > 0 ? Math.round(totalCalories / localDays.length) : 0,
+      totalProtein: Math.round(totalProtein),
+      totalCarbs: Math.round(totalCarbs),
+      totalFat: Math.round(totalFat),
+      avgProtein: localDays.length > 0 ? Math.round(totalProtein / localDays.length) : 0,
+      avgCarbs: localDays.length > 0 ? Math.round(totalCarbs / localDays.length) : 0,
+      avgFat: localDays.length > 0 ? Math.round(totalFat / localDays.length) : 0,
+    };
+  };
+
+  const nutritionStats = calculateTotalNutrition();
+
   if (!plan) return null;
 
   const dietColors = {
@@ -208,27 +283,166 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
           </TabsList>
 
           <TabsContent value="meals" className="space-y-6">
-            {/* Day Selector */}
-            <div className="flex gap-2 overflow-x-auto pb-2">
-            {plan.days?.map((day, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedDay(index)}
-                className={`
-                  px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all
-                  ${selectedDay === index 
-                    ? 'bg-indigo-600 text-white shadow-md' 
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }
-                `}
-              >
-                {day.day}
-              </button>
-            ))}
-          </div>
+            {/* Nutrition Summary */}
+            {nutritionStats && (
+              <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp className="w-4 h-4 text-indigo-600" />
+                    <h3 className="font-semibold text-indigo-900">Plan Nutrition Overview</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-white/80 rounded-lg p-3 text-center">
+                      <div className="text-xs text-slate-600 mb-1">Total Calories</div>
+                      <div className="text-xl font-bold text-slate-900">{nutritionStats.totalCalories}</div>
+                      <div className="text-[10px] text-slate-500">~{nutritionStats.avgCalories}/day</div>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-3 text-center">
+                      <div className="text-xs text-blue-600 mb-1">Protein</div>
+                      <div className="text-xl font-bold text-blue-700">{nutritionStats.totalProtein}g</div>
+                      <div className="text-[10px] text-slate-500">~{nutritionStats.avgProtein}g/day</div>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-3 text-center">
+                      <div className="text-xs text-amber-600 mb-1">Carbs</div>
+                      <div className="text-xl font-bold text-amber-700">{nutritionStats.totalCarbs}g</div>
+                      <div className="text-[10px] text-slate-500">~{nutritionStats.avgCarbs}g/day</div>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-3 text-center">
+                      <div className="text-xs text-rose-600 mb-1">Fat</div>
+                      <div className="text-xl font-bold text-rose-700">{nutritionStats.totalFat}g</div>
+                      <div className="text-[10px] text-slate-500">~{nutritionStats.avgFat}g/day</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Selected Day Details */}
-          {plan.days?.[selectedDay] && (
+            {/* View Mode Toggle */}
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                <Button
+                  variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('calendar')}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Calendar View
+                </Button>
+                <Button
+                  variant={viewMode === 'detailed' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('detailed')}
+                >
+                  <ChefHat className="w-4 h-4 mr-2" />
+                  Detailed View
+                </Button>
+              </div>
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <ArrowLeftRight className="w-3 h-3" />
+                Drag to swap meals
+              </Badge>
+            </div>
+
+            <DragDropContext onDragEnd={handleDragEnd}>
+              {viewMode === 'calendar' ? (
+                /* Calendar/Weekly Overview */
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {localDays?.map((day, dayIndex) => (
+                    <Card key={dayIndex} className="border-slate-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center justify-between">
+                          <span>{day.day}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {['breakfast', 'lunch', 'dinner', 'snacks'].reduce((total, mealType) => {
+                              const meal = day[mealType];
+                              const match = meal?.calories?.match(/(\d+)/);
+                              return total + (match ? parseInt(match[1]) : 0);
+                            }, 0)} kcal
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {['breakfast', 'lunch', 'dinner', 'snacks'].map(mealType => {
+                          const meal = day[mealType];
+                          if (!meal) return null;
+
+                          return (
+                            <Droppable key={`${dayIndex}-${mealType}`} droppableId={`day-${dayIndex}-${mealType}`}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.droppableProps}
+                                  className={`rounded-lg transition-colors ${
+                                    snapshot.isDraggingOver ? 'bg-indigo-50 border-2 border-indigo-300' : ''
+                                  }`}
+                                >
+                                  <Draggable draggableId={`meal-${dayIndex}-${mealType}`} index={0}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={`p-2 rounded-lg border bg-white cursor-move hover:shadow-md transition-all ${
+                                          snapshot.isDragging ? 'shadow-lg border-indigo-400 bg-indigo-50' : 'border-slate-200'
+                                        }`}
+                                      >
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="text-[10px] text-slate-500 uppercase font-medium mb-1">
+                                              {mealIcons[mealType]} {mealType}
+                                            </div>
+                                            <div className="text-xs font-medium text-slate-800 truncate">
+                                              {meal.name}
+                                            </div>
+                                          </div>
+                                          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 whitespace-nowrap">
+                                            {meal.calories}
+                                          </Badge>
+                                        </div>
+                                        {(meal.protein || meal.carbs || meal.fat) && (
+                                          <div className="flex gap-2 mt-1.5 text-[10px]">
+                                            {meal.protein && <span className="text-blue-600">P:{meal.protein}g</span>}
+                                            {meal.carbs && <span className="text-amber-600">C:{meal.carbs}g</span>}
+                                            {meal.fat && <span className="text-rose-600">F:{meal.fat}g</span>}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                /* Detailed View */
+                <>
+                  {/* Day Selector */}
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {localDays?.map((day, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedDay(index)}
+                        className={`
+                          px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all
+                          ${selectedDay === index 
+                            ? 'bg-indigo-600 text-white shadow-md' 
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }
+                        `}
+                      >
+                        {day.day}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Selected Day Details */}
+                  {localDays?.[selectedDay] && (
             <motion.div
               key={selectedDay}
               initial={{ opacity: 0, x: 20 }}
@@ -240,66 +454,121 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                 if (!meal) return null;
 
                 return (
-                  <Card key={mealType} className="border-slate-200">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="text-3xl">{mealIcons[mealType]}</div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-lg text-slate-900 capitalize">
-                              {mealType}
-                            </h3>
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              <Flame className="w-3 h-3 text-orange-500" />
-                              {meal.calories}
-                            </Badge>
-                          </div>
-                          
-                          <h4 className="text-slate-800 font-medium mb-4">
-                            {meal.name}
-                          </h4>
-                          
-                          <div className="space-y-3">
-                            <div className="flex gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                                <Pill className="w-4 h-4 text-emerald-600" />
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                  Nutrients
-                                </p>
-                                <p className="text-sm text-slate-700 leading-relaxed">
-                                  {meal.nutrients}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0">
-                                <ChefHat className="w-4 h-4 text-violet-600" />
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                  Prep Tip
-                                </p>
-                                <p className="text-sm text-slate-700 leading-relaxed">
-                                  {meal.prepTip}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </motion.div>
-          )}
+                  <Droppable key={`${selectedDay}-${mealType}`} droppableId={`day-${selectedDay}-${mealType}`}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                      >
+                        <Draggable draggableId={`meal-${selectedDay}-${mealType}`} index={0}>
+                          {(provided, snapshot) => (
+                            <Card 
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`border-slate-200 transition-all ${
+                                snapshot.isDragging ? 'shadow-2xl border-indigo-400 bg-indigo-50' : ''
+                              }`}
+                            >
+                              <CardContent className="p-6">
+                                <div className="flex items-start gap-4">
+                                  <div 
+                                    {...provided.dragHandleProps}
+                                    className="text-3xl cursor-move hover:scale-110 transition-transform"
+                                  >
+                                    {mealIcons[mealType]}
+                                  </div>
 
-          {/* Preferences (if custom plan) */}
-          {plan.diet_type === 'custom' && plan.preferences && (
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h3 className="font-semibold text-lg text-slate-900 capitalize">
+                                        {mealType}
+                                      </h3>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="flex items-center gap-1">
+                                          <Flame className="w-3 h-3 text-orange-500" />
+                                          {meal.calories}
+                                        </Badge>
+                                        <Badge variant="secondary" className="text-xs">
+                                          <ArrowLeftRight className="w-3 h-3 mr-1" />
+                                          Drag to swap
+                                        </Badge>
+                                      </div>
+                                    </div>
+                          
+                          <h4 className="text-slate-800 font-medium mb-3">
+                                            {meal.name}
+                                          </h4>
+
+                                          {/* Macro Display */}
+                                          {(meal.protein || meal.carbs || meal.fat) && (
+                                            <div className="flex gap-2 mb-4 flex-wrap">
+                                              {meal.protein && (
+                                                <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                                                  Protein: {meal.protein}g
+                                                </Badge>
+                                              )}
+                                              {meal.carbs && (
+                                                <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                                                  Carbs: {meal.carbs}g
+                                                </Badge>
+                                              )}
+                                              {meal.fat && (
+                                                <Badge className="bg-rose-100 text-rose-700 border-rose-200">
+                                                  Fat: {meal.fat}g
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          )}
+
+                                          <div className="space-y-3">
+                                            <div className="flex gap-3">
+                                              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                                                <Pill className="w-4 h-4 text-emerald-600" />
+                                              </div>
+                                              <div>
+                                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                                  Nutrients
+                                                </p>
+                                                <p className="text-sm text-slate-700 leading-relaxed">
+                                                  {meal.nutrients}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            <div className="flex gap-3">
+                                              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0">
+                                                <ChefHat className="w-4 h-4 text-violet-600" />
+                                              </div>
+                                              <div>
+                                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                                  Prep Tip
+                                                </p>
+                                                <p className="text-sm text-slate-700 leading-relaxed">
+                                                  {meal.prepTip}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </Draggable>
+                              {provided.placeholder}
+                            </div>
+                          )}
+                          </Droppable>
+                          );
+                          })}
+                          </motion.div>
+                          )}
+                          </>
+                          )}
+                          </DragDropContext>
+
+                          {/* Preferences (if custom plan) */}
+                          {plan.diet_type === 'custom' && plan.preferences && (
             <>
               <Separator />
               <div className="space-y-3">

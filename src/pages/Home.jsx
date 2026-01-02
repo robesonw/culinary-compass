@@ -111,7 +111,7 @@ export default function Home() {
             className="text-center"
           >
             <Badge className="mb-6 bg-white/20 text-white border-white/30 backdrop-blur-sm">
-              🎉 AI-Powered Health & Nutrition Platform
+              ✨ AI-Powered Health & Nutrition Platform
             </Badge>
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/90">
               Your Personal Health

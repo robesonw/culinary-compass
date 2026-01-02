@@ -5,7 +5,6 @@ import Dashboard from './pages/Dashboard';
 import Forum from './pages/Forum';
 import GroceryLists from './pages/GroceryLists';
 import HealthDietHub from './pages/HealthDietHub';
-import Index from './pages/Index';
 import LabResults from './pages/LabResults';
 import MealPlans from './pages/MealPlans';
 import NutritionTracking from './pages/NutritionTracking';
@@ -25,7 +24,6 @@ export const PAGES = {
     "Forum": Forum,
     "GroceryLists": GroceryLists,
     "HealthDietHub": HealthDietHub,
-    "Index": Index,
     "LabResults": LabResults,
     "MealPlans": MealPlans,
     "NutritionTracking": NutritionTracking,

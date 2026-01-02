@@ -92,15 +92,16 @@ export default function GroceryLists() {
     setCheckedItems(new Set());
   }, [selectedPlan]);
 
-  const saveGroceryList = () => {
-    if (!groceryList || !selectedPlanId) return;
+  const saveGroceryList = (updatedList) => {
+    const listToSave = updatedList || groceryList;
+    if (!listToSave || !selectedPlanId) return;
     
-    const currentTotal = Object.values(groceryList)
+    const currentTotal = Object.values(listToSave)
       .flat()
       .reduce((sum, item) => sum + (item.price || 0), 0);
 
     updatePlanMutation.mutate({
-      grocery_list: groceryList,
+      grocery_list: listToSave,
       current_total_cost: currentTotal
     });
   };
@@ -121,15 +122,16 @@ export default function GroceryLists() {
       });
 
       if (priceData?.price) {
-        setGroceryList(prev => ({
-          ...prev,
-          [category]: prev[category].map(item => 
+        const updatedList = {
+          ...groceryList,
+          [category]: groceryList[category].map(item => 
             item.name === itemName 
               ? { ...item, price: priceData.price, unit: priceData.unit }
               : item
           )
-        }));
-        saveGroceryList();
+        };
+        setGroceryList(updatedList);
+        saveGroceryList(updatedList);
       }
     } catch (error) {
       toast.error('Failed to fetch price');
@@ -141,16 +143,20 @@ export default function GroceryLists() {
   const addCustomItem = (category) => {
     if (!newItemName.trim()) return;
     
-    setGroceryList(prev => ({
-      ...prev,
-      [category]: [...(prev[category] || []), { name: newItemName, price: null, unit: '' }]
-    }));
+    const updatedList = {
+      ...groceryList,
+      [category]: [...(groceryList[category] || []), { name: newItemName.trim(), price: null, unit: '' }]
+    };
+    
+    setGroceryList(updatedList);
     setNewItemName('');
     setAddingItem(null);
-    saveGroceryList();
+    saveGroceryList(updatedList);
+    toast.success('Item added');
   };
 
-  const toggleAllInCategory = (category, items) => {
+  const toggleAllInCategory = (category) => {
+    const items = groceryList[category] || [];
     const newChecked = new Set(checkedItems);
     const allChecked = items.every(item => checkedItems.has(item.name));
     
@@ -342,7 +348,7 @@ export default function GroceryLists() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => toggleAllInCategory(category, items)}
+                            onClick={() => toggleAllInCategory(category)}
                             className="h-7 text-xs"
                           >
                             {allChecked ? 'Uncheck All' : 'Check All'}
@@ -394,13 +400,14 @@ export default function GroceryLists() {
                                   onBlur={(e) => {
                                     const newPrice = parseFloat(e.target.value);
                                     if (!isNaN(newPrice)) {
-                                      setGroceryList(prev => ({
-                                        ...prev,
-                                        [category]: prev[category].map((it, i) => 
+                                      const updatedList = {
+                                        ...groceryList,
+                                        [category]: groceryList[category].map((it, i) => 
                                           i === idx ? { ...it, price: newPrice } : it
                                         )
-                                      }));
-                                      saveGroceryList();
+                                      };
+                                      setGroceryList(updatedList);
+                                      saveGroceryList(updatedList);
                                     }
                                     setEditingPrice(null);
                                   }}

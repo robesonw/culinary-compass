@@ -20,9 +20,18 @@ export default function LabResults() {
 
   const queryClient = useQueryClient();
 
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+    retry: false,
+  });
+
   const { data: labResults = [] } = useQuery({
     queryKey: ['labResults'],
-    queryFn: () => base44.entities.LabResult.list('-upload_date'),
+    queryFn: async () => {
+      const currentUser = await base44.auth.me();
+      return base44.entities.LabResult.filter({ created_by: currentUser.email }, '-upload_date');
+    },
   });
 
   const createLabResult = useMutation({

@@ -14,6 +14,7 @@ import SharedMealPlans from './pages/SharedMealPlans';
 import SharedRecipes from './pages/SharedRecipes';
 import Index from './pages/Index';
 import AdminFeedback from './pages/AdminFeedback';
+import ProgressFeed from './pages/ProgressFeed';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "SharedRecipes": SharedRecipes,
     "Index": Index,
     "AdminFeedback": AdminFeedback,
+    "ProgressFeed": ProgressFeed,
 }
 
 export const pagesConfig = {

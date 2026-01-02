@@ -12,10 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Target, TrendingUp, Calendar as CalendarIcon, Plus, Flame, Activity, Award, Edit, Save, Camera, Upload, Loader2, ChefHat } from 'lucide-react';
+import { Target, TrendingUp, Calendar as CalendarIcon, Plus, Flame, Activity, Award, Edit, Save, Camera, Upload, Loader2, ChefHat, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { format, startOfWeek, endOfWeek, subDays } from 'date-fns';
+import ShareProgressDialog from '../components/progress/ShareProgressDialog';
 
 export default function NutritionTracking() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
@@ -27,6 +28,7 @@ export default function NutritionTracking() {
   const [editingGoal, setEditingGoal] = useState(null);
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const [logMethod, setLogMethod] = useState('manual'); // 'manual', 'photo', 'recipe'
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   
   const [goalForm, setGoalForm] = useState({
     goal_type: 'daily',
@@ -345,6 +347,10 @@ export default function NutritionTracking() {
           <Button variant="outline" onClick={() => setRecipeBuilderOpen(true)}>
             <ChefHat className="w-4 h-4 mr-2" />
             Recipe Builder
+          </Button>
+          <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
+            <Share2 className="w-4 h-4 mr-2" />
+            Share Progress
           </Button>
           <Button onClick={() => { setLogMethod('manual'); setLogDialogOpen(true); }} className="bg-gradient-to-r from-indigo-600 to-purple-600">
             <Plus className="w-4 h-4 mr-2" />
@@ -846,6 +852,13 @@ export default function NutritionTracking() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Share Progress Dialog */}
+      <ShareProgressDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        logs={logs}
+      />
     </div>
   );
 }

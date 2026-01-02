@@ -35,6 +35,13 @@ export default function Community() {
       link: 'SharedMealPlans',
     },
     {
+      title: 'Progress & Leaderboard',
+      description: 'See community achievements and compete on leaderboards',
+      icon: TrendingUp,
+      color: 'from-emerald-500 to-teal-500',
+      link: 'ProgressFeed',
+    },
+    {
       title: 'Community Forum',
       description: 'Ask questions, share tips, and connect with others',
       icon: MessageSquare,
@@ -85,7 +92,7 @@ export default function Community() {
       </div>
 
       {/* Features */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {features.map((feature, index) => (
           <motion.div
             key={feature.title}

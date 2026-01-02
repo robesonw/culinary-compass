@@ -36,6 +36,7 @@ const navigation = [
   { name: 'Nutrition Tracking', href: 'NutritionTracking', icon: TrendingUp },
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
   { name: 'Community', href: 'Community', icon: Users },
+  { name: 'Progress Feed', href: 'ProgressFeed', icon: TrendingUp },
   { name: 'Recipes', href: 'SharedRecipes', icon: ChefHat },
   { name: 'Analytics', href: 'Analytics', icon: BarChart3 },
   { name: 'My Profile', href: 'Profile', icon: User },

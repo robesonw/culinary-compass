@@ -78,6 +78,11 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
 
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
   const { data: preferences, isLoading } = useQuery({
     queryKey: ['userPreferences', user?.email],
     queryFn: async () => {
@@ -86,11 +91,6 @@ export default function Profile() {
       return prefs?.[0] || null;
     },
     enabled: !!user?.email,
-  });
-
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
   });
 
   const { data: myRecipes = [] } = useQuery({

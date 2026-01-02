@@ -417,28 +417,30 @@ export default function NutritionTracking() {
       endDate = new Date(weeklyGoalDateRange.to);
     } else {
       const days = weeklyGoalTimeRange === 'week' ? 7 : 28;
-      startDate = subDays(new Date(), days);
+      startDate = subDays(new Date(), days - 1);
       endDate = new Date();
     }
-    
-    // Ensure start and end are at midnight
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
     
     // Group by weeks
     const weeks = [];
     let currentWeekStart = new Date(startDate);
+    currentWeekStart.setHours(0, 0, 0, 0);
     
     while (currentWeekStart <= endDate) {
       const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
       
-      // Don't let weekEnd go beyond the specified end date
-      const actualWeekEnd = weekEnd > endDate ? new Date(endDate) : weekEnd;
+      const actualWeekEnd = weekEnd > endDate ? endDate : weekEnd;
       
       const weekLogs = logs.filter(l => {
         const logDate = new Date(l.log_date);
-        return logDate >= currentWeekStart && logDate <= actualWeekEnd;
+        logDate.setHours(0, 0, 0, 0);
+        const compareStart = new Date(currentWeekStart);
+        compareStart.setHours(0, 0, 0, 0);
+        const compareEnd = new Date(actualWeekEnd);
+        compareEnd.setHours(23, 59, 59, 999);
+        return logDate >= compareStart && logDate <= compareEnd;
       });
       
       const totals = {

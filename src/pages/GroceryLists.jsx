@@ -614,9 +614,9 @@ export default function GroceryLists() {
           {/* Items List */}
           <div className="lg:col-span-2 space-y-4">
             {Object.entries(organizedList).map(([category, items]) => {
-              if (!items || items.length === 0) return null;
-              const colors = categoryColors[category];
-              const allChecked = items.every(item => checkedItems.has(item.name));
+              const colors = categoryColors[category] || categoryColors['Other'];
+              const allChecked = items && items.length > 0 && items.every(item => checkedItems.has(item.name));
+              const isEmpty = !items || items.length === 0;
               
               return (
                 <motion.div
@@ -630,20 +630,24 @@ export default function GroceryLists() {
                         <CardTitle className={`${colors.text} flex items-center gap-2 text-base`}>
                           <div className={`w-3 h-3 rounded-full ${colors.badge}`} />
                           {category}
-                          <Badge variant="secondary" className="ml-2">
-                            {items.filter(item => checkedItems.has(item.name)).length} / {items.length}
-                          </Badge>
+                          {!isEmpty && (
+                            <Badge variant="secondary" className="ml-2">
+                              {items.filter(item => checkedItems.has(item.name)).length} / {items.length}
+                            </Badge>
+                          )}
                         </CardTitle>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleAllInCategory(category)}
-                            className={`h-8 text-xs ${allChecked ? 'text-emerald-600' : ''}`}
-                          >
-                            <Check className="w-3 h-3 mr-1" />
-                            {allChecked ? 'Uncheck All' : 'Mark All'}
-                          </Button>
+                          {!isEmpty && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleAllInCategory(category)}
+                              className={`h-8 text-xs ${allChecked ? 'text-emerald-600' : ''}`}
+                            >
+                              <Check className="w-3 h-3 mr-1" />
+                              {allChecked ? 'Uncheck All' : 'Mark All'}
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -658,7 +662,12 @@ export default function GroceryLists() {
                     </CardHeader>
                     <CardContent className="p-4">
                       <div className="space-y-2">
-                        {items.map((item, idx) => {
+                        {isEmpty && addingItem !== category && (
+                          <div className="text-center py-6 text-slate-400">
+                            <p className="text-sm">No items yet. Click "Add Item" to get started.</p>
+                          </div>
+                        )}
+                        {items && items.map((item, idx) => {
                           const itemName = item.name;
                           const itemPrice = item.price;
                           const itemUnit = item.unit;

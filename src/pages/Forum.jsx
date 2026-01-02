@@ -359,13 +359,15 @@ export default function Forum() {
                 <Eye className="w-3 h-3" />
                 {selectedPost?.views_count || 0} views
               </span>
-              <button
-                onClick={() => toggleLikeMutation.mutate({ targetId: selectedPost.id, targetType: 'forum_post' })}
-                className="flex items-center gap-1 hover:text-rose-500 transition-colors"
-              >
-                <Heart className={`w-3 h-3 ${isLiked(selectedPost.id, 'forum_post') ? 'fill-rose-500 text-rose-500' : ''}`} />
-                {selectedPost?.likes_count || 0} likes
-              </button>
+              {selectedPost && (
+                <button
+                  onClick={() => toggleLikeMutation.mutate({ targetId: selectedPost.id, targetType: 'forum_post' })}
+                  className="flex items-center gap-1 hover:text-rose-500 transition-colors"
+                >
+                  <Heart className={`w-3 h-3 ${isLiked(selectedPost.id, 'forum_post') ? 'fill-rose-500 text-rose-500' : ''}`} />
+                  {selectedPost.likes_count || 0} likes
+                </button>
+              )}
             </div>
 
             {/* Comments */}

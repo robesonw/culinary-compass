@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -101,10 +100,21 @@ export default function Profile() {
     enabled: !!user,
   });
 
-  const { data: favoriteMeals = [] } = useQuery({
+  const { data: allFavoriteMeals = [] } = useQuery({
     queryKey: ['favoriteMeals'],
     queryFn: () => base44.entities.FavoriteMeal.list('-created_date'),
   });
+
+  // Deduplicate favorites by name and meal_type
+  const favoriteMeals = React.useMemo(() => {
+    const seen = new Set();
+    return allFavoriteMeals.filter(meal => {
+      const key = `${meal.name?.toLowerCase()}-${meal.meal_type}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [allFavoriteMeals]);
 
   const { data: mealPlans = [] } = useQuery({
     queryKey: ['mealPlans'],

@@ -1,4 +1,3 @@
-import Community from './pages/Community';
 import Dashboard from './pages/Dashboard';
 import Forum from './pages/Forum';
 import GroceryLists from './pages/GroceryLists';
@@ -15,7 +14,6 @@ import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Community": Community,
     "Dashboard": Dashboard,
     "Forum": Forum,
     "GroceryLists": GroceryLists,
@@ -31,7 +29,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Community",
+    mainPage: "Dashboard",
     Pages: PAGES,
     Layout: __Layout,
 };

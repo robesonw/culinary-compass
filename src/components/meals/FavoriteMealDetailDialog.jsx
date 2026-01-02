@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, ChefHat, TrendingUp, Flame, ShoppingCart, ExternalLink, Calendar } from 'lucide-react';
-import { createPageUrl } from '../utils';
+import { createPageUrl } from '../../utils';
 
 export default function FavoriteMealDetailDialog({ meal, open, onOpenChange }) {
   if (!meal) return null;

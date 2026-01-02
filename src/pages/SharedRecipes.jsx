@@ -109,13 +109,35 @@ export default function SharedRecipes() {
     toast.success('Saved to favorites!');
   };
 
-  // Combine all recipes (shared + favorites)
+  // Combine all recipes (shared + favorites) and remove duplicates
   const allRecipesWithFavorites = [
     ...allRecipes.map(r => ({ ...r, source: 'shared' })),
     ...favoriteMeals.map(r => ({ ...r, source: 'favorite' }))
   ];
 
-  const filteredRecipes = allRecipesWithFavorites.filter(recipe => {
+  // Remove duplicates: if a favorite was sourced from a shared recipe, keep only the favorite
+  const uniqueRecipes = allRecipesWithFavorites.reduce((acc, recipe) => {
+    // Check if this recipe is a duplicate
+    const isDuplicate = acc.some(existing => {
+      // Check if it's the same recipe by comparing IDs or names
+      if (recipe.source === 'favorite' && recipe.source_recipe_id === existing.id) {
+        return true; // Favorite sourced from this shared recipe
+      }
+      if (existing.source === 'favorite' && existing.source_recipe_id === recipe.id) {
+        return true; // This shared recipe already exists as a favorite
+      }
+      // Also check for same name to catch other duplicates
+      return existing.name?.toLowerCase().trim() === recipe.name?.toLowerCase().trim() &&
+             existing.meal_type === recipe.meal_type;
+    });
+
+    if (!isDuplicate) {
+      acc.push(recipe);
+    }
+    return acc;
+  }, []);
+
+  const filteredRecipes = uniqueRecipes.filter(recipe => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm || 
       recipe.name?.toLowerCase().includes(searchLower) ||

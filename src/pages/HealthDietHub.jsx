@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Loader2, Heart, Users, Calendar, ShoppingCart, Save, Flame, Salad, DollarSign, AlertTriangle } from 'lucide-react';
+import { Sparkles, Loader2, Heart, Users, Calendar, ShoppingCart, Save, Flame, Salad, DollarSign, AlertTriangle, RefreshCw, Utensils } from 'lucide-react';
 import { toast } from 'sonner';
 
 const healthGoals = [
@@ -96,6 +96,7 @@ export default function HealthDietHub() {
   const [planName, setPlanName] = useState('');
   const [isFetchingPrices, setIsFetchingPrices] = useState(false);
   const [editingPrice, setEditingPrice] = useState(null);
+  const [regeneratingImage, setRegeneratingImage] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -425,7 +426,8 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       // Generate images one by one (to avoid rate limits)
       for (const { dayIndex, mealType, mealName } of imagesToGenerate.slice(0, 3)) {
         try {
-          const culturalContext = culturalStyle !== 'none' ? `${culturalStyle} style ` : '';
+          const effectiveCulturalStyle = customCulturalStyle.trim() || (culturalStyle !== 'none' ? culturalStyle : '');
+          const culturalContext = effectiveCulturalStyle ? `${effectiveCulturalStyle} style ` : '';
           const result = await base44.integrations.Core.GenerateImage({
             prompt: `Professional food photography of ${culturalContext}${mealName}, appetizing presentation, natural lighting, high quality, restaurant style plating`
           });
@@ -436,12 +438,45 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
           }
         } catch (err) {
           console.log('Image generation skipped for', mealName);
+          // Set error flag so we show placeholder
+          updatedDays[dayIndex][mealType].imageError = true;
+          setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
         }
       }
     } catch (error) {
       console.log('Image generation completed with some skips');
     } finally {
       setGeneratingImages(false);
+    }
+  };
+
+  const regenerateMealImage = async (dayIndex, mealType) => {
+    const meal = generatedPlan.days[dayIndex][mealType];
+    if (!meal?.name) return;
+    
+    setRegeneratingImage(`${dayIndex}-${mealType}`);
+    
+    try {
+      const effectiveCulturalStyle = customCulturalStyle.trim() || (culturalStyle !== 'none' ? culturalStyle : '');
+      const culturalContext = effectiveCulturalStyle ? `${effectiveCulturalStyle} style ` : '';
+      const result = await base44.integrations.Core.GenerateImage({
+        prompt: `Professional food photography of ${culturalContext}${meal.name}, appetizing presentation, natural lighting, high quality, restaurant style plating`
+      });
+      
+      if (result?.url) {
+        const updatedDays = [...generatedPlan.days];
+        updatedDays[dayIndex][mealType].imageUrl = result.url;
+        updatedDays[dayIndex][mealType].imageError = false;
+        setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
+        toast.success('Image regenerated');
+      }
+    } catch (error) {
+      toast.error('Failed to generate image');
+      const updatedDays = [...generatedPlan.days];
+      updatedDays[dayIndex][mealType].imageError = true;
+      setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
+    } finally {
+      setRegeneratingImage(null);
     }
   };
 
@@ -1066,6 +1101,63 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
 
                             return (
                               <div key={mealType} className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                                {/* Meal Image */}
+                                {(meal.imageUrl || meal.imageError !== undefined) && (
+                                  <div className="relative mb-3 rounded-lg overflow-hidden bg-slate-100 group">
+                                    {meal.imageUrl && !meal.imageError ? (
+                                      <>
+                                        <img
+                                          src={meal.imageUrl}
+                                          alt={meal.name}
+                                          loading="lazy"
+                                          className="w-full h-48 object-cover"
+                                          onError={(e) => {
+                                            const updatedDays = [...generatedPlan.days];
+                                            updatedDays[index][mealType].imageError = true;
+                                            setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
+                                          }}
+                                        />
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          onClick={() => regenerateMealImage(index, mealType)}
+                                          disabled={regeneratingImage === `${index}-${mealType}`}
+                                        >
+                                          {regeneratingImage === `${index}-${mealType}` ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                          ) : (
+                                            <RefreshCw className="w-3 h-3" />
+                                          )}
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <div className="w-full h-48 flex flex-col items-center justify-center">
+                                        <Utensils className="w-12 h-12 text-slate-300 mb-2" />
+                                        <p className="text-xs text-slate-400 mb-2">Image unavailable</p>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => regenerateMealImage(index, mealType)}
+                                          disabled={regeneratingImage === `${index}-${mealType}`}
+                                        >
+                                          {regeneratingImage === `${index}-${mealType}` ? (
+                                            <>
+                                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                              Generating...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Sparkles className="w-3 h-3 mr-1" />
+                                              Generate Image
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
                                 <div className="flex items-start gap-3">
                                   <div className="text-2xl">{mealIcons[mealType]}</div>
                                   <div className="flex-1">

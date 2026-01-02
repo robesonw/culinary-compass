@@ -101,8 +101,12 @@ export default function Profile() {
   });
 
   const { data: allFavoriteMeals = [] } = useQuery({
-    queryKey: ['favoriteMeals'],
-    queryFn: () => base44.entities.FavoriteMeal.list('-created_date'),
+    queryKey: ['favoriteMeals', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return base44.entities.FavoriteMeal.filter({ created_by: user.email }, '-created_date');
+    },
+    enabled: !!user?.email,
   });
 
   // Deduplicate favorites by name and meal_type
@@ -117,8 +121,12 @@ export default function Profile() {
   }, [allFavoriteMeals]);
 
   const { data: mealPlans = [] } = useQuery({
-    queryKey: ['mealPlans'],
-    queryFn: () => base44.entities.MealPlan.list('-created_date'),
+    queryKey: ['mealPlans', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return base44.entities.MealPlan.filter({ created_by: user.email }, '-created_date');
+    },
+    enabled: !!user?.email,
   });
 
   const { data: userSettings } = useQuery({

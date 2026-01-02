@@ -112,7 +112,26 @@ export default function SharedRecipes() {
   // Combine all recipes (shared + favorites) and remove duplicates
   const allRecipesWithFavorites = [
     ...allRecipes.map(r => ({ ...r, source: 'shared' })),
-    ...favoriteMeals.map(r => ({ ...r, source: 'favorite' }))
+    ...favoriteMeals.map(r => ({ 
+      ...r, 
+      source: 'favorite',
+      // Normalize structure for dialog compatibility
+      meal_data: r.meal_data || {
+        name: r.name,
+        calories: r.calories,
+        protein: r.protein,
+        carbs: r.carbs,
+        fat: r.fat,
+        prepSteps: r.prepSteps,
+        prepTime: r.prepTime,
+        difficulty: r.difficulty,
+        equipment: r.equipment,
+        healthBenefit: r.healthBenefit,
+        prepTip: r.prepTip,
+        imageUrl: r.imageUrl,
+        ingredients: r.ingredients
+      }
+    }))
   ];
 
   // Remove duplicates: if a favorite was sourced from a shared recipe, keep only the favorite

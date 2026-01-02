@@ -5,8 +5,11 @@ import HealthDietHub from './pages/HealthDietHub';
 import LabResults from './pages/LabResults';
 import MealPlanner from './pages/MealPlanner';
 import MealPlans from './pages/MealPlans';
-import Settings from './pages/Settings';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+import Community from './pages/Community';
+import SharedMealPlans from './pages/SharedMealPlans';
+import Forum from './pages/Forum';
 import __Layout from './Layout.jsx';
 
 
@@ -18,8 +21,11 @@ export const PAGES = {
     "LabResults": LabResults,
     "MealPlanner": MealPlanner,
     "MealPlans": MealPlans,
-    "Settings": Settings,
     "Profile": Profile,
+    "Settings": Settings,
+    "Community": Community,
+    "SharedMealPlans": SharedMealPlans,
+    "Forum": Forum,
 }
 
 export const pagesConfig = {

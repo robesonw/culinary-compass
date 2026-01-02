@@ -13,7 +13,8 @@ import {
   User,
   Bell,
   Search,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Health Diet Hub', href: 'HealthDietHub', icon: ChefHat },
   { name: 'Meal Plans', href: 'MealPlans', icon: Calendar },
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
+  { name: 'Community', href: 'Community', icon: Users },
   { name: 'Analytics', href: 'Analytics', icon: BarChart3 },
   { name: 'My Profile', href: 'Profile', icon: User },
   { name: 'Settings', href: 'Settings', icon: Settings },

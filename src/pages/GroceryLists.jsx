@@ -359,21 +359,29 @@ export default function GroceryLists() {
         </CardContent>
       </Card>
 
-      {/* Organization Toggle */}
+      {/* Organization Toggle & Quick Info */}
       {selectedPlan && groceryList && (
-        <Card className="border-slate-200 bg-slate-50">
+        <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Organize By:</Label>
-              <Select value={organizationMode} onValueChange={setOrganizationMode}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="category">Food Category</SelectItem>
-                  <SelectItem value="aisle">Store Aisle</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex-1 space-y-1">
+                <h3 className="font-semibold text-slate-900">Shopping List Ready! 🛒</h3>
+                <p className="text-sm text-slate-600">
+                  {totalItems} items • {checkedCount} purchased • Organized by {organizationMode === 'category' ? 'food category' : 'store aisle'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium whitespace-nowrap">Organize By:</Label>
+                <Select value={organizationMode} onValueChange={setOrganizationMode}>
+                  <SelectTrigger className="w-40 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="category">🍎 Food Category</SelectItem>
+                    <SelectItem value="aisle">🏪 Store Aisle</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -472,28 +480,31 @@ export default function GroceryLists() {
                   <Card className={`border ${colors.border}`}>
                     <CardHeader className={`${colors.bg} border-b ${colors.border}`}>
                       <div className="flex items-center justify-between">
-                        <CardTitle className={`${colors.text} flex items-center gap-2`}>
-                          <div className={`w-2 h-2 rounded-full ${colors.badge}`} />
+                        <CardTitle className={`${colors.text} flex items-center gap-2 text-base`}>
+                          <div className={`w-3 h-3 rounded-full ${colors.badge}`} />
                           {category}
+                          <Badge variant="secondary" className="ml-2">
+                            {items.filter(item => checkedItems.has(item.name)).length} / {items.length}
+                          </Badge>
                         </CardTitle>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleAllInCategory(category)}
-                            className="h-7 text-xs"
+                            className={`h-8 text-xs ${allChecked ? 'text-emerald-600' : ''}`}
                           >
-                            {allChecked ? 'Uncheck All' : 'Check All'}
+                            <Check className="w-3 h-3 mr-1" />
+                            {allChecked ? 'Uncheck All' : 'Mark All'}
                           </Button>
-                          <Badge variant="secondary">
-                            {items.filter(item => checkedItems.has(item.name)).length} / {items.length}
-                          </Badge>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setAddingItem(category)}
+                            className="h-8"
                           >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add Item
                           </Button>
                         </div>
                       </div>
@@ -509,8 +520,10 @@ export default function GroceryLists() {
                           const totalPrice = (itemPrice || 0) * itemQuantity;
 
                           return (
-                            <div key={idx} className="p-2 rounded-lg hover:bg-slate-50">
-                              <div className="flex items-center gap-2">
+                            <div key={idx} className={`p-3 rounded-lg transition-all ${
+                              checkedItems.has(itemName) ? 'bg-emerald-50/50' : 'hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                            }`}>
+                              <div className="flex items-center gap-3">
                                 <Checkbox 
                                   checked={checkedItems.has(itemName)}
                                   onCheckedChange={(checked) => {
@@ -519,16 +532,17 @@ export default function GroceryLists() {
                                     else newSet.delete(itemName);
                                     setCheckedItems(newSet);
                                   }}
+                                  className={checkedItems.has(itemName) ? 'data-[state=checked]:bg-emerald-600' : ''}
                                 />
                                 <div className="flex-1">
-                                  <span className={`text-sm block ${
-                                    checkedItems.has(itemName) ? 'line-through text-slate-400' : 'text-slate-700'
+                                  <span className={`text-sm font-medium block ${
+                                    checkedItems.has(itemName) ? 'line-through text-slate-400' : 'text-slate-800'
                                   }`}>
                                     {itemName}
                                   </span>
-                                  {itemNotes && (
-                                    <span className="text-xs text-slate-500 italic">
-                                      {itemNotes}
+                                  {itemNotes && !checkedItems.has(itemName) && (
+                                    <span className="text-xs text-slate-500 italic block mt-0.5">
+                                      💡 {itemNotes}
                                     </span>
                                   )}
                                 </div>
@@ -682,19 +696,20 @@ export default function GroceryLists() {
                         })}
 
                         {addingItem === category && (
-                          <div className="flex gap-2 mt-2 p-2 bg-slate-50 rounded-lg">
+                          <div className="flex gap-2 mt-2 p-3 bg-indigo-50 rounded-lg border-2 border-indigo-200">
                             <Input
-                              placeholder="Item name..."
+                              placeholder="Enter item name..."
                               value={newItemName}
                               onChange={(e) => setNewItemName(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') addCustomItem(category);
                                 if (e.key === 'Escape') setAddingItem(null);
                               }}
-                              className="h-8 text-sm"
+                              className="h-9 text-sm bg-white"
                               autoFocus
                             />
-                            <Button size="sm" onClick={() => addCustomItem(category)}>
+                            <Button size="sm" onClick={() => addCustomItem(category)} className="bg-indigo-600 hover:bg-indigo-700">
+                              <Plus className="w-4 h-4 mr-1" />
                               Add
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => setAddingItem(null)}>

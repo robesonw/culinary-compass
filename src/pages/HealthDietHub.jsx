@@ -56,8 +56,78 @@ export default function HealthDietHub() {
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const [planName, setPlanName] = useState('');
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false);
+  const [editingPrice, setEditingPrice] = useState(null);
 
   const queryClient = useQueryClient();
+
+  const fetchGroceryPrices = async (plan) => {
+    if (!plan?.days) return;
+    
+    setIsFetchingPrices(true);
+    
+    const items = new Set();
+    plan.days.forEach(day => {
+      ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
+        if (day[meal]?.name) {
+          const words = day[meal].name.toLowerCase().split(/[\s,&]+/);
+          words.forEach(word => {
+            if (word.length > 3 && !['with', 'and', 'the'].includes(word)) {
+              items.add(word);
+            }
+          });
+        }
+      });
+    });
+
+    const itemsList = Array.from(items).join(', ');
+    
+    try {
+      const priceData = await base44.integrations.Core.InvokeLLM({
+        prompt: `Get current average grocery prices in USD for these items (scaled for ${numPeople} people for a week): ${itemsList}. 
+        Return prices as approximate cost per typical package/unit from major US grocery stores. 
+        For items serving ${numPeople} people for a week, estimate quantities needed.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            items: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  price: { type: "number", description: "Price in USD" },
+                  unit: { type: "string", description: "e.g. per lb, per dozen, per bag" }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (priceData?.items) {
+        const priceMap = {};
+        priceData.items.forEach(item => {
+          priceMap[item.name.toLowerCase()] = {
+            name: item.name,
+            price: item.price,
+            unit: item.unit
+          };
+        });
+        
+        setGeneratedPlan(prev => ({
+          ...prev,
+          grocery_prices: priceMap
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch prices:', error);
+      toast.error('Could not fetch current prices');
+    } finally {
+      setIsFetchingPrices(false);
+    }
+  };
 
   const { data: userPrefs } = useQuery({
     queryKey: ['userPrefs'],
@@ -229,6 +299,9 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       const budgetText = weeklyBudget ? ` ($${weeklyBudget}/wk)` : '';
       const peopleText = numPeople > 1 ? ` for ${numPeople}` : '';
       setPlanName(`${goalDescription} Plan${peopleText}${budgetText} - ${new Date().toLocaleDateString()}`);
+
+      // Fetch real grocery prices
+      fetchGroceryPrices(response);
     } catch (error) {
       toast.error('Failed to generate meal plan');
       console.error(error);
@@ -318,12 +391,13 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
     const dairyKeywords = ['milk', 'cheese', 'yogurt', 'butter'];
 
     items.forEach(item => {
-      if (proteinKeywords.some(k => item.includes(k))) categorized['Proteins'].push(item);
-      else if (vegKeywords.some(k => item.includes(k))) categorized['Vegetables'].push(item);
-      else if (fruitKeywords.some(k => item.includes(k))) categorized['Fruits'].push(item);
-      else if (grainKeywords.some(k => item.includes(k))) categorized['Grains'].push(item);
-      else if (dairyKeywords.some(k => item.includes(k))) categorized['Dairy/Alternatives'].push(item);
-      else categorized['Other'].push(item);
+      const itemWithPrice = generatedPlan.grocery_prices?.[item] || { name: item, price: null };
+      if (proteinKeywords.some(k => item.includes(k))) categorized['Proteins'].push(itemWithPrice);
+      else if (vegKeywords.some(k => item.includes(k))) categorized['Vegetables'].push(itemWithPrice);
+      else if (fruitKeywords.some(k => item.includes(k))) categorized['Fruits'].push(itemWithPrice);
+      else if (grainKeywords.some(k => item.includes(k))) categorized['Grains'].push(itemWithPrice);
+      else if (dairyKeywords.some(k => item.includes(k))) categorized['Dairy/Alternatives'].push(itemWithPrice);
+      else categorized['Other'].push(itemWithPrice);
     });
 
     return categorized;
@@ -637,7 +711,11 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                   </>
                 )}
               </Button>
-              <Button variant="outline" className="flex-1">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => document.getElementById('grocery-list-section')?.scrollIntoView({ behavior: 'smooth' })}
+              >
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 View Grocery List ({Object.values(groceryList).flat().length} items)
               </Button>
@@ -729,11 +807,14 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
             </Card>
 
             {/* Grocery List */}
-            <Card className="border-slate-200">
+            <Card id="grocery-list-section" className="border-slate-200">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="w-5 h-5" />
                   Grocery List
+                  {isFetchingPrices && (
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                  )}
                   {numPeople > 1 && (
                     <Badge variant="outline" className="ml-2">
                       Scaled for {numPeople} people
@@ -741,13 +822,28 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                   )}
                 </CardTitle>
                 <div className="flex gap-2">
+                  {!isFetchingPrices && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchGroceryPrices(generatedPlan)}
+                      disabled={isFetchingPrices}
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Refresh Prices
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
                       const items = Object.entries(groceryList)
                         .filter(([_, items]) => items.length > 0)
-                        .map(([category, items]) => `${category}:\n${items.map(item => `  • ${item}`).join('\n')}`)
+                        .map(([category, items]) => `${category}:\n${items.map(item => {
+                          const itemName = typeof item === 'string' ? item : item.name;
+                          const itemPrice = typeof item === 'object' && item.price ? ` - $${item.price.toFixed(2)}` : '';
+                          return `  • ${itemName}${itemPrice}`;
+                        }).join('\n')}`)
                         .join('\n\n');
                       navigator.clipboard.writeText(items);
                       toast.success('Copied to clipboard');
@@ -767,22 +863,61 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                       <div key={category}>
                         <h4 className="font-semibold text-slate-900 mb-3">{category}</h4>
                         <div className="space-y-2">
-                          {items.map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <Checkbox
-                                checked={checkedItems.has(item)}
-                                onCheckedChange={(checked) => {
-                                  const newSet = new Set(checkedItems);
-                                  if (checked) newSet.add(item);
-                                  else newSet.delete(item);
-                                  setCheckedItems(newSet);
-                                }}
-                              />
-                              <span className={`text-sm capitalize ${checkedItems.has(item) ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                                {item}
-                              </span>
-                            </div>
-                          ))}
+                          {items.map((item, idx) => {
+                            const itemName = typeof item === 'string' ? item : item.name;
+                            const itemPrice = typeof item === 'object' ? item.price : null;
+                            const itemUnit = typeof item === 'object' ? item.unit : null;
+
+                            return (
+                              <div key={idx} className="flex items-center gap-2">
+                                <Checkbox
+                                  checked={checkedItems.has(itemName)}
+                                  onCheckedChange={(checked) => {
+                                    const newSet = new Set(checkedItems);
+                                    if (checked) newSet.add(itemName);
+                                    else newSet.delete(itemName);
+                                    setCheckedItems(newSet);
+                                  }}
+                                />
+                                <span className={`text-sm capitalize flex-1 ${checkedItems.has(itemName) ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                  {itemName}
+                                </span>
+                                {editingPrice === itemName ? (
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    defaultValue={itemPrice || ''}
+                                    placeholder="$"
+                                    className="w-20 h-7 text-xs"
+                                    onBlur={(e) => {
+                                      const newPrice = parseFloat(e.target.value);
+                                      if (!isNaN(newPrice)) {
+                                        setGeneratedPlan(prev => ({
+                                          ...prev,
+                                          grocery_prices: {
+                                            ...prev.grocery_prices,
+                                            [itemName]: { name: itemName, price: newPrice, unit: itemUnit || '' }
+                                          }
+                                        }));
+                                      }
+                                      setEditingPrice(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') e.target.blur();
+                                    }}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingPrice(itemName)}
+                                    className="text-xs text-slate-500 hover:text-indigo-600 min-w-[60px] text-right"
+                                  >
+                                    {itemPrice ? `$${itemPrice.toFixed(2)}${itemUnit ? `/${itemUnit}` : ''}` : isFetchingPrices ? '...' : 'Add price'}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );

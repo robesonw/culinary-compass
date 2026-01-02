@@ -7,7 +7,6 @@ import GroceryLists from './pages/GroceryLists';
 import HealthDietHub from './pages/HealthDietHub';
 import Index from './pages/Index';
 import LabResults from './pages/LabResults';
-import MealPlanner from './pages/MealPlanner';
 import MealPlans from './pages/MealPlans';
 import NutritionTracking from './pages/NutritionTracking';
 import Profile from './pages/Profile';
@@ -28,7 +27,6 @@ export const PAGES = {
     "HealthDietHub": HealthDietHub,
     "Index": Index,
     "LabResults": LabResults,
-    "MealPlanner": MealPlanner,
     "MealPlans": MealPlans,
     "NutritionTracking": NutritionTracking,
     "Profile": Profile,
@@ -39,7 +37,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "MealPlanner",
+    mainPage: "AIRecipeGenerator",
     Pages: PAGES,
     Layout: __Layout,
 };

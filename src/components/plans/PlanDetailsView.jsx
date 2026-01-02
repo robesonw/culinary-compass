@@ -670,7 +670,7 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                             }
                           `}
                         >
-                          {day.day}
+                          {index + 1}
                         </button>
                         <Button
                           variant="ghost"

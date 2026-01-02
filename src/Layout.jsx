@@ -16,7 +16,8 @@ import {
   FileText,
   Users,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -86,7 +87,7 @@ export default function Layout({ children, currentPageName }) {
             {navigation.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
-              
+
               return (
                 <Link
                   key={item.name}
@@ -105,6 +106,26 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               );
             })}
+
+            {user?.role === 'admin' && (
+              <>
+                <div className="border-t border-slate-200 my-2" />
+                <Link
+                  to={createPageUrl('AdminFeedback')}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                    ${isActive('AdminFeedback')
+                      ? 'bg-rose-50 text-rose-700' 
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <MessageSquare className={`w-5 h-5 ${isActive('AdminFeedback') ? 'text-rose-600' : 'text-slate-400'}`} />
+                  Admin Feedback
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* User Profile */}

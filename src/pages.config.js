@@ -9,10 +9,10 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import SharedMealPlans from './pages/SharedMealPlans';
 import SharedRecipes from './pages/SharedRecipes';
-import AAAHome from './pages/AAAHome';
 import AIRecipeGenerator from './pages/AIRecipeGenerator';
 import Analytics from './pages/Analytics';
 import Community from './pages/Community';
+import _000Home from './pages/000Home';
 import __Layout from './Layout.jsx';
 
 
@@ -28,10 +28,10 @@ export const PAGES = {
     "Settings": Settings,
     "SharedMealPlans": SharedMealPlans,
     "SharedRecipes": SharedRecipes,
-    "AAAHome": AAAHome,
     "AIRecipeGenerator": AIRecipeGenerator,
     "Analytics": Analytics,
     "Community": Community,
+    "000Home": _000Home,
 }
 
 export const pagesConfig = {

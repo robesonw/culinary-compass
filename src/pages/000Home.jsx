@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function AAAHome() {
+export default function Home() {
   const features = [
     {
       icon: Sparkles,

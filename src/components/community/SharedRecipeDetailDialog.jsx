@@ -1,7 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Flame, Clock, ChefHat, Wrench } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { Flame, Clock, ChefHat, Wrench, ThumbsUp, MessageCircle, Send } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function SharedRecipeDetailDialog({ recipe, open, onOpenChange, comments: allComments = [] }) {
   const [newComment, setNewComment] = useState('');
@@ -187,6 +195,66 @@ export default function SharedRecipeDetailDialog({ recipe, open, onOpenChange, c
               <p className="text-sm text-slate-600">{meal.prepTip}</p>
             </div>
           )}
+
+          <Separator className="my-4" />
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => likeMutation.mutate()} disabled={likeMutation.isPending}>
+              <ThumbsUp className="w-4 h-4 mr-2" />
+              Like ({recipe.likes_count || 0})
+            </Button>
+            <Button variant="outline">
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Comments ({recipeComments.length})
+            </Button>
+          </div>
+
+          <Separator className="my-4" />
+
+          {/* Comments Section */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-slate-900">Comments</h4>
+            
+            {/* Add Comment */}
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Add a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                rows={2}
+                className="flex-1"
+              />
+              <Button 
+                onClick={handleAddComment} 
+                disabled={!newComment.trim() || addCommentMutation.isPending}
+                className="self-end"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Comments List */}
+            <div className="space-y-3">
+              {recipeComments.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">No comments yet. Be the first to comment!</p>
+              ) : (
+                recipeComments.map((comment) => (
+                  <Card key={comment.id} className="border-slate-200">
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between mb-1">
+                        <span className="font-medium text-sm text-slate-900">{comment.author_name}</span>
+                        <span className="text-xs text-slate-500">
+                          {formatDistanceToNow(new Date(comment.created_date), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700">{comment.comment}</p>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

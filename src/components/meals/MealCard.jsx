@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ChevronDown, Clock, ChefHat, Wrench, Heart, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 const difficultyColors = {
   Easy: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -14,6 +17,45 @@ const difficultyColors = {
 
 export default function MealCard({ meal, mealType, mealIcon }) {
   if (!meal) return null;
+
+  const queryClient = useQueryClient();
+  
+  const { data: favoriteMeals = [] } = useQuery({
+    queryKey: ['favoriteMeals'],
+    queryFn: () => base44.entities.FavoriteMeal.list(),
+  });
+
+  const isFavorite = favoriteMeals.some(fav => fav.name === meal.name);
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      const existing = favoriteMeals.find(fav => fav.name === meal.name);
+      if (existing) {
+        await base44.entities.FavoriteMeal.delete(existing.id);
+      } else {
+        await base44.entities.FavoriteMeal.create({
+          name: meal.name,
+          meal_type: mealType,
+          calories: meal.calories,
+          protein: meal.protein,
+          carbs: meal.carbs,
+          fat: meal.fat,
+          nutrients: meal.nutrients,
+          prepTip: meal.prepTip,
+          prepTime: meal.prepTime,
+          prepSteps: meal.prepSteps,
+          difficulty: meal.difficulty,
+          equipment: meal.equipment,
+          healthBenefit: meal.healthBenefit,
+          imageUrl: meal.imageUrl,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favoriteMeals'] });
+      toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
+    },
+  });
 
   const hasPrepDetails = meal.prepSteps?.length > 0 || meal.prepTime || meal.difficulty;
 
@@ -35,6 +77,14 @@ export default function MealCard({ meal, mealType, mealIcon }) {
               {mealIcon} {mealType}
             </Badge>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm hover:bg-white"
+            onClick={() => toggleFavoriteMutation.mutate()}
+          >
+            <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-600 text-rose-600' : 'text-slate-600'}`} />
+          </Button>
         </div>
       )}
 

@@ -332,6 +332,88 @@ export default function NutritionTracking() {
     return 'bg-emerald-500';
   };
 
+  // Calculate weekly totals
+  const weeklyTotals = useMemo(() => {
+    const weekStart = startOfWeek(new Date());
+    const weekEnd = endOfWeek(new Date());
+    const weekLogs = logs.filter(l => {
+      const logDate = new Date(l.log_date);
+      return logDate >= weekStart && logDate <= weekEnd;
+    });
+    return {
+      calories: weekLogs.reduce((sum, l) => sum + (l.calories * (l.servings || 1)), 0),
+      protein: weekLogs.reduce((sum, l) => sum + (l.protein * (l.servings || 1)), 0),
+      carbs: weekLogs.reduce((sum, l) => sum + (l.carbs * (l.servings || 1)), 0),
+      fat: weekLogs.reduce((sum, l) => sum + (l.fat * (l.servings || 1)), 0),
+    };
+  }, [logs]);
+
+  // Calculate goal achievement history
+  const goalAchievementHistory = useMemo(() => {
+    if (!activeGoal) return [];
+    
+    const history = [];
+    const daysToCheck = 30; // Last 30 days
+    
+    for (let i = daysToCheck - 1; i >= 0; i--) {
+      const currentDate = new Date();
+      currentDate.setDate(currentDate.getDate() - i);
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      const dayLogs = logs.filter(l => l.log_date === dateStr);
+      
+      const totals = {
+        calories: dayLogs.reduce((sum, l) => sum + (l.calories * (l.servings || 1)), 0),
+        protein: dayLogs.reduce((sum, l) => sum + (l.protein * (l.servings || 1)), 0),
+        carbs: dayLogs.reduce((sum, l) => sum + (l.carbs * (l.servings || 1)), 0),
+        fat: dayLogs.reduce((sum, l) => sum + (l.fat * (l.servings || 1)), 0),
+      };
+      
+      const goalsMetCount = [
+        totals.calories >= activeGoal.target_calories * 0.9 && totals.calories <= activeGoal.target_calories * 1.1,
+        totals.protein >= activeGoal.target_protein * 0.9,
+        totals.carbs >= activeGoal.target_carbs * 0.9 && totals.carbs <= activeGoal.target_carbs * 1.1,
+        totals.fat >= activeGoal.target_fat * 0.9 && totals.fat <= activeGoal.target_fat * 1.1,
+      ].filter(Boolean).length;
+      
+      history.push({
+        date: dateStr,
+        displayDate: format(currentDate, 'MMM d'),
+        totals,
+        goalsMetCount,
+        allGoalsMet: goalsMetCount === 4,
+        hasLogs: dayLogs.length > 0
+      });
+    }
+    
+    return history;
+  }, [logs, activeGoal]);
+
+  // Calculate statistics
+  const goalStats = useMemo(() => {
+    if (!activeGoal || goalAchievementHistory.length === 0) return null;
+    
+    const daysWithLogs = goalAchievementHistory.filter(d => d.hasLogs);
+    const daysAllGoalsMet = daysWithLogs.filter(d => d.allGoalsMet).length;
+    const successRate = daysWithLogs.length > 0 ? Math.round((daysAllGoalsMet / daysWithLogs.length) * 100) : 0;
+    
+    // Calculate current streak
+    let currentStreak = 0;
+    for (let i = goalAchievementHistory.length - 1; i >= 0; i--) {
+      if (goalAchievementHistory[i].allGoalsMet) {
+        currentStreak++;
+      } else if (goalAchievementHistory[i].hasLogs) {
+        break;
+      }
+    }
+    
+    return {
+      daysTracked: daysWithLogs.length,
+      daysGoalsMet: daysAllGoalsMet,
+      successRate,
+      currentStreak
+    };
+  }, [goalAchievementHistory, activeGoal]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -556,14 +638,225 @@ export default function NutritionTracking() {
         </CardContent>
       </Card>
 
+      {/* Weekly Progress (for weekly goals) */}
+      {activeGoal && activeGoal.goal_type === 'weekly' && (
+        <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarIcon className="w-5 h-5 text-purple-600" />
+              This Week's Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-slate-900">{Math.round(weeklyTotals.calories)}</div>
+                <div className="text-sm text-slate-600">/ {activeGoal.target_calories * 7} kcal</div>
+                <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getProgressColor(getProgressPercentage(weeklyTotals.calories, activeGoal.target_calories * 7))}`}
+                    style={{ width: `${getProgressPercentage(weeklyTotals.calories, activeGoal.target_calories * 7)}%` }}
+                  />
+                </div>
+                <div className="text-xs mt-1 font-medium">
+                  {getProgressPercentage(weeklyTotals.calories, activeGoal.target_calories * 7) >= 100 ? (
+                    <span className="text-emerald-600">✓ Goal Met</span>
+                  ) : (
+                    <span className="text-slate-500">{(activeGoal.target_calories * 7) - Math.round(weeklyTotals.calories)} kcal left</span>
+                  )}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-700">{Math.round(weeklyTotals.protein)}g</div>
+                <div className="text-sm text-slate-600">/ {activeGoal.target_protein * 7}g</div>
+                <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getProgressColor(getProgressPercentage(weeklyTotals.protein, activeGoal.target_protein * 7))}`}
+                    style={{ width: `${getProgressPercentage(weeklyTotals.protein, activeGoal.target_protein * 7)}%` }}
+                  />
+                </div>
+                <div className="text-xs mt-1 font-medium">
+                  {getProgressPercentage(weeklyTotals.protein, activeGoal.target_protein * 7) >= 100 ? (
+                    <span className="text-emerald-600">✓ Goal Met</span>
+                  ) : (
+                    <span className="text-slate-500">{(activeGoal.target_protein * 7) - Math.round(weeklyTotals.protein)}g left</span>
+                  )}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-amber-700">{Math.round(weeklyTotals.carbs)}g</div>
+                <div className="text-sm text-slate-600">/ {activeGoal.target_carbs * 7}g</div>
+                <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getProgressColor(getProgressPercentage(weeklyTotals.carbs, activeGoal.target_carbs * 7))}`}
+                    style={{ width: `${getProgressPercentage(weeklyTotals.carbs, activeGoal.target_carbs * 7)}%` }}
+                  />
+                </div>
+                <div className="text-xs mt-1 font-medium">
+                  {getProgressPercentage(weeklyTotals.carbs, activeGoal.target_carbs * 7) >= 100 ? (
+                    <span className="text-emerald-600">✓ Goal Met</span>
+                  ) : (
+                    <span className="text-slate-500">{(activeGoal.target_carbs * 7) - Math.round(weeklyTotals.carbs)}g left</span>
+                  )}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-rose-700">{Math.round(weeklyTotals.fat)}g</div>
+                <div className="text-sm text-slate-600">/ {activeGoal.target_fat * 7}g</div>
+                <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getProgressColor(getProgressPercentage(weeklyTotals.fat, activeGoal.target_fat * 7))}`}
+                    style={{ width: `${getProgressPercentage(weeklyTotals.fat, activeGoal.target_fat * 7)}%` }}
+                  />
+                </div>
+                <div className="text-xs mt-1 font-medium">
+                  {getProgressPercentage(weeklyTotals.fat, activeGoal.target_fat * 7) >= 100 ? (
+                    <span className="text-emerald-600">✓ Goal Met</span>
+                  ) : (
+                    <span className="text-slate-500">{(activeGoal.target_fat * 7) - Math.round(weeklyTotals.fat)}g left</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Goal Achievement History */}
+      {activeGoal && goalStats && (
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-indigo-600" />
+              Goal Achievement History (Last 30 Days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Stats Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                <div className="text-3xl font-bold text-indigo-600">{goalStats.successRate}%</div>
+                <div className="text-xs text-slate-600 mt-1">Success Rate</div>
+              </div>
+              <div className="text-center p-4 bg-emerald-50 rounded-lg">
+                <div className="text-3xl font-bold text-emerald-600">{goalStats.daysGoalsMet}</div>
+                <div className="text-xs text-slate-600 mt-1">Days Goals Met</div>
+              </div>
+              <div className="text-center p-4 bg-amber-50 rounded-lg">
+                <div className="text-3xl font-bold text-amber-600">{goalStats.daysTracked}</div>
+                <div className="text-xs text-slate-600 mt-1">Days Tracked</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-3xl font-bold text-purple-600">{goalStats.currentStreak}</div>
+                <div className="text-xs text-slate-600 mt-1">Current Streak</div>
+              </div>
+            </div>
+
+            {/* Calendar Heatmap */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 mb-3">Daily Achievement Calendar</h4>
+              <div className="grid grid-cols-7 gap-2">
+                {goalAchievementHistory.slice(-28).map((day, idx) => (
+                  <div
+                    key={idx}
+                    className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs relative group cursor-pointer transition-all ${
+                      !day.hasLogs
+                        ? 'bg-slate-100 text-slate-400'
+                        : day.allGoalsMet
+                        ? 'bg-emerald-500 text-white'
+                        : day.goalsMetCount >= 2
+                        ? 'bg-amber-400 text-white'
+                        : 'bg-rose-400 text-white'
+                    }`}
+                  >
+                    <div className="font-semibold">{format(new Date(day.date), 'd')}</div>
+                    {day.hasLogs && (
+                      <div className="text-[8px]">{day.goalsMetCount}/4</div>
+                    )}
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10">
+                      {day.displayDate}
+                      {day.hasLogs ? (
+                        <>
+                          <br />
+                          {day.allGoalsMet ? '✓ All goals met' : `${day.goalsMetCount}/4 goals met`}
+                        </>
+                      ) : (
+                        <><br />No data</>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-center gap-4 mt-4 text-xs text-slate-600">
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded bg-slate-100" />
+                  <span>No data</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded bg-rose-400" />
+                  <span>0-1 goals</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded bg-amber-400" />
+                  <span>2-3 goals</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 rounded bg-emerald-500" />
+                  <span>All goals met</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Days Detail */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 mb-3">Recent Performance</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {goalAchievementHistory.slice(-7).reverse().map((day, idx) => {
+                  if (!day.hasLogs) return null;
+                  return (
+                    <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-medium text-sm text-slate-900">{day.displayDate}</div>
+                        <Badge variant={day.allGoalsMet ? 'default' : 'secondary'} className={day.allGoalsMet ? 'bg-emerald-500' : 'bg-amber-500'}>
+                          {day.allGoalsMet ? '✓ All Goals Met' : `${day.goalsMetCount}/4 Goals`}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 text-xs">
+                        <div className={day.totals.calories >= activeGoal.target_calories * 0.9 && day.totals.calories <= activeGoal.target_calories * 1.1 ? 'text-emerald-600' : 'text-slate-500'}>
+                          <div className="font-medium">{Math.round(day.totals.calories)}</div>
+                          <div>/ {activeGoal.target_calories} kcal</div>
+                        </div>
+                        <div className={day.totals.protein >= activeGoal.target_protein * 0.9 ? 'text-emerald-600' : 'text-slate-500'}>
+                          <div className="font-medium">{Math.round(day.totals.protein)}g</div>
+                          <div>/ {activeGoal.target_protein}g P</div>
+                        </div>
+                        <div className={day.totals.carbs >= activeGoal.target_carbs * 0.9 && day.totals.carbs <= activeGoal.target_carbs * 1.1 ? 'text-emerald-600' : 'text-slate-500'}>
+                          <div className="font-medium">{Math.round(day.totals.carbs)}g</div>
+                          <div>/ {activeGoal.target_carbs}g C</div>
+                        </div>
+                        <div className={day.totals.fat >= activeGoal.target_fat * 0.9 && day.totals.fat <= activeGoal.target_fat * 1.1 ? 'text-emerald-600' : 'text-slate-500'}>
+                          <div className="font-medium">{Math.round(day.totals.fat)}g</div>
+                          <div>/ {activeGoal.target_fat}g F</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Active Goals */}
       {activeGoal && (
         <Card className="border-emerald-200 bg-emerald-50">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-emerald-900">
-                <Award className="w-5 h-5" />
-                Active Daily Goal
+                <Target className="w-5 h-5" />
+                Active {activeGoal.goal_type === 'daily' ? 'Daily' : 'Weekly'} Goal
               </CardTitle>
               <Button variant="ghost" size="sm" onClick={() => handleEditGoal(activeGoal)}>
                 <Edit className="w-4 h-4" />
@@ -574,19 +867,19 @@ export default function NutritionTracking() {
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-2xl font-bold text-emerald-900">{activeGoal.target_calories}</div>
-                <div className="text-xs text-emerald-700">Calories</div>
+                <div className="text-xs text-emerald-700">Calories {activeGoal.goal_type === 'weekly' && '/day'}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-emerald-900">{activeGoal.target_protein}g</div>
-                <div className="text-xs text-emerald-700">Protein</div>
+                <div className="text-xs text-emerald-700">Protein {activeGoal.goal_type === 'weekly' && '/day'}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-emerald-900">{activeGoal.target_carbs}g</div>
-                <div className="text-xs text-emerald-700">Carbs</div>
+                <div className="text-xs text-emerald-700">Carbs {activeGoal.goal_type === 'weekly' && '/day'}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-emerald-900">{activeGoal.target_fat}g</div>
-                <div className="text-xs text-emerald-700">Fat</div>
+                <div className="text-xs text-emerald-700">Fat {activeGoal.goal_type === 'weekly' && '/day'}</div>
               </div>
             </div>
           </CardContent>

@@ -504,6 +504,66 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
 
           <Separator />
 
+          {/* Cuisine Preferences */}
+          <div>
+            <Label className="mb-3 block">Cuisine Preferences (Optional)</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {cuisineOptions.map(cuisine => (
+                <div key={cuisine.value} className="flex items-center gap-2">
+                  <Checkbox
+                    id={cuisine.value}
+                    checked={cuisinePreferences.includes(cuisine.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setCuisinePreferences([...cuisinePreferences, cuisine.value]);
+                      } else {
+                        setCuisinePreferences(cuisinePreferences.filter(c => c !== cuisine.value));
+                      }
+                    }}
+                  />
+                  <Label htmlFor={cuisine.value} className="cursor-pointer text-sm">
+                    {cuisine.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cooking Time & Skill Level */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label className="mb-2 block">Max Cooking Time per Meal</Label>
+              <Select value={cookingTime} onValueChange={setCookingTime}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any Duration</SelectItem>
+                  <SelectItem value="under_15">Under 15 minutes</SelectItem>
+                  <SelectItem value="15_30">15-30 minutes</SelectItem>
+                  <SelectItem value="30_60">30-60 minutes</SelectItem>
+                  <SelectItem value="over_60">Over 60 minutes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="mb-2 block">Cooking Skill Level</Label>
+              <Select value={skillLevel} onValueChange={setSkillLevel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beginner">Beginner - Simple recipes</SelectItem>
+                  <SelectItem value="intermediate">Intermediate - Moderate complexity</SelectItem>
+                  <SelectItem value="advanced">Advanced - Complex techniques</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Separator />
+
           <div className="space-y-2">
             <Label>Additional Requirements (Optional)</Label>
             <Textarea

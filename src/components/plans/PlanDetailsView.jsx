@@ -42,7 +42,8 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
 
   React.useEffect(() => {
     if (plan?.days) {
-      setLocalDays(plan.days);
+      // Ensure we only show the correct number of days (max 7 for a week)
+      setLocalDays(plan.days.slice(0, 7));
     }
   }, [plan]);
 
@@ -670,7 +671,7 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                             }
                           `}
                         >
-                          {index + 1}
+                          Day {index + 1}
                         </button>
                         <Button
                           variant="ghost"

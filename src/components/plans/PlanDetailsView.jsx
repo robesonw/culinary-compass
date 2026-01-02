@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles, Clock, Wrench, Utensils } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarSign, Plus, Loader2, ArrowLeftRight, TrendingUp, Heart, RefreshCw, Sparkles, Clock, Wrench, Utensils, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
@@ -43,12 +44,19 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [shareMealDialogOpen, setShareMealDialogOpen] = useState(false);
   const [mealToShare, setMealToShare] = useState(null);
   const [mealTypeToShare, setMealTypeToShare] = useState(null);
+  const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  const [addRecipeTarget, setAddRecipeTarget] = useState(null);
 
   const queryClient = useQueryClient();
 
   const { data: favoriteMeals = [] } = useQuery({
     queryKey: ['favoriteMeals'],
     queryFn: () => base44.entities.FavoriteMeal.list('-created_date'),
+  });
+
+  const { data: sharedRecipes = [] } = useQuery({
+    queryKey: ['sharedRecipes'],
+    queryFn: () => base44.entities.SharedRecipe.list('-created_date'),
   });
 
   React.useEffect(() => {
@@ -181,11 +189,80 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
     
     setGroceryList(prev => ({
       ...prev,
-      [category]: [...(prev[category] || []), { name: newItemName, price: null, unit: '' }]
+      [category]: [...(prev[category] || []), { name: newItemName, price: null, unit: '', quantity: 1 }]
     }));
     setNewItemName('');
     setAddingItem(null);
     saveGroceryList();
+  };
+
+  const removeGroceryItem = (category, idx) => {
+    setGroceryList(prev => ({
+      ...prev,
+      [category]: prev[category].filter((_, i) => i !== idx)
+    }));
+    saveGroceryList();
+  };
+
+  const handleAddRecipe = async (recipeId, source) => {
+    if (!addRecipeTarget) return;
+    
+    const { dayIndex, mealType } = addRecipeTarget;
+    
+    let recipeData;
+    if (source === 'favorite') {
+      const recipe = favoriteMeals.find(r => r.id === recipeId);
+      if (!recipe) return;
+      
+      recipeData = {
+        name: recipe.name,
+        calories: recipe.calories,
+        protein: recipe.protein,
+        carbs: recipe.carbs,
+        fat: recipe.fat,
+        nutrients: recipe.nutrients,
+        prepTip: recipe.prepTip,
+        prepSteps: recipe.prepSteps,
+        prepTime: recipe.prepTime,
+        difficulty: recipe.difficulty,
+        equipment: recipe.equipment,
+        healthBenefit: recipe.healthBenefit,
+        imageUrl: recipe.imageUrl
+      };
+    } else {
+      const recipe = sharedRecipes.find(r => r.id === recipeId);
+      if (!recipe) return;
+      
+      recipeData = {
+        name: recipe.name,
+        calories: recipe.calories,
+        protein: recipe.protein,
+        carbs: recipe.carbs,
+        fat: recipe.fat,
+        nutrients: recipe.meal_data?.nutrients || '',
+        prepTip: recipe.description,
+        prepSteps: recipe.prep_steps || [],
+        prepTime: recipe.prep_time,
+        difficulty: recipe.difficulty,
+        equipment: recipe.meal_data?.equipment || [],
+        healthBenefit: recipe.meal_data?.health_benefits || '',
+        imageUrl: recipe.image_url
+      };
+    }
+    
+    const updatedDays = [...localDays];
+    updatedDays[dayIndex][mealType] = recipeData;
+    
+    try {
+      await base44.entities.MealPlan.update(plan.id, { days: updatedDays });
+      setLocalDays(updatedDays);
+      queryClient.invalidateQueries({ queryKey: ['mealPlans'] });
+      toast.success('Recipe added to meal plan!');
+      setShowAddRecipeDialog(false);
+      setAddRecipeTarget(null);
+    } catch (error) {
+      toast.error('Failed to add recipe');
+    }
   };
 
   const handleDragEnd = (result) => {
@@ -864,6 +941,17 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                           )}
                                           Regenerate
                                         </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setAddRecipeTarget({ dayIndex: selectedDay, mealType });
+                                            setShowAddRecipeDialog(true);
+                                          }}
+                                        >
+                                          <Plus className="w-4 h-4 mr-1" />
+                                          Add Recipe
+                                        </Button>
                                         <Badge variant="outline" className="flex items-center gap-1">
                                           <Flame className="w-3 h-3 text-orange-500" />
                                           {meal.calories}
@@ -1138,6 +1226,16 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                     {itemName}
                                   </span>
 
+                                  {/* Remove Item */}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => removeGroceryItem(category, idx)}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+
                                   {/* Quantity Input */}
                                   <Input
                                     type="number"
@@ -1271,6 +1369,65 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
         open={shareMealDialogOpen}
         onOpenChange={setShareMealDialogOpen}
       />
+
+      {/* Add Recipe to Plan Dialog */}
+      <Dialog open={showAddRecipeDialog} onOpenChange={setShowAddRecipeDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Recipe to {addRecipeTarget?.mealType}</DialogTitle>
+          </DialogHeader>
+          <Tabs defaultValue="favorites">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="favorites">My Favorites</TabsTrigger>
+              <TabsTrigger value="community">Community Recipes</TabsTrigger>
+            </TabsList>
+            <TabsContent value="favorites" className="space-y-3 mt-4">
+              {favoriteMeals.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-8">No favorite meals yet</p>
+              ) : (
+                favoriteMeals.map(recipe => (
+                  <div key={recipe.id} className="p-3 border border-slate-200 rounded-lg flex items-center justify-between hover:bg-slate-50">
+                    <div className="flex items-center gap-3">
+                      {recipe.imageUrl && (
+                        <img src={recipe.imageUrl} alt={recipe.name} className="w-12 h-12 object-cover rounded" />
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{recipe.name}</p>
+                        <p className="text-xs text-slate-500 capitalize">{recipe.meal_type}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => handleAddRecipe(recipe.id, 'favorite')}>
+                      Add
+                    </Button>
+                  </div>
+                ))
+              )}
+            </TabsContent>
+            <TabsContent value="community" className="space-y-3 mt-4">
+              {sharedRecipes.filter(r => r.status === 'approved').length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-8">No community recipes available</p>
+              ) : (
+                sharedRecipes.filter(r => r.status === 'approved').map(recipe => (
+                  <div key={recipe.id} className="p-3 border border-slate-200 rounded-lg flex items-center justify-between hover:bg-slate-50">
+                    <div className="flex items-center gap-3">
+                      {recipe.image_url && (
+                        <img src={recipe.image_url} alt={recipe.name} className="w-12 h-12 object-cover rounded" />
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{recipe.name}</p>
+                        <p className="text-xs text-slate-500">by {recipe.author_name}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => handleAddRecipe(recipe.id, 'shared')}>
+                      Add
+                    </Button>
+                  </div>
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

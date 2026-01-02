@@ -11,7 +11,7 @@ import { Calendar, Flame, Pill, ChefHat, Download, Share2, ShoppingCart, DollarS
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MealCard from '../meals/MealCard';
 import SharePlanDialog from '../share/SharePlanDialog';
@@ -45,6 +45,11 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
   const [mealTypeToShare, setMealTypeToShare] = useState(null);
 
   const queryClient = useQueryClient();
+
+  const { data: favoriteMeals = [] } = useQuery({
+    queryKey: ['favoriteMeals'],
+    queryFn: () => base44.entities.FavoriteMeal.list('-created_date'),
+  });
 
   React.useEffect(() => {
     if (plan?.days) {
@@ -249,21 +254,49 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
 
   const nutritionStats = calculateTotalNutrition();
 
-  const saveMealToFavorites = async (meal, mealType) => {
+  const isMealFavorited = (meal, mealType) => {
+    return favoriteMeals.some(fav => 
+      fav.name === meal.name && fav.meal_type === mealType
+    );
+  };
+
+  const toggleMealFavorite = async (meal, mealType) => {
+    const existingFavorite = favoriteMeals.find(fav => 
+      fav.name === meal.name && fav.meal_type === mealType
+    );
+
     try {
-      await base44.entities.FavoriteMeal.create({
-        name: meal.name,
-        meal_type: mealType,
-        calories: meal.calories,
-        protein: meal.protein,
-        carbs: meal.carbs,
-        fat: meal.fat,
-        nutrients: meal.nutrients,
-        prepTip: meal.prepTip,
-      });
-      toast.success('Meal saved to favorites!');
+      if (existingFavorite) {
+        // Remove from favorites
+        await base44.entities.FavoriteMeal.delete(existingFavorite.id);
+        queryClient.invalidateQueries({ queryKey: ['favoriteMeals'] });
+        toast.success('Removed from favorites');
+      } else {
+        // Add to favorites
+        await base44.entities.FavoriteMeal.create({
+          name: meal.name,
+          meal_type: mealType,
+          calories: meal.calories,
+          protein: meal.protein,
+          carbs: meal.carbs,
+          fat: meal.fat,
+          nutrients: meal.nutrients,
+          prepTip: meal.prepTip,
+          prepTime: meal.prepTime,
+          prepSteps: meal.prepSteps || [],
+          difficulty: meal.difficulty,
+          equipment: meal.equipment || [],
+          healthBenefit: meal.healthBenefit,
+          imageUrl: meal.imageUrl,
+          source_type: 'meal_plan',
+          source_meal_plan_id: plan.id,
+          source_meal_plan_name: plan.name,
+        });
+        queryClient.invalidateQueries({ queryKey: ['favoriteMeals'] });
+        toast.success('Saved to favorites!');
+      }
     } catch (error) {
-      toast.error('Failed to save meal');
+      toast.error('Failed to update favorites');
     }
   };
 
@@ -620,10 +653,10 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                               className="h-6 w-6 p-0"
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                saveMealToFavorites(meal, mealType);
+                                                toggleMealFavorite(meal, mealType);
                                               }}
                                             >
-                                              <Heart className="w-3 h-3" />
+                                              <Heart className={`w-3 h-3 ${isMealFavorited(meal, mealType) ? 'fill-rose-500 text-rose-500' : ''}`} />
                                             </Button>
                                             <Button
                                               variant="ghost"
@@ -805,10 +838,10 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          onClick={() => saveMealToFavorites(meal, mealType)}
+                                          onClick={() => toggleMealFavorite(meal, mealType)}
                                         >
-                                          <Heart className="w-4 h-4 mr-1" />
-                                          Favorite
+                                          <Heart className={`w-4 h-4 mr-1 ${isMealFavorited(meal, mealType) ? 'fill-rose-500 text-rose-500' : ''}`} />
+                                          {isMealFavorited(meal, mealType) ? 'Favorited' : 'Favorite'}
                                         </Button>
                                         <Button
                                           variant="outline"

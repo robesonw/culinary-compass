@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const cuisineTypes = [
   'Italian', 'Mexican', 'Chinese', 'Japanese', 'Indian', 'Thai', 'Mediterranean',
-  'French', 'American', 'Korean', 'Vietnamese', 'Middle Eastern', 'Greek', 'Spanish'
+  'French', 'American', 'Korean', 'Vietnamese', 'Middle Eastern', 'Greek', 'Spanish', 'Other'
 ];
 
 const dietaryPreferences = [
@@ -34,6 +34,7 @@ export default function AIRecipeGenerator() {
   const [form, setForm] = useState({
     mealType: 'Dinner',
     cuisine: 'Italian',
+    customCuisine: '',
     dietary: 'None',
     difficulty: 'Medium',
     ingredients: '',
@@ -50,7 +51,8 @@ export default function AIRecipeGenerator() {
 
     setGenerating(true);
     try {
-      const prompt = `Generate a detailed ${form.difficulty.toLowerCase()} difficulty ${form.cuisine} ${form.mealType.toLowerCase()} recipe.
+      const cuisineName = form.cuisine === 'Other' ? form.customCuisine : form.cuisine;
+      const prompt = `Generate a detailed ${form.difficulty.toLowerCase()} difficulty ${cuisineName} ${form.mealType.toLowerCase()} recipe.
 
 Dietary Preference: ${form.dietary}
 Available Ingredients: ${form.ingredients}
@@ -253,6 +255,14 @@ Provide:
                     ))}
                   </SelectContent>
                 </Select>
+                {form.cuisine === 'Other' && (
+                  <Input
+                    placeholder="Enter custom cuisine type..."
+                    value={form.customCuisine}
+                    onChange={(e) => setForm({ ...form, customCuisine: e.target.value })}
+                    className="mt-2"
+                  />
+                )}
               </div>
 
               <div>

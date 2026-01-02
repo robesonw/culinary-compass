@@ -18,6 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import QuickStartChecklist from '../components/onboarding/QuickStartChecklist';
+import OnboardingTour from '../components/onboarding/OnboardingTour';
 
 export default function Dashboard() {
   const { data: mealPlans = [] } = useQuery({
@@ -151,6 +153,11 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <OnboardingTour />
+      
+      {/* Quick Start Checklist */}
+      <QuickStartChecklist />
+      
       {/* Welcome Section */}
       <div className="flex items-center justify-between">
         <div>

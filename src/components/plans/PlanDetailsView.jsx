@@ -61,16 +61,35 @@ export default function PlanDetailsView({ plan, open, onOpenChange }) {
       const dairyKeywords = ['yogurt', 'cheese', 'milk', 'cream', 'butter'];
       const fruitKeywords = ['berry', 'berries', 'apple', 'banana', 'orange', 'lemon', 'avocado'];
 
+      // Group items by category and deduplicate
+      const itemsByCategory = {};
       items.forEach(item => {
         const lowerItem = item.toLowerCase();
-        const itemWithPrice = { name: item, price: null, quantity: 1 };
+        let targetCategory = 'Other';
         
-        if (proteinKeywords.some(k => lowerItem.includes(k))) categorized['Proteins'].push(itemWithPrice);
-        else if (vegKeywords.some(k => lowerItem.includes(k))) categorized['Vegetables'].push(itemWithPrice);
-        else if (fruitKeywords.some(k => lowerItem.includes(k))) categorized['Fruits'].push(itemWithPrice);
-        else if (grainKeywords.some(k => lowerItem.includes(k))) categorized['Grains'].push(itemWithPrice);
-        else if (dairyKeywords.some(k => lowerItem.includes(k))) categorized['Dairy/Alternatives'].push(itemWithPrice);
-        else categorized['Other'].push(itemWithPrice);
+        if (proteinKeywords.some(k => lowerItem.includes(k))) targetCategory = 'Proteins';
+        else if (vegKeywords.some(k => lowerItem.includes(k))) targetCategory = 'Vegetables';
+        else if (fruitKeywords.some(k => lowerItem.includes(k))) targetCategory = 'Fruits';
+        else if (grainKeywords.some(k => lowerItem.includes(k))) targetCategory = 'Grains';
+        else if (dairyKeywords.some(k => lowerItem.includes(k))) targetCategory = 'Dairy/Alternatives';
+        
+        if (!itemsByCategory[targetCategory]) {
+          itemsByCategory[targetCategory] = {};
+        }
+        
+        // Deduplicate by item name
+        if (itemsByCategory[targetCategory][item]) {
+          itemsByCategory[targetCategory][item].quantity += 1;
+        } else {
+          itemsByCategory[targetCategory][item] = { name: item, price: null, quantity: 1 };
+        }
+      });
+
+      // Convert to array format
+      Object.keys(categorized).forEach(category => {
+        if (itemsByCategory[category]) {
+          categorized[category] = Object.values(itemsByCategory[category]);
+        }
       });
 
       setGroceryList(categorized);

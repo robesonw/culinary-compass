@@ -30,8 +30,7 @@ const healthGoals = [
   { value: 'general_wellness', label: 'General Wellness', icon: Sparkles, color: 'purple' },
 ];
 
-const culturalStyles = [
-  { value: 'none', label: 'Any / Mixed', emoji: '🌍' },
+const culturalStylesList = [
   { value: 'mediterranean', label: 'Mediterranean', emoji: '🫒' },
   { value: 'asian', label: 'Asian', emoji: '🍜' },
   { value: 'indian', label: 'Indian', emoji: '🍛' },
@@ -86,8 +85,9 @@ export default function HealthDietHub() {
   const [cuisinePreferences, setCuisinePreferences] = useState([]);
   const [cookingTime, setCookingTime] = useState('any');
   const [skillLevel, setSkillLevel] = useState('intermediate');
-  const [culturalStyle, setCulturalStyle] = useState('none');
+  const [culturalStyles, setCulturalStyles] = useState([]);
   const [customCulturalStyle, setCustomCulturalStyle] = useState('');
+  const [customCuisineInput, setCustomCuisineInput] = useState('');
   const [lifeStage, setLifeStage] = useState('general');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
@@ -193,7 +193,32 @@ export default function HealthDietHub() {
       if (userPrefs.foods_liked) setFoodsLiked(userPrefs.foods_liked);
       if (userPrefs.foods_avoided) setFoodsAvoided(userPrefs.foods_avoided);
       if (userPrefs.allergens) setAllergens(userPrefs.allergens);
-      if (userPrefs.cuisine_preferences) setCuisinePreferences(userPrefs.cuisine_preferences);
+      if (userPrefs.cuisine_preferences) {
+        setCuisinePreferences(userPrefs.cuisine_preferences);
+        // Also populate cultural styles from cuisine preferences
+        const culturalMapping = {
+          'mediterranean': 'mediterranean',
+          'greek': 'mediterranean',
+          'asian': 'asian',
+          'chinese': 'asian',
+          'japanese': 'asian',
+          'thai': 'asian',
+          'vietnamese': 'asian',
+          'indian': 'indian',
+          'mexican': 'latin_american',
+          'middle_eastern': 'middle_eastern',
+          'italian': 'european',
+          'french': 'european',
+          'spanish': 'european',
+          'african': 'african'
+        };
+        const styles = new Set();
+        userPrefs.cuisine_preferences.forEach(cuisine => {
+          const style = culturalMapping[cuisine];
+          if (style) styles.add(style);
+        });
+        if (styles.size > 0) setCulturalStyles(Array.from(styles));
+      }
       if (userPrefs.cooking_time) setCookingTime(userPrefs.cooking_time);
       if (userPrefs.skill_level) setSkillLevel(userPrefs.skill_level);
       if (userPrefs.num_people) setNumPeople(userPrefs.num_people);
@@ -250,11 +275,27 @@ export default function HealthDietHub() {
     const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
     
     const allergenText = allergens.length > 0 ? `- STRICT ALLERGEN RESTRICTIONS (NEVER include): ${allergens.join(', ')}` : '';
-    const cuisineText = cuisinePreferences.length > 0 ? `- Preferred Cuisines: ${cuisinePreferences.join(', ')}` : '';
+
+    // Combine selected cuisine preferences with custom input
+    const allCuisines = [...cuisinePreferences];
+    if (customCuisineInput.trim()) {
+      allCuisines.push(...customCuisineInput.split(',').map(c => c.trim()).filter(c => c));
+    }
+    const cuisineText = allCuisines.length > 0 ? `- Preferred Cuisines: ${allCuisines.join(', ')}` : '';
+
     const timeText = cookingTime !== 'any' ? `- Cooking Time Preference: ${cookingTime}` : '';
     const skillText = `- Cooking Skill Level: ${skillLevel}`;
-    const effectiveCulturalStyle = customCulturalStyle.trim() || (culturalStyle !== 'none' ? culturalStyle : '');
-    const culturalText = effectiveCulturalStyle ? `- CULTURAL STYLE: ${effectiveCulturalStyle.toUpperCase()} - All meals must be authentic to this cuisine with traditional ingredients, spices, and cooking methods` : '';
+
+    // Handle multiple cultural styles
+    const effectiveCulturalStyles = customCulturalStyle.trim() 
+      ? [customCulturalStyle.trim()] 
+      : culturalStyles.length > 0 
+        ? culturalStyles 
+        : [];
+    const culturalText = effectiveCulturalStyles.length > 0 
+      ? `- CULTURAL STYLES: ${effectiveCulturalStyles.map(s => s.toUpperCase()).join(' + ')} - Blend these cultural cuisines with traditional ingredients, spices, and cooking methods` 
+      : '';
+
     const lifeStageText = lifeStage !== 'general' ? `- LIFE STAGE: ${lifeStage.toUpperCase()} - Adjust portions, textures, and nutrients accordingly` : '';
 
     const prompt = `You are a professional nutritionist specializing in culturally authentic, health-focused meal planning. Create a ${daysCount}-day personalized meal plan.
@@ -385,10 +426,19 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
         }
       });
 
+      // Ensure we only get the exact number of days requested
+      if (response?.days) {
+        response.days = response.days.slice(0, daysCount);
+      }
+
       setGeneratedPlan(response);
       setCheckedItems(new Set());
 
-      const effectiveCulturalLabel = customCulturalStyle.trim() || (culturalStyle !== 'none' ? culturalStyles.find(s => s.value === culturalStyle)?.label : '');
+      const effectiveCulturalLabel = customCulturalStyle.trim() 
+        ? customCulturalStyle.trim()
+        : culturalStyles.length > 0 
+          ? culturalStyles.map(s => culturalStylesList.find(cs => cs.value === s)?.label || s).join(' + ')
+          : '';
       const culturalLabel = effectiveCulturalLabel ? ` ${effectiveCulturalLabel}` : '';
       const budgetText = weeklyBudget ? ` ($${weeklyBudget})` : '';
       const peopleText = numPeople > 1 ? ` for ${numPeople}` : '';
@@ -434,25 +484,27 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
             prompt: `Professional food photography of ${culturalContext}${mealName}, appetizing presentation, natural lighting, high quality, restaurant style plating`
           });
           
-          if (result?.url) {
+          if (result?.url && dayIndex < plan.days.length) {
             updatedDays[dayIndex][mealType].imageUrl = result.url;
-            setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
+            setGeneratedPlan(prev => ({ ...prev, days: updatedDays.slice(0, plan.days.length) }));
           }
-        } catch (err) {
+          } catch (err) {
           console.log('Image generation skipped for', mealName);
           // Set error flag so we show placeholder
-          updatedDays[dayIndex][mealType].imageError = true;
-          setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
-        }
-      }
-    } catch (error) {
-      console.log('Image generation completed with some skips');
-    } finally {
-      setGeneratingImages(false);
-    }
-  };
+          if (dayIndex < plan.days.length) {
+            updatedDays[dayIndex][mealType].imageError = true;
+            setGeneratedPlan(prev => ({ ...prev, days: updatedDays.slice(0, plan.days.length) }));
+          }
+          }
+          }
+          } catch (error) {
+          console.log('Image generation completed with some skips');
+          } finally {
+          setGeneratingImages(false);
+          }
+          };
 
-  const regenerateMealImage = async (dayIndex, mealType) => {
+          const regenerateMealImage = async (dayIndex, mealType) => {
     const meal = generatedPlan.days[dayIndex][mealType];
     if (!meal?.name) return;
     
@@ -504,7 +556,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
     current_total_cost: currentTotalCost,
     grocery_list: groceryList,
     macros: generatedPlan.average_daily_macros || null,
-    cultural_style: customCulturalStyle.trim() || culturalStyle,
+    cultural_style: customCulturalStyle.trim() || culturalStyles.join('+'),
     life_stage: lifeStage,
       days: generatedPlan.days.map(day => ({
         day: day.day || 'Day',
@@ -681,19 +733,25 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
 
           <Separator />
 
-          {/* Cultural Style */}
+          {/* Cultural Style - Multiple Selection */}
           <div>
             <Label className="mb-3 block flex items-center gap-2">
               <span className="text-lg">🌍</span>
-              Cultural Cuisine Style
+              Cultural Cuisine Styles (Select Multiple)
             </Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {culturalStyles.map(style => (
+              {culturalStylesList.map(style => (
                 <button
                   key={style.value}
-                  onClick={() => setCulturalStyle(style.value)}
+                  onClick={() => {
+                    if (culturalStyles.includes(style.value)) {
+                      setCulturalStyles(culturalStyles.filter(s => s !== style.value));
+                    } else {
+                      setCulturalStyles([...culturalStyles, style.value]);
+                    }
+                  }}
                   className={`p-3 rounded-lg border-2 transition-all text-left ${
-                    culturalStyle === style.value
+                    culturalStyles.includes(style.value)
                       ? 'border-indigo-600 bg-indigo-50'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
@@ -704,13 +762,13 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
               ))}
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              AI will adapt recipes to your selected cultural style while preserving health goals
+              Select multiple styles to blend cuisines, or leave unselected for any style
             </p>
-            
+
             {/* Custom Cultural Style Input */}
             <div className="mt-3">
               <Input
-                placeholder="Or specify any other cuisine (e.g., Ethiopian, Vietnamese, Peruvian...)"
+                placeholder="Or specify other cuisine styles (e.g., Ethiopian, Vietnamese, Peruvian...)"
                 value={customCulturalStyle}
                 onChange={(e) => setCustomCulturalStyle(e.target.value)}
                 className="text-sm"
@@ -759,6 +817,19 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                   </Label>
                 </div>
               ))}
+            </div>
+
+            {/* Custom Cuisine Input */}
+            <div className="mt-3">
+              <Input
+                placeholder="Add other cuisines (comma-separated, e.g., Ethiopian, Vietnamese, Peruvian)"
+                value={customCuisineInput}
+                onChange={(e) => setCustomCuisineInput(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                These will be combined with your selected preferences above
+              </p>
             </div>
           </div>
 

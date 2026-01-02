@@ -74,8 +74,8 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-200">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
-              <ChefHat className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white">
+              <span className="text-2xl font-bold bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">V</span>
             </div>
             <div>
               <h1 className="font-semibold text-slate-900">VitaPlate</h1>

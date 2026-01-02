@@ -49,10 +49,7 @@ export default function HelpCenter() {
             label: 'Restart Tour',
             onClick: () => {
               localStorage.removeItem('vitaplate_tour_completed');
-              if (window.restartVitaPlateTour) {
-                window.restartVitaPlateTour();
-              }
-              window.location.href = '/';
+              window.location.href = '/Dashboard';
             },
           },
         },

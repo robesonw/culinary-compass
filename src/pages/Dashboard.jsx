@@ -152,13 +152,20 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          Welcome back, {user?.full_name?.split(' ')[0] || 'there'}! 👋
-        </h1>
-        <p className="text-slate-600 mt-1">
-          Here's your nutrition overview for today
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">
+            Welcome back, {user?.full_name?.split(' ')[0] || 'there'}! 👋
+          </h1>
+          <p className="text-slate-600 mt-1">
+            Here's your nutrition overview for today
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link to={createPageUrl('AALandingPage')}>
+            🏠 Home Page
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Grid */}

@@ -44,6 +44,21 @@ export default function MealPlans() {
     setShareDialogOpen(true);
   };
 
+  // Expose handleViewPlan globally for FavoriteMealDetailDialog
+  React.useEffect(() => {
+    window.openMealPlanById = (planId) => {
+      const plan = mealPlans.find(p => p.id === planId);
+      if (plan) {
+        handleViewPlan(plan);
+      } else {
+        toast.error('Meal plan not found');
+      }
+    };
+    return () => {
+      delete window.openMealPlanById;
+    };
+  }, [mealPlans]);
+
   const dietColors = {
     'liver-centric': 'bg-rose-100 text-rose-700 border-rose-200',
     'low-sugar': 'bg-amber-100 text-amber-700 border-amber-200',

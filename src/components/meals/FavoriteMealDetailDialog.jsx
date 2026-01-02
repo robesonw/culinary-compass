@@ -158,11 +158,19 @@ export default function FavoriteMealDetailDialog({ meal, open, onOpenChange }) {
                   </div>
                 </div>
                 {meal.source_meal_plan_id && (
-                  <Button size="sm" variant="ghost" className="h-7" asChild>
-                    <Link to={createPageUrl('MealPlans')}>
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      View Plan
-                    </Link>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-7"
+                    onClick={() => {
+                      onOpenChange(false);
+                      if (window.openMealPlanById) {
+                        window.openMealPlanById(meal.source_meal_plan_id);
+                      }
+                    }}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    View Plan
                   </Button>
                 )}
               </div>

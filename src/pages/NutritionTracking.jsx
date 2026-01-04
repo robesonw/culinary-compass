@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { format, startOfWeek, endOfWeek, subDays, addDays } from 'date-fns';
 import ShareProgressDialog from '../components/progress/ShareProgressDialog';
+import FoodDatabaseSearch from '../components/nutrition/FoodDatabaseSearch';
+import MicronutrientTargetSelector from '../components/nutrition/MicronutrientTargetSelector';
 
 export default function NutritionTracking() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
@@ -39,7 +41,8 @@ export default function NutritionTracking() {
     target_calories: 2000,
     target_protein: 150,
     target_carbs: 200,
-    target_fat: 65
+    target_fat: 65,
+    target_micronutrients: {}
   });
 
   const [logForm, setLogForm] = useState({
@@ -50,7 +53,10 @@ export default function NutritionTracking() {
     protein: 0,
     carbs: 0,
     fat: 0,
-    servings: 1
+    servings: 1,
+    micronutrients: {},
+    food_source: 'manual',
+    food_id: null
   });
 
   const [recipeIngredients, setRecipeIngredients] = useState('');
@@ -149,9 +155,25 @@ export default function NutritionTracking() {
       target_calories: goal.target_calories,
       target_protein: goal.target_protein,
       target_carbs: goal.target_carbs,
-      target_fat: goal.target_fat
+      target_fat: goal.target_fat,
+      target_micronutrients: goal.target_micronutrients || {}
     });
     setGoalDialogOpen(true);
+  };
+
+  const handleSelectFoodFromDatabase = (food) => {
+    setLogForm({
+      ...logForm,
+      recipe_name: food.name,
+      calories: food.calories || 0,
+      protein: food.protein || 0,
+      carbs: food.carbs || 0,
+      fat: food.fat || 0,
+      micronutrients: food.micronutrients || {},
+      food_source: food.source || 'usda',
+      food_id: food.food_id || null
+    });
+    toast.success('Food loaded from database');
   };
 
   const handleSelectMeal = (mealId) => {
@@ -1277,6 +1299,10 @@ export default function NutritionTracking() {
                 />
               </div>
             </div>
+            <MicronutrientTargetSelector
+              targets={goalForm.target_micronutrients || {}}
+              onChange={(newTargets) => setGoalForm({ ...goalForm, target_micronutrients: newTargets })}
+            />
             <Button onClick={handleSaveGoal} className="w-full" disabled={createGoalMutation.isPending || updateGoalMutation.isPending}>
               <Save className="w-4 h-4 mr-2" />
               {editingGoal ? 'Update Goal' : 'Save Goal'}
@@ -1331,11 +1357,16 @@ export default function NutritionTracking() {
           <div className="space-y-4">
             {/* Quick Add Options */}
             <Tabs value={logMethod} onValueChange={setLogMethod}>
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="manual">Manual</TabsTrigger>
+                <TabsTrigger value="database">Database</TabsTrigger>
                 <TabsTrigger value="photo">Photo</TabsTrigger>
                 <TabsTrigger value="plan">From Plan</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="database" className="space-y-3">
+                <FoodDatabaseSearch onSelectFood={handleSelectFoodFromDatabase} />
+              </TabsContent>
 
               <TabsContent value="photo" className="space-y-3">
                 <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">

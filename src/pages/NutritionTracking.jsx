@@ -19,6 +19,7 @@ import { format, startOfWeek, endOfWeek, subDays, addDays } from 'date-fns';
 import ShareProgressDialog from '../components/progress/ShareProgressDialog';
 import FoodDatabaseSearch from '../components/nutrition/FoodDatabaseSearch';
 import MicronutrientTargetSelector from '../components/nutrition/MicronutrientTargetSelector';
+import MicronutrientProgressCard from '../components/nutrition/MicronutrientProgressCard';
 
 export default function NutritionTracking() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
@@ -128,7 +129,10 @@ export default function NutritionTracking() {
         protein: 0,
         carbs: 0,
         fat: 0,
-        servings: 1
+        servings: 1,
+        micronutrients: {},
+        food_source: 'manual',
+        food_id: null
       });
     },
   });
@@ -782,6 +786,11 @@ export default function NutritionTracking() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Micronutrient Progress */}
+      {activeDailyGoal && (
+        <MicronutrientProgressCard logs={logs} activeGoal={activeDailyGoal} />
+      )}
 
       {/* Weekly Progress (for weekly goals) */}
       {activeWeeklyGoal && (
@@ -1528,6 +1537,26 @@ export default function NutritionTracking() {
                 />
               </div>
             </div>
+
+            {/* Micronutrient Display */}
+            {logForm.micronutrients && Object.keys(logForm.micronutrients).length > 0 && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <Label className="text-xs text-emerald-900 mb-2 block">Micronutrients Tracked</Label>
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(logForm.micronutrients).map(([nutrient, data]) => (
+                    <Badge key={nutrient} variant="secondary" className="text-xs">
+                      {nutrient}: {data.value}{data.unit}
+                    </Badge>
+                  ))}
+                </div>
+                {logForm.food_source !== 'manual' && (
+                  <p className="text-xs text-emerald-700 mt-2">
+                    Data from {logForm.food_source === 'usda' ? 'USDA FoodData Central' : 'Open Food Facts'}
+                  </p>
+                )}
+              </div>
+            )}
+
             <Button
               onClick={() => createLogMutation.mutate(logForm)}
               className="w-full"

@@ -1,0 +1,80 @@
+{
+  "name": "NutritionLog",
+  "type": "object",
+  "properties": {
+    "recipe_name": {
+      "type": "string",
+      "description": "Name of the recipe consumed"
+    },
+    "meal_type": {
+      "type": "string",
+      "enum": [
+        "breakfast",
+        "lunch",
+        "dinner",
+        "snack"
+      ],
+      "description": "Type of meal"
+    },
+    "log_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of consumption"
+    },
+    "calories": {
+      "type": "number",
+      "description": "Calories consumed"
+    },
+    "protein": {
+      "type": "number",
+      "description": "Protein in grams"
+    },
+    "carbs": {
+      "type": "number",
+      "description": "Carbs in grams"
+    },
+    "fat": {
+      "type": "number",
+      "description": "Fat in grams"
+    },
+    "micronutrients": {
+      "type": "object",
+      "description": "Micronutrient values (vitamin/mineral name as key, object with value and unit)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "servings": {
+      "type": "number",
+      "default": 1,
+      "description": "Number of servings consumed"
+    },
+    "food_source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "usda",
+        "open_food_facts"
+      ],
+      "default": "manual",
+      "description": "Source of nutritional data"
+    },
+    "food_id": {
+      "type": "string",
+      "description": "External food database ID if from USDA or Open Food Facts"
+    }
+  },
+  "required": [
+    "recipe_name",
+    "log_date",
+    "calories"
+  ]
+}

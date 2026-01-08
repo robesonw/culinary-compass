@@ -1,0 +1,42 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "target_id": {
+      "type": "string",
+      "description": "ID of the meal plan or recipe being reviewed"
+    },
+    "target_type": {
+      "type": "string",
+      "enum": [
+        "meal_plan",
+        "shared_plan"
+      ],
+      "description": "Type of item being reviewed"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Rating from 1 to 5 stars"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Review comment"
+    },
+    "helpful_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of helpful votes"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the reviewer"
+    }
+  },
+  "required": [
+    "target_id",
+    "target_type",
+    "rating"
+  ]
+}

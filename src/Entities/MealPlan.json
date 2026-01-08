@@ -1,0 +1,320 @@
+{
+  "name": "MealPlan",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the meal plan"
+    },
+    "diet_type": {
+      "type": "string",
+      "enum": [
+        "liver-centric",
+        "low-sugar",
+        "vegetarian",
+        "custom"
+      ],
+      "description": "Type of diet"
+    },
+    "cultural_style": {
+      "type": "string",
+      "enum": [
+        "mediterranean",
+        "asian",
+        "indian",
+        "latin_american",
+        "african",
+        "middle_eastern",
+        "european",
+        "fusion",
+        "none"
+      ],
+      "description": "Cultural cuisine style"
+    },
+    "life_stage": {
+      "type": "string",
+      "enum": [
+        "general",
+        "children",
+        "pregnancy",
+        "seniors"
+      ],
+      "description": "Life stage or age group"
+    },
+    "days": {
+      "type": "array",
+      "description": "Array of daily meal plans",
+      "items": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string"
+          },
+          "breakfast": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "calories": {
+                "type": "string"
+              },
+              "protein": {
+                "type": "number"
+              },
+              "carbs": {
+                "type": "number"
+              },
+              "fat": {
+                "type": "number"
+              },
+              "nutrients": {
+                "type": "string"
+              },
+              "prepTip": {
+                "type": "string"
+              },
+              "prepSteps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "prepTime": {
+                "type": "string"
+              },
+              "difficulty": {
+                "type": "string"
+              },
+              "equipment": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "healthBenefit": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string"
+              }
+            }
+          },
+          "lunch": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "calories": {
+                "type": "string"
+              },
+              "protein": {
+                "type": "number"
+              },
+              "carbs": {
+                "type": "number"
+              },
+              "fat": {
+                "type": "number"
+              },
+              "nutrients": {
+                "type": "string"
+              },
+              "prepTip": {
+                "type": "string"
+              },
+              "prepSteps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "prepTime": {
+                "type": "string"
+              },
+              "difficulty": {
+                "type": "string"
+              },
+              "equipment": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "healthBenefit": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string"
+              }
+            }
+          },
+          "dinner": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "calories": {
+                "type": "string"
+              },
+              "protein": {
+                "type": "number"
+              },
+              "carbs": {
+                "type": "number"
+              },
+              "fat": {
+                "type": "number"
+              },
+              "nutrients": {
+                "type": "string"
+              },
+              "prepTip": {
+                "type": "string"
+              },
+              "prepSteps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "prepTime": {
+                "type": "string"
+              },
+              "difficulty": {
+                "type": "string"
+              },
+              "equipment": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "healthBenefit": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string"
+              }
+            }
+          },
+          "snacks": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "calories": {
+                "type": "string"
+              },
+              "protein": {
+                "type": "number"
+              },
+              "carbs": {
+                "type": "number"
+              },
+              "fat": {
+                "type": "number"
+              },
+              "nutrients": {
+                "type": "string"
+              },
+              "prepTip": {
+                "type": "string"
+              },
+              "prepSteps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "prepTime": {
+                "type": "string"
+              },
+              "difficulty": {
+                "type": "string"
+              },
+              "equipment": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "healthBenefit": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "description": "User preferences for the meal plan",
+      "properties": {
+        "foods_liked": {
+          "type": "string"
+        },
+        "foods_avoided": {
+          "type": "string"
+        },
+        "dietary_notes": {
+          "type": "string"
+        },
+        "num_people": {
+          "type": "number"
+        },
+        "weekly_budget": {
+          "type": "number"
+        },
+        "allergens": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "macros": {
+      "type": "object",
+      "description": "Average daily macronutrient breakdown",
+      "properties": {
+        "protein": {
+          "type": "number"
+        },
+        "carbs": {
+          "type": "number"
+        },
+        "fat": {
+          "type": "number"
+        }
+      }
+    },
+    "estimated_cost": {
+      "type": "number",
+      "description": "Initial estimated weekly cost in dollars"
+    },
+    "grocery_list": {
+      "type": "object",
+      "description": "Categorized grocery items with prices"
+    },
+    "current_total_cost": {
+      "type": "number",
+      "description": "Current calculated total from grocery prices"
+    },
+    "hero_image_url": {
+      "type": "string",
+      "description": "Hero image for the meal plan"
+    }
+  },
+  "required": [
+    "name",
+    "diet_type",
+    "days"
+  ]
+}

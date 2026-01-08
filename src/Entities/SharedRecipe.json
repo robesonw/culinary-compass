@@ -1,0 +1,136 @@
+{
+  "name": "SharedRecipe",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Recipe name"
+    },
+    "meal_type": {
+      "type": "string",
+      "enum": [
+        "breakfast",
+        "lunch",
+        "dinner",
+        "snacks"
+      ],
+      "description": "Type of meal"
+    },
+    "description": {
+      "type": "string",
+      "description": "Recipe description"
+    },
+    "meal_data": {
+      "type": "object",
+      "description": "Complete meal/recipe data"
+    },
+    "calories": {
+      "type": "string",
+      "description": "Calorie information"
+    },
+    "protein": {
+      "type": "number",
+      "description": "Protein in grams"
+    },
+    "carbs": {
+      "type": "number",
+      "description": "Carbs in grams"
+    },
+    "fat": {
+      "type": "number",
+      "description": "Fat in grams"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Recipe image URL"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for discovery"
+    },
+    "views_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of views"
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of likes"
+    },
+    "saves_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of times saved"
+    },
+    "average_rating": {
+      "type": "number",
+      "description": "Average rating"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the person who shared it"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Moderation status"
+    },
+    "moderation_notes": {
+      "type": "string",
+      "description": "Admin notes on moderation decision"
+    },
+    "cuisine": {
+      "type": "string",
+      "description": "Cuisine type"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "Easy",
+        "Medium",
+        "Hard"
+      ],
+      "description": "Difficulty level"
+    },
+    "prep_time": {
+      "type": "string",
+      "description": "Preparation time"
+    },
+    "cooking_time": {
+      "type": "string",
+      "description": "Cooking time"
+    },
+    "servings": {
+      "type": "number",
+      "description": "Number of servings"
+    },
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of ingredients"
+    },
+    "prep_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Step-by-step preparation instructions"
+    }
+  },
+  "required": [
+    "name",
+    "meal_type",
+    "meal_data"
+  ]
+}

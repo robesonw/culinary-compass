@@ -1,0 +1,33 @@
+{
+  "name": "UserInteraction",
+  "type": "object",
+  "properties": {
+    "target_id": {
+      "type": "string",
+      "description": "ID of the item (post, plan, comment)"
+    },
+    "target_type": {
+      "type": "string",
+      "enum": [
+        "shared_plan",
+        "forum_post",
+        "forum_comment"
+      ],
+      "description": "Type of interaction target"
+    },
+    "interaction_type": {
+      "type": "string",
+      "enum": [
+        "like",
+        "save",
+        "view"
+      ],
+      "description": "Type of interaction"
+    }
+  },
+  "required": [
+    "target_id",
+    "target_type",
+    "interaction_type"
+  ]
+}

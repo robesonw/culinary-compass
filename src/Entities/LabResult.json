@@ -1,0 +1,180 @@
+{
+  "name": "LabResult",
+  "type": "object",
+  "properties": {
+    "upload_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of lab test"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to uploaded PDF file"
+    },
+    "biomarkers": {
+      "type": "object",
+      "description": "Extracted biomarker values",
+      "properties": {
+        "ALT": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "high",
+                "low"
+              ]
+            }
+          }
+        },
+        "AST": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "high",
+                "low"
+              ]
+            }
+          }
+        },
+        "Glucose": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "high",
+                "low"
+              ]
+            }
+          }
+        },
+        "Sodium": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "high",
+                "low"
+              ]
+            }
+          }
+        },
+        "Potassium": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "high",
+                "low"
+              ]
+            }
+          }
+        },
+        "eGFR": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "high",
+                "low"
+              ]
+            }
+          }
+        },
+        "BUN": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "high",
+                "low"
+              ]
+            }
+          }
+        },
+        "Creatinine": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "high",
+                "low"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the lab result"
+    }
+  },
+  "required": [
+    "upload_date"
+  ]
+}

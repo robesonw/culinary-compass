@@ -1,0 +1,54 @@
+{
+  "name": "NutritionGoal",
+  "type": "object",
+  "properties": {
+    "goal_type": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "weekly"
+      ],
+      "default": "daily",
+      "description": "Type of goal period"
+    },
+    "target_calories": {
+      "type": "number",
+      "description": "Target calorie intake"
+    },
+    "target_protein": {
+      "type": "number",
+      "description": "Target protein in grams"
+    },
+    "target_carbs": {
+      "type": "number",
+      "description": "Target carbs in grams"
+    },
+    "target_fat": {
+      "type": "number",
+      "description": "Target fat in grams"
+    },
+    "target_micronutrients": {
+      "type": "object",
+      "description": "Target micronutrient values (vitamin/mineral name as key, amount as value)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this goal is currently active"
+    }
+  },
+  "required": [
+    "goal_type"
+  ]
+}

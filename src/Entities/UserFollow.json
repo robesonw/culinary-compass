@@ -1,0 +1,17 @@
+{
+  "name": "UserFollow",
+  "type": "object",
+  "properties": {
+    "following_user_email": {
+      "type": "string",
+      "description": "Email of the user being followed"
+    },
+    "following_user_name": {
+      "type": "string",
+      "description": "Name of the user being followed"
+    }
+  },
+  "required": [
+    "following_user_email"
+  ]
+}

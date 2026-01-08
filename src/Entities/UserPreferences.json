@@ -1,0 +1,104 @@
+{
+  "name": "UserPreferences",
+  "type": "object",
+  "properties": {
+    "age": {
+      "type": "number",
+      "description": "User's age"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other"
+      ],
+      "description": "User's gender"
+    },
+    "height": {
+      "type": "number",
+      "description": "Height in cm"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Weight in kg"
+    },
+    "health_goal": {
+      "type": "string",
+      "enum": [
+        "liver_health",
+        "weight_loss",
+        "blood_sugar_control",
+        "muscle_gain",
+        "heart_health",
+        "kidney_health",
+        "digestive_health",
+        "energy_boost",
+        "immune_support",
+        "anti_inflammatory",
+        "bone_health",
+        "general_wellness"
+      ],
+      "description": "Primary health goal"
+    },
+    "dietary_restrictions": {
+      "type": "string",
+      "description": "Any dietary restrictions or allergies"
+    },
+    "foods_liked": {
+      "type": "string",
+      "description": "Foods user prefers"
+    },
+    "foods_avoided": {
+      "type": "string",
+      "description": "Foods to avoid"
+    },
+    "allergens": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of allergens to avoid"
+    },
+    "cuisine_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Preferred cuisine types"
+    },
+    "cooking_time": {
+      "type": "string",
+      "enum": [
+        "any",
+        "under_15",
+        "15_30",
+        "30_60",
+        "over_60"
+      ],
+      "default": "any",
+      "description": "Maximum cooking time per meal"
+    },
+    "skill_level": {
+      "type": "string",
+      "enum": [
+        "beginner",
+        "intermediate",
+        "advanced"
+      ],
+      "default": "intermediate",
+      "description": "Cooking skill level"
+    },
+    "num_people": {
+      "type": "number",
+      "default": 1,
+      "description": "Number of people to cook for"
+    },
+    "weekly_budget": {
+      "type": "number",
+      "default": 100,
+      "description": "Weekly grocery budget"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,79 @@
+{
+  "name": "SharedProgress",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the shared progress post"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the achievement"
+    },
+    "progress_type": {
+      "type": "string",
+      "enum": [
+        "streak",
+        "goal_reached",
+        "milestone",
+        "weekly_summary"
+      ],
+      "description": "Type of progress being shared"
+    },
+    "stats": {
+      "type": "object",
+      "description": "Progress statistics",
+      "properties": {
+        "streak_days": {
+          "type": "number"
+        },
+        "calories_logged": {
+          "type": "number"
+        },
+        "meals_tracked": {
+          "type": "number"
+        },
+        "goals_met": {
+          "type": "number"
+        },
+        "avg_protein": {
+          "type": "number"
+        },
+        "avg_calories": {
+          "type": "number"
+        }
+      }
+    },
+    "date_range": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "format": "date"
+        },
+        "to": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of likes"
+    },
+    "comments_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of comments"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the person who shared"
+    }
+  },
+  "required": [
+    "title",
+    "progress_type"
+  ]
+}

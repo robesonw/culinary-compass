@@ -1,0 +1,22 @@
+{
+  "name": "RecipeComment",
+  "type": "object",
+  "properties": {
+    "recipe_id": {
+      "type": "string",
+      "description": "ID of the shared recipe"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Comment text"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the commenter"
+    }
+  },
+  "required": [
+    "recipe_id",
+    "comment"
+  ]
+}

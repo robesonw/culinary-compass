@@ -1,0 +1,64 @@
+{
+  "name": "SharedMealPlan",
+  "type": "object",
+  "properties": {
+    "original_plan_id": {
+      "type": "string",
+      "description": "Reference to the original MealPlan"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title of the shared meal plan"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the meal plan"
+    },
+    "plan_data": {
+      "type": "object",
+      "description": "Complete meal plan data"
+    },
+    "diet_type": {
+      "type": "string",
+      "description": "Type of diet"
+    },
+    "cultural_style": {
+      "type": "string",
+      "description": "Cultural cuisine style"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for discovery"
+    },
+    "views_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of views"
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of likes"
+    },
+    "saves_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of times saved"
+    },
+    "average_rating": {
+      "type": "number",
+      "description": "Average rating"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the person who shared it"
+    }
+  },
+  "required": [
+    "title",
+    "plan_data"
+  ]
+}

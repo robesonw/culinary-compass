@@ -1,0 +1,22 @@
+{
+  "name": "ProgressComment",
+  "type": "object",
+  "properties": {
+    "progress_id": {
+      "type": "string",
+      "description": "ID of the shared progress"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Comment text"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the commenter"
+    }
+  },
+  "required": [
+    "progress_id",
+    "comment"
+  ]
+}

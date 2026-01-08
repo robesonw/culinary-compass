@@ -1,0 +1,42 @@
+{
+  "name": "UserSettings",
+  "type": "object",
+  "properties": {
+    "email_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Receive email notifications"
+    },
+    "recipe_approved_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notify when recipes are approved"
+    },
+    "recipe_rejected_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notify when recipes are rejected"
+    },
+    "new_follower_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notify when someone follows you"
+    },
+    "comment_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notify when someone comments"
+    },
+    "like_notifications": {
+      "type": "boolean",
+      "default": false,
+      "description": "Notify when someone likes your content"
+    },
+    "weekly_summary": {
+      "type": "boolean",
+      "default": true,
+      "description": "Receive weekly nutrition summary"
+    }
+  },
+  "required": []
+}

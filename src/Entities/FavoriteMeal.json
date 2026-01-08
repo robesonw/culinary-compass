@@ -1,0 +1,130 @@
+{
+  "name": "FavoriteMeal",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the meal"
+    },
+    "meal_type": {
+      "type": "string",
+      "enum": [
+        "breakfast",
+        "lunch",
+        "dinner",
+        "snacks"
+      ],
+      "description": "Type of meal"
+    },
+    "calories": {
+      "type": "string",
+      "description": "Calorie information"
+    },
+    "protein": {
+      "type": "number",
+      "description": "Protein in grams"
+    },
+    "carbs": {
+      "type": "number",
+      "description": "Carbs in grams"
+    },
+    "fat": {
+      "type": "number",
+      "description": "Fat in grams"
+    },
+    "nutrients": {
+      "type": "string",
+      "description": "Nutrient information"
+    },
+    "prepTip": {
+      "type": "string",
+      "description": "Preparation tips"
+    },
+    "prepTime": {
+      "type": "string",
+      "description": "Preparation time"
+    },
+    "prepSteps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Step-by-step preparation"
+    },
+    "difficulty": {
+      "type": "string",
+      "description": "Cooking difficulty"
+    },
+    "equipment": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Required equipment"
+    },
+    "healthBenefit": {
+      "type": "string",
+      "description": "Health benefits"
+    },
+    "imageUrl": {
+      "type": "string",
+      "description": "Meal image URL"
+    },
+    "cuisine": {
+      "type": "string",
+      "description": "Cuisine type"
+    },
+    "cooking_time": {
+      "type": "string",
+      "description": "Estimated cooking time"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for categorization"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "meal_plan",
+        "ai_recipe",
+        "shared_recipe",
+        "manual"
+      ],
+      "description": "Where this favorite came from"
+    },
+    "source_meal_plan_id": {
+      "type": "string",
+      "description": "ID of the meal plan this came from"
+    },
+    "source_meal_plan_name": {
+      "type": "string",
+      "description": "Name of the meal plan"
+    },
+    "source_recipe_id": {
+      "type": "string",
+      "description": "ID of the recipe if from AI or shared"
+    },
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of ingredients"
+    },
+    "grocery_list": {
+      "type": "object",
+      "description": "Categorized grocery items with estimated costs"
+    },
+    "estimated_cost": {
+      "type": "number",
+      "description": "Estimated total cost"
+    }
+  },
+  "required": [
+    "name",
+    "meal_type"
+  ]
+}

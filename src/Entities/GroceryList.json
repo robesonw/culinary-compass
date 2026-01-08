@@ -1,0 +1,25 @@
+{
+  "name": "GroceryList",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the grocery list"
+    },
+    "items": {
+      "type": "object",
+      "description": "Categorized grocery items with prices and quantities"
+    },
+    "total_cost": {
+      "type": "number",
+      "description": "Total cost of all items"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes for the list"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "Feedback",
+  "type": "object",
+  "properties": {
+    "user_name": {
+      "type": "string",
+      "description": "Name of the user providing feedback"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "page": {
+      "type": "string",
+      "description": "Page where feedback was submitted"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Rating from 1 to 5 stars"
+    },
+    "feedback_type": {
+      "type": "string",
+      "enum": [
+        "bug",
+        "feature_request",
+        "general",
+        "praise"
+      ],
+      "description": "Type of feedback"
+    },
+    "message": {
+      "type": "string",
+      "description": "Feedback message"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "reviewed",
+        "resolved"
+      ],
+      "default": "new",
+      "description": "Status of the feedback"
+    }
+  },
+  "required": [
+    "message",
+    "feedback_type"
+  ]
+}

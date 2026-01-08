@@ -1,0 +1,38 @@
+{
+  "name": "ForumComment",
+  "type": "object",
+  "properties": {
+    "post_id": {
+      "type": "string",
+      "description": "ID of the forum post"
+    },
+    "content": {
+      "type": "string",
+      "description": "Comment text"
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of likes"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the author"
+    },
+    "reactions": {
+      "type": "object",
+      "description": "Emoji reactions with counts",
+      "default": {},
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "post_id",
+    "content"
+  ]
+}

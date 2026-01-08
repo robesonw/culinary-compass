@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Upload, TrendingUp, TrendingDown, Minus, Loader2, Calendar } from 'lucide-react';
+import { FileText, Upload, TrendingUp, TrendingDown, Minus, Loader2, Calendar, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -42,6 +42,14 @@ export default function LabResults() {
       setUploadDate('');
       setNotes('');
       setFile(null);
+    },
+  });
+
+  const deleteLabResult = useMutation({
+    mutationFn: (id) => base44.entities.LabResult.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['labResults'] });
+      toast.success('Lab result deleted successfully!');
     },
   });
 
@@ -368,12 +376,26 @@ export default function LabResults() {
                         )}
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={result.file_url} target="_blank" rel="noopener noreferrer">
-                        <FileText className="w-4 h-4 mr-2" />
-                        View PDF
-                      </a>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={result.file_url} target="_blank" rel="noopener noreferrer">
+                          <FileText className="w-4 h-4 mr-2" />
+                          View PDF
+                        </a>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this lab result?')) {
+                            deleteLabResult.mutate(result.id);
+                          }
+                        }}
+                        className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>

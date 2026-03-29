@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,15 +28,16 @@ export default function SharePlanDialog({ plan, open, onOpenChange }) {
     },
   });
 
-  React.useEffect(() => {
-    if (plan && open) {
+  const handleOpenChange = (newOpen) => {
+    onOpenChange(newOpen);
+    if (newOpen && plan) {
       setShareForm({
         title: plan.name || '',
         description: '',
         tags: ''
       });
     }
-  }, [plan, open]);
+  };
 
   const handleShare = () => {
     if (!plan || !shareForm.title) {
@@ -57,7 +58,7 @@ export default function SharePlanDialog({ plan, open, onOpenChange }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Share Meal Plan with Community</DialogTitle>

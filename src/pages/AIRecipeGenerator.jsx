@@ -31,6 +31,8 @@ export default function AIRecipeGenerator() {
   const [generating, setGenerating] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
   const [savingImage, setSavingImage] = useState(false);
+  const [savingRecipe, setSavingRecipe] = useState(false);
+  const [aiError, setAiError] = useState(null);
   const queryClient = useQueryClient();
   
   const [form, setForm] = useState({
@@ -53,6 +55,7 @@ export default function AIRecipeGenerator() {
     }
 
     setGenerating(true);
+    setAiError(null);
     try {
       const cuisineName = form.cuisine === 'Other' ? form.customCuisine : form.cuisine;
       const prompt = `Generate a detailed ${form.difficulty.toLowerCase()} difficulty ${cuisineName} ${form.mealType.toLowerCase()} recipe.
@@ -122,8 +125,8 @@ Provide:
       
       toast.success('Recipe generated!');
     } catch (error) {
-      toast.error('Failed to generate recipe');
       console.error(error);
+      setAiError('The AI could not generate a recipe right now. Please check your ingredients and try again.');
     } finally {
       setGenerating(false);
     }
@@ -151,10 +154,7 @@ Provide:
 
   const saveRecipe = async () => {
     if (!generatedRecipe) return;
-    
-    const saveButton = document.querySelector('[data-save-recipe]');
-    if (saveButton) saveButton.disabled = true;
-    
+    setSavingRecipe(true);
     try {
       // Generate grocery list and get prices
       const ingredientNames = generatedRecipe.ingredients?.map(ing => `${ing.quantity} ${ing.item}`) || [];
@@ -240,7 +240,7 @@ Provide:
       toast.error('Failed to save recipe');
       console.error(error);
     } finally {
-      if (saveButton) saveButton.disabled = false;
+      setSavingRecipe(false);
     }
   };
 
@@ -436,7 +436,40 @@ Provide:
         {/* Generated Recipe */}
         <div className="lg:col-span-2">
           <AnimatePresence mode="wait">
-            {!generatedRecipe ? (
+            {generating ? (
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <Card className="border-indigo-200 bg-indigo-50">
+                  <CardContent className="p-10 text-center space-y-4">
+                    <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto" />
+                    <p className="text-lg font-semibold text-indigo-900">AI is crafting your recipe...</p>
+                    <p className="text-sm text-indigo-600">Generating ingredients, steps, and nutrition info</p>
+                    <div className="space-y-2 pt-2 text-left max-w-xs mx-auto">
+                      {['Recipe name & description', 'Ingredient list with quantities', 'Step-by-step instructions', 'Nutrition per serving'].map(step => (
+                        <div key={step} className="flex items-center gap-2 text-xs text-indigo-700">
+                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                          {step}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : aiError ? (
+              <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <Card className="border-rose-200 bg-rose-50">
+                  <CardContent className="p-10 text-center space-y-4">
+                    <div className="w-14 h-14 rounded-full bg-rose-100 flex items-center justify-center mx-auto">
+                      <ChefHat className="w-7 h-7 text-rose-500" />
+                    </div>
+                    <p className="text-lg font-semibold text-rose-900">Recipe generation failed</p>
+                    <p className="text-sm text-rose-700">{aiError}</p>
+                    <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100" onClick={() => setAiError(null)}>
+                      Dismiss & Try Again
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : !generatedRecipe ? (
               <motion.div
                 key="empty"
                 initial={{ opacity: 0 }}
@@ -512,11 +545,14 @@ Provide:
                       <Button 
                         size="sm" 
                         onClick={saveRecipe}
-                        data-save-recipe
+                        disabled={savingRecipe}
                         className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                       >
-                        <Heart className="w-4 h-4 mr-2" />
-                        Save Recipe
+                        {savingRecipe ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
+                        ) : (
+                          <><Heart className="w-4 h-4 mr-2" />Save Recipe</>
+                        )}
                       </Button>
                       <Button variant="outline" size="sm" onClick={shareRecipe}>
                         <Share2 className="w-4 h-4 mr-2" />
@@ -634,6 +670,7 @@ Provide:
               </motion.div>
             )}
           </AnimatePresence>
+
         </div>
       </div>
     </div>

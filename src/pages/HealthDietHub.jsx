@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -92,6 +92,7 @@ export default function HealthDietHub() {
   const [lifeStage, setLifeStage] = useState('general');
   const [usePantry, setUsePantry] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState(null);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [labsOptimized, setLabsOptimized] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
@@ -306,7 +307,8 @@ Every meal MUST be designed to help correct these markers. Prioritize foods that
     }
 
     setIsGenerating(true);
-    
+    setAiError(null);
+
     const daysCount = duration === 'day' ? 1 : duration === '3days' ? 3 : 7;
     const dayNames = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
     
@@ -405,7 +407,6 @@ For each day, provide:
 Return a JSON object with the meal plan, health notes, estimated weekly cost, and average daily macros.`;
 
     try {
-      // Generate meal plan
       const response = await base44.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: {
@@ -514,8 +515,8 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       // Generate images for meals in background
       generateMealImages(response);
     } catch (error) {
-      toast.error('Failed to generate meal plan');
       console.error(error);
+      setAiError('The AI could not generate your meal plan. This may be a temporary issue — please try again in a moment.');
     } finally {
       setIsGenerating(false);
     }
@@ -1165,6 +1166,39 @@ Make it nutritionally appropriate for ${mealType}, different from the current me
           </Button>
         </CardContent>
       </Card>
+
+      {/* AI Loading State */}
+      {isGenerating && (
+        <div className="p-6 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 text-center space-y-4">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto" />
+          <p className="text-lg font-semibold text-indigo-900">AI is generating your personalized plan...</p>
+          <p className="text-sm text-indigo-600">Building a {duration === 'day' ? '1-day' : duration === '3days' ? '3-day' : '7-day'} meal plan tailored to your health goals</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+            {['Analyzing your health profile', 'Selecting optimal meals', 'Calculating nutrition', 'Building grocery list'].map(step => (
+              <div key={step} className="p-3 rounded-lg bg-white/70 border border-indigo-100 text-xs text-indigo-700 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse flex-shrink-0" />
+                {step}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Error State */}
+      {aiError && !isGenerating && (
+        <div className="p-5 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-5 h-5 text-rose-500" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-rose-900 mb-1">Meal plan generation failed</p>
+            <p className="text-sm text-rose-700 mb-3">{aiError}</p>
+            <Button size="sm" variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100" onClick={() => setAiError(null)}>
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Generated Plan Display */}
       <AnimatePresence>

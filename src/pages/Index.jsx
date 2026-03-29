@@ -58,6 +58,11 @@ export default function Index() {
                   View Dashboard
                 </Link>
               </Button>
+              <Button asChild size="lg" className="bg-yellow-400 text-slate-900 hover:bg-yellow-300 shadow-xl text-lg px-8 py-6">
+                <Link to="/Pricing">
+                  View Pricing
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

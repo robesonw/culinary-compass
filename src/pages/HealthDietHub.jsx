@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,35 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Sparkles, Loader2, Heart, Users, Calendar, ShoppingCart, Save, Flame, Salad, DollarSign, AlertTriangle, RefreshCw, Utensils, Package, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
+import SwapMealButton from '@/components/meals/SwapMealButton';
+import { useSubscription } from '@/lib/useSubscription';
+
+// Small inline component to show free users how many swaps they have left
+function FreeTierSwapCounter() {
+  const { isFree } = useSubscription();
+  if (!isFree) return null;
+  const FREE_LIMIT = 3;
+  try {
+    const raw = localStorage.getItem('vitaplate_swap_count');
+    if (!raw) return <span className="text-xs text-slate-500">🔄 {FREE_LIMIT} free swaps/month</span>;
+    const parsed = JSON.parse(raw);
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${now.getMonth()}`;
+    if (parsed.month !== monthKey) return <span className="text-xs text-slate-500">🔄 {FREE_LIMIT} free swaps/month</span>;
+    const used = parsed.count || 0;
+    const remaining = Math.max(0, FREE_LIMIT - used);
+    if (remaining === 0) {
+      return (
+        <Link to="/Pricing" className="text-xs text-amber-600 font-medium hover:underline flex items-center gap-1">
+          ⚡ Upgrade for unlimited swaps
+        </Link>
+      );
+    }
+    return <span className="text-xs text-slate-500">🔄 {remaining} free swap{remaining !== 1 ? 's' : ''} left this month</span>;
+  } catch {
+    return null;
+  }
+}
 
 const healthGoals = [
   { value: 'liver_health', label: 'Liver Health', icon: Heart, color: 'rose' },
@@ -104,6 +133,7 @@ export default function HealthDietHub() {
   const [editingPrice, setEditingPrice] = useState(null);
   const [regeneratingImage, setRegeneratingImage] = useState(null);
   const [swappingMeal, setSwappingMeal] = useState(null);
+  const [swapHistory, setSwapHistory] = useState({});
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -683,48 +713,21 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
     }
   };
 
-  const handleSwapMeal = async (dayIndex, mealType) => {
+  // Called by SwapMealButton when a swap (or undo) completes
+  const handleSwapComplete = (dayIndex, mealType, newMeal, isUndo) => {
     const key = `${dayIndex}-${mealType}`;
-    setSwappingMeal(key);
-    const currentMeal = generatedPlan.days[dayIndex][mealType];
-    const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
-    const { text: healthContext } = getHealthContext();
+    const updatedDays = [...generatedPlan.days];
+    const oldMealName = updatedDays[dayIndex][mealType]?.name;
 
-    try {
-      const newMeal = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a DIFFERENT ${mealType} meal to replace "${currentMeal?.name}" in a meal plan.
-Goal: ${goalDescription}
-${healthContext ? `Health context: ${healthContext}` : ''}
-${allergens.length ? `STRICT ALLERGENS TO AVOID: ${allergens.join(', ')}` : ''}
-${foodsAvoided ? `Also avoid: ${foodsAvoided}` : ''}
-${usePantry && pantryItems.length > 0 ? `Prefer using these pantry items if possible: ${pantryItems.map(i => i.name).join(', ')}` : ''}
-Make it nutritionally appropriate for ${mealType}, different from the current meal, and include full details.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            description: { type: "string" },
-            calories: { type: "string" },
-            protein: { type: "number" },
-            carbs: { type: "number" },
-            fat: { type: "number" },
-            health_benefit: { type: "string" },
-            prepTime: { type: "string" },
-            difficulty: { type: "string" },
-            prepSteps: { type: "array", items: { type: "string" } },
-            equipment: { type: "array", items: { type: "string" } }
-          }
-        }
+    updatedDays[dayIndex] = { ...updatedDays[dayIndex], [mealType]: newMeal };
+    setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
+
+    // Track swap history so same meal isn't suggested twice
+    if (!isUndo && oldMealName) {
+      setSwapHistory(prev => {
+        const existing = prev[key] || [];
+        return { ...prev, [key]: [...existing, oldMealName].slice(-5) };
       });
-
-      const updatedDays = [...generatedPlan.days];
-      updatedDays[dayIndex] = { ...updatedDays[dayIndex], [mealType]: newMeal };
-      setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
-      toast.success(`${mealType} swapped!`);
-    } catch (e) {
-      toast.error('Failed to swap meal');
-    } finally {
-      setSwappingMeal(null);
     }
   };
 
@@ -1453,7 +1456,10 @@ Make it nutritionally appropriate for ${mealType}, different from the current me
             {/* Meal Plan Days */}
             <Card className="border-slate-200">
               <CardHeader>
-                <CardTitle>Your Meal Plan</CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle>Your Meal Plan</CardTitle>
+                  <FreeTierSwapCounter />
+                </div>
               </CardHeader>
               <CardContent>
                 <Accordion type="single" collapsible className="w-full">
@@ -1545,20 +1551,19 @@ Make it nutritionally appropriate for ${mealType}, different from the current me
                                     <div className="flex items-center justify-between mb-2">
                                       <h4 className="font-semibold text-slate-900 capitalize">{mealType}</h4>
                                       <div className="flex gap-2 flex-wrap items-center">
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="h-7 text-xs px-2"
-                                          onClick={() => handleSwapMeal(index, mealType)}
-                                          disabled={swappingMeal === `${index}-${mealType}`}
-                                        >
-                                          {swappingMeal === `${index}-${mealType}` ? (
-                                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                          ) : (
-                                            <RefreshCw className="w-3 h-3 mr-1" />
-                                          )}
-                                          Swap
-                                        </Button>
+                                        <SwapMealButton
+                                          meal={meal}
+                                          mealType={mealType}
+                                          dayIndex={index}
+                                          healthGoal={healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness'}
+                                          healthContext={getHealthContext().text}
+                                          allergens={allergens}
+                                          foodsAvoided={foodsAvoided}
+                                          pantryItems={pantryItems}
+                                          usePantry={usePantry}
+                                          swapHistory={swapHistory}
+                                          onSwapComplete={handleSwapComplete}
+                                        />
                                         <Badge variant="outline" className="flex items-center gap-1">
                                           <Flame className="w-3 h-3 text-orange-500" />
                                           {meal.calories}

@@ -46,7 +46,7 @@ const navigation = [
   { name: 'Pantry', href: 'Pantry', icon: Package },
   { name: 'My Progress', href: 'MyProgress', icon: Camera },
   { name: 'Progress Tracking', href: 'ProgressTracking', icon: TrendingUp },
-  { name: 'Refer a Friend', href: 'ReferAFriend', icon: Gift },
+  { name: 'Refer a Friend', href: 'ReferFriend', icon: Gift },
   { name: 'Find a Practitioner', href: 'FindPractitioner', icon: Users },
   { name: 'Community', href: 'Community', icon: Users },
   { name: 'Progress Feed', href: 'ProgressFeed', icon: TrendingUp },

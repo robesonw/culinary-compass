@@ -86,7 +86,7 @@ const AuthenticatedApp = () => {
       <Route path="/Integrations" element={<LayoutWrapper currentPageName="Integrations"><Integrations /></LayoutWrapper>} />
       <Route path="/SupplementRecommendations" element={<LayoutWrapper currentPageName="SupplementRecommendations"><SupplementRecommendations /></LayoutWrapper>} />
       <Route path="/MyProgress" element={<LayoutWrapper currentPageName="MyProgress"><MyProgress /></LayoutWrapper>} />
-      <Route path="/ReferAFriend" element={<LayoutWrapper currentPageName="ReferAFriend"><ReferAFriend /></LayoutWrapper>} />
+      <Route path="/ReferFriend" element={<LayoutWrapper currentPageName="ReferFriend"><ReferAFriend /></LayoutWrapper>} />
       <Route path="/refer/:code" element={<ReferralLanding />} />
       <Route path="/scorecard/:userId" element={<ScorecardView />} />
       <Route path="/PractitionerPortal" element={<LayoutWrapper currentPageName="PractitionerPortal"><PractitionerPortal /></LayoutWrapper>} />

@@ -126,7 +126,7 @@ export default function Pricing() {
           const existing = await base44.entities.UserSettings.list();
           const data = {
             subscription_plan: planParam,
-            subscription_status: 'trialing',
+            subscription_status: 'active',
           };
           if (existing.length > 0) {
             await base44.entities.UserSettings.update(existing[0].id, data);
@@ -137,7 +137,7 @@ export default function Pricing() {
           console.error('Failed to update UserSettings after checkout:', e);
         }
       })();
-      toast.success(`🎉 Welcome to ${planParam.charAt(0).toUpperCase() + planParam.slice(1)}! Your 7-day trial has started.`);
+      toast.success(`🎉 Welcome to ${planParam.charAt(0).toUpperCase() + planParam.slice(1)}! Your subscription is now active.`);
       // Clean up URL
       window.history.replaceState({}, '', '/Pricing');
     } else if (params.get('cancelled') === 'true') {

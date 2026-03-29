@@ -31,6 +31,13 @@ Deno.serve(async (req) => {
         metadata: { user_email: user.email },
       });
       customerId = customer.id;
+      // Persist the new customer ID so future sessions reuse it
+      const customerData = { stripe_customer_id: customerId };
+      if (settings.length > 0) {
+        await base44.entities.UserSettings.update(settings[0].id, customerData);
+      } else {
+        await base44.entities.UserSettings.create(customerData);
+      }
     }
 
     const session = await stripe.checkout.sessions.create({

@@ -168,6 +168,19 @@
       "type": "number",
       "default": 100,
       "description": "Weekly grocery budget"
+    },
+    "preferred_instacart_retailer": {
+      "type": "string",
+      "enum": [
+        "whole_foods",
+        "kroger",
+        "costco",
+        "safeway",
+        "trader_joes",
+        "other"
+      ],
+      "default": "whole_foods",
+      "description": "Preferred Instacart retailer for shopping"
     }
   },
   "required": []

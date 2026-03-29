@@ -1,77 +1,56 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useMutation } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function OrderFeedbackDialog({ affiliateClickId, isOpen, onClose }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleFeedback = async (arrived) => {
-    setIsSubmitting(true);
-    try {
-      await base44.entities.AffiliateClick.update(affiliateClickId, {
-        order_arrived: arrived
-      });
-
-      toast.success(
-        arrived 
-          ? '✅ Great! We\'re glad your order arrived safely.' 
-          : '⚠️ We\'re sorry to hear that. We\'ll note this for future improvements.'
-      );
-      
+  const updateMutation = useMutation({
+    mutationFn: (id) =>
+      base44.asServiceRole.entities.AffiliateClick.update(id, {
+        order_completed: true,
+        order_completed_at: new Date().toISOString(),
+      }),
+    onSuccess: () => {
+      toast.success('Thanks for letting us know!');
       onClose();
-    } catch (error) {
-      console.error('Feedback error:', error);
+    },
+    onError: () => {
       toast.error('Failed to save feedback');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+  });
+
+  if (!affiliateClickId) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-slate-900">📦 Order Arrived?</DialogTitle>
-          <DialogDescription className="text-slate-600">
-            We'd love to know if your order arrived as expected. Your feedback helps us improve our affiliate partnerships.
-          </DialogDescription>
+          <DialogTitle>Order Confirmation</DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-3">
-          <Button
-            onClick={() => handleFeedback(true)}
-            disabled={isSubmitting}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-            )}
-            Yes, It Arrived!
-          </Button>
+        <div className="space-y-4 py-4">
+          <p className="text-sm text-slate-600">
+            Did your order go through successfully? Your feedback helps us improve the experience.
+          </p>
 
-          <Button
-            onClick={() => handleFeedback(false)}
-            disabled={isSubmitting}
-            variant="outline"
-            className="flex-1"
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <XCircle className="w-4 h-4 mr-2" />
-            )}
-            No Issues
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+            >
+              Not Yet
+            </Button>
+            <Button
+              onClick={() => updateMutation.mutate(affiliateClickId)}
+              disabled={updateMutation.isPending}
+              className="flex-1"
+            >
+              Yes, Order Placed! ✓
+            </Button>
+          </div>
         </div>
-
-        <p className="text-xs text-slate-600 text-center mt-2">
-          Thank you for helping us improve VitaPlate!
-        </p>
       </DialogContent>
     </Dialog>
   );

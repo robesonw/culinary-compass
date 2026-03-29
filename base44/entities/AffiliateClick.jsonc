@@ -2,48 +2,49 @@
   "name": "AffiliateClick",
   "type": "object",
   "properties": {
-    "affiliate_type": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of user who clicked"
+    },
+    "platform": {
       "type": "string",
       "enum": [
         "instacart",
         "amazon_fresh"
       ],
-      "description": "Type of affiliate link clicked"
+      "description": "Affiliate platform used"
     },
     "item_count": {
       "type": "integer",
       "description": "Number of items in the order"
     },
-    "estimated_value": {
+    "estimated_order_value": {
       "type": "number",
-      "description": "Estimated order value in dollars"
+      "description": "Estimated total order value in USD"
     },
     "grocery_list_id": {
       "type": "string",
-      "description": "ID of the grocery list used for this order"
+      "description": "ID of the grocery list or meal plan used"
     },
-    "items_data": {
-      "type": "object",
-      "description": "Snapshot of items included in the order"
+    "clicked_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the affiliate link was clicked"
     },
-    "order_arrived": {
-      "type": "boolean",
-      "default": null,
-      "description": "User confirmation if order arrived (tracked after 2 days)"
-    },
-    "follow_up_sent": {
+    "order_completed": {
       "type": "boolean",
       "default": false,
-      "description": "Whether follow-up notification was sent"
+      "description": "Whether user confirmed order completion"
     },
-    "follow_up_date": {
+    "order_completed_at": {
       "type": "string",
-      "format": "date",
-      "description": "Date when follow-up was sent"
+      "format": "date-time",
+      "description": "When user marked order as completed"
     }
   },
   "required": [
-    "affiliate_type",
+    "user_email",
+    "platform",
     "item_count"
   ]
 }

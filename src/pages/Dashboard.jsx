@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import QuickStartChecklist from '../components/onboarding/QuickStartChecklist';
 import OnboardingTour from '../components/onboarding/OnboardingTour';
 import StreakCard from '../components/dashboard/StreakCard';
+import HealthScoreCard from '../components/dashboard/HealthScoreCard';
+import { useSubscription } from '../lib/useSubscription';
 
 export default function Dashboard() {
   const { data: mealPlans = [] } = useQuery({
@@ -41,8 +43,13 @@ export default function Dashboard() {
 
   const { data: labResults = [] } = useQuery({
     queryKey: ['labResults'],
-    queryFn: () => base44.entities.LabResult.list('-upload_date', 1),
+    queryFn: async () => {
+      const currentUser = await base44.auth.me();
+      return base44.entities.LabResult.filter({ created_by: currentUser.email }, '-upload_date');
+    },
   });
+
+  const { isPro } = useSubscription();
 
   const { data: nutritionLogs = [] } = useQuery({
     queryKey: ['nutritionLogsStreak'],
@@ -220,6 +227,15 @@ export default function Dashboard() {
           );
         })}
       </div>
+
+      {/* Health Score Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+      >
+        <HealthScoreCard labResults={labResults} isPro={isPro} />
+      </motion.div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Today's Progress */}

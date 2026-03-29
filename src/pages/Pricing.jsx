@@ -4,8 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, Zap, Crown, Leaf } from 'lucide-react';
+import { Check, Loader2, Zap, Crown, Leaf, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSubscription } from '@/lib/useSubscription';
 
 const PLANS = [
   {
@@ -35,7 +36,7 @@ const PLANS = [
     icon: Zap,
     color: 'indigo',
     description: 'For serious nutrition tracking',
-    priceId: 'price_1TGB0B2fkJjbFUOaMdWx6fIM',
+    priceId: 'price_1TGBR1COuE09SydQb6vFoZEX',
     popular: true,
     features: [
       'Unlimited meal plans',
@@ -54,7 +55,7 @@ const PLANS = [
     icon: Crown,
     color: 'purple',
     description: 'For complete health optimization',
-    priceId: 'price_1TGB0B2fkJjbFUOaY7OGXV9D',
+    priceId: 'price_1TGBR1COuE09SydQUiKVWxEx',
     features: [
       'Everything in Pro',
       'Meal swap suggestions',
@@ -75,6 +76,8 @@ export default function Pricing() {
     queryFn: () => base44.auth.me(),
     retry: false,
   });
+
+  const { plan: currentPlan, isActive } = useSubscription();
 
   const handleSubscribe = async (plan) => {
     if (plan.id === 'free') return;
@@ -114,7 +117,7 @@ export default function Pricing() {
     }
   }, []);
 
-  const currentPlan = user?.subscription_plan || 'free';
+  // currentPlan from useSubscription above
 
   return (
     <div className="space-y-8">
@@ -126,7 +129,7 @@ export default function Pricing() {
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {PLANS.map((plan) => {
           const Icon = plan.icon;
-          const isCurrentPlan = currentPlan === plan.id;
+          const isCurrentPlan = currentPlan === plan.id && (plan.id === 'free' ? !isActive : isActive);
           const isPro = plan.id === 'pro';
           const isPremium = plan.id === 'premium';
 

@@ -1,0 +1,77 @@
+{
+  "name": "UserSettings",
+  "type": "object",
+  "properties": {
+    "email_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Receive email notifications"
+    },
+    "recipe_approved_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notify when recipes are approved"
+    },
+    "recipe_rejected_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notify when recipes are rejected"
+    },
+    "new_follower_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notify when someone follows you"
+    },
+    "comment_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notify when someone comments"
+    },
+    "like_notifications": {
+      "type": "boolean",
+      "default": false,
+      "description": "Notify when someone likes your content"
+    },
+    "weekly_summary": {
+      "type": "boolean",
+      "default": true,
+      "description": "Receive weekly nutrition summary"
+    },
+    "subscription_plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro",
+        "premium"
+      ],
+      "default": "free",
+      "description": "Current subscription plan"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "cancelled",
+        "past_due",
+        "trialing",
+        "inactive"
+      ],
+      "default": "inactive",
+      "description": "Stripe subscription status"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID"
+    },
+    "subscription_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "When the current period ends"
+    }
+  },
+  "required": []
+}

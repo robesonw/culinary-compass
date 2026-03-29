@@ -245,6 +245,16 @@ export default function Layout({ children, currentPageName }) {
               </div>
             </div>
           </div>
+
+          {/* Contact Info */}
+          <div className="p-4 border-t border-slate-200 space-y-2">
+            <p className="text-xs font-semibold text-slate-700 uppercase">Need Help?</p>
+            <div className="space-y-1 text-xs">
+              <a href="mailto:support@vitaplate.ai" className="text-indigo-600 hover:underline block">Support: support@vitaplate.ai</a>
+              <a href="mailto:hello@vitaplate.ai" className="text-indigo-600 hover:underline block">General: hello@vitaplate.ai</a>
+              <a href="mailto:founder@vitaplate.ai" className="text-indigo-600 hover:underline block">Founder: founder@vitaplate.ai</a>
+            </div>
+          </div>
         </div>
       </aside>
 

@@ -77,7 +77,7 @@ export default function MealPlans() {
   };
 
   // Expose handleViewPlan globally for FavoriteMealDetailDialog
-  React.useEffect(() => {
+  useEffect(() => {
     window.openMealPlanById = (planId) => {
       const plan = mealPlans.find(p => p.id === planId);
       if (plan) {

@@ -95,6 +95,8 @@ export default function HealthDietHub() {
   const [aiError, setAiError] = useState(null);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [labsOptimized, setLabsOptimized] = useState(false);
+  const [labAdjustments, setLabAdjustments] = useState([]);
+  const [labResultDate, setLabResultDate] = useState(null);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const [planName, setPlanName] = useState('');
@@ -253,21 +255,36 @@ export default function HealthDietHub() {
   });
 
   const getHealthContext = () => {
-    if (!labResults.length) return { text: '', abnormals: [] };
+    if (!labResults.length) return { text: '', abnormals: [], rules: [], labDate: null };
     
     const latest = labResults[0];
     const abnormals = [];
     const dietaryGuidance = [];
+    const rules = []; // condition-based rules for prompt
 
     const b = latest.biomarkers || {};
 
+    // Helper: find a biomarker value by multiple possible keys
+    const findVal = (keys) => {
+      for (const k of keys) {
+        const exact = b[k]?.value;
+        if (exact != null) return { value: exact, status: b[k].status };
+        const ci = Object.keys(b).find(bk => bk.toLowerCase() === k.toLowerCase());
+        if (ci && b[ci]?.value != null) return { value: b[ci].value, status: b[ci].status };
+      }
+      return null;
+    };
+
+    // --- Existing markers ---
     if (b.ALT?.status === 'high' || b.AST?.status === 'high') {
       abnormals.push('elevated liver enzymes (ALT/AST)');
       dietaryGuidance.push('liver-friendly foods (leafy greens, beets, cruciferous vegetables), avoid saturated fats and alcohol');
+      rules.push('Include cruciferous vegetables, beets, and leafy greens in meals to support liver detoxification. Avoid fried foods and high-saturated-fat dishes.');
     }
     if (b.Glucose?.status === 'high') {
       abnormals.push('high blood glucose');
       dietaryGuidance.push('low-glycemic foods, high fiber, limit refined carbs and sugars');
+      rules.push('HIGH BLOOD GLUCOSE: Use low-glycemic index carbohydrates (lentils, legumes, non-starchy vegetables). Avoid white rice, white bread, sugary foods. Include cinnamon and berberine-supporting foods.');
     }
     if (b.Glucose?.status === 'low') {
       abnormals.push('low blood glucose');
@@ -286,16 +303,69 @@ export default function HealthDietHub() {
       dietaryGuidance.push('kidney-friendly diet: limit protein to moderate levels, avoid excessive potassium/phosphorus');
     }
 
-    if (abnormals.length === 0) {
-      return { text: 'All biomarkers within normal range.', abnormals: [] };
+    // --- New markers ---
+    const ldl = findVal(['LDL', 'LDL Cholesterol', 'LDL-C']);
+    if (ldl && ldl.value > 130) {
+      abnormals.push(`high LDL cholesterol (${ldl.value} mg/dL)`);
+      rules.push('HIGH LDL: Reduce saturated fats (no fatty red meat, butter, full-fat dairy). Include soluble fiber foods (oats, beans, apples, barley). Add omega-3 rich foods (salmon, sardines, flaxseed, walnuts). Each day should include at least one high-fiber or omega-3 meal.');
     }
 
-    const text = `CRITICAL HEALTH OPTIMIZATION REQUIRED based on lab results:
+    const hba1c = findVal(['HbA1c', 'Hemoglobin A1c', 'A1c', 'Glycated Hemoglobin']);
+    if (hba1c && hba1c.value > 5.7) {
+      abnormals.push(`elevated HbA1c (${hba1c.value}%)`);
+      rules.push('HIGH HbA1c: Reduce refined carbohydrates and added sugars. Prioritize low-glycemic foods. Include cinnamon, bitter melon, fenugreek, and berberine-supporting foods. Emphasize protein and healthy fat at each meal to blunt blood sugar spikes.');
+    }
+
+    const vitD = findVal(['Vitamin D', '25-OH Vitamin D', 'Vitamin D, 25-Hydroxy', '25(OH)D']);
+    if (vitD && vitD.value < 30) {
+      abnormals.push(`low Vitamin D (${vitD.value} ng/mL)`);
+      rules.push('LOW VITAMIN D: Include fatty fish (salmon, mackerel, sardines) at least 3 times this week. Add egg yolks, fortified milk/plant milk, and mushrooms. Consider pairing with healthy fats (avocado, olive oil) to improve absorption.');
+    }
+
+    const trig = findVal(['Triglycerides', 'Triglyceride']);
+    if (trig && trig.value > 150) {
+      abnormals.push(`high triglycerides (${trig.value} mg/dL)`);
+      rules.push('HIGH TRIGLYCERIDES: Eliminate added sugars and refined carbs. No fruit juices or sweetened beverages. Increase omega-3 fatty acids (salmon, flaxseed, chia seeds). Include fiber-rich legumes and vegetables.');
+    }
+
+    const ferritin = findVal(['Ferritin', 'Iron', 'Serum Iron', 'Serum Ferritin']);
+    if (ferritin && ferritin.value < 12) {
+      abnormals.push(`low iron/ferritin (${ferritin.value} ng/mL)`);
+      rules.push('LOW FERRITIN/IRON: Include lean red meat, dark leafy greens (spinach, kale), lentils, and fortified cereals. Pair iron-rich foods with vitamin C (citrus, bell peppers) to enhance absorption. Avoid tea/coffee with meals as they inhibit iron absorption.');
+    }
+
+    const crp = findVal(['CRP', 'C-Reactive Protein', 'hs-CRP', 'hsCRP']);
+    if (crp && crp.value > 1.0) {
+      abnormals.push(`elevated CRP/inflammation (${crp.value} mg/L)`);
+      rules.push('HIGH CRP INFLAMMATION: Every meal should include anti-inflammatory ingredients. Prioritize turmeric (with black pepper), ginger, berries, fatty fish, olive oil, and leafy greens. Avoid processed foods, trans fats, and refined sugars. Use herbs and spices liberally.');
+    }
+
+    const hdl = findVal(['HDL', 'HDL Cholesterol', 'HDL-C']);
+    if (hdl && hdl.value < 40) {
+      abnormals.push(`low HDL (${hdl.value} mg/dL)`);
+      rules.push('LOW HDL: Increase healthy fats — extra virgin olive oil, avocado, nuts, and fatty fish. Include niacin-rich foods (poultry, peanuts, mushrooms). Reduce trans fats completely. Meals should support cardiovascular health and exercise-supportive nutrition.');
+    }
+
+    const tsh = findVal(['TSH', 'Thyroid Stimulating Hormone', 'Thyroid-Stimulating Hormone']);
+    if (tsh && tsh.value > 4.0) {
+      abnormals.push(`high TSH/hypothyroid (${tsh.value} mIU/L)`);
+      rules.push('HIGH TSH (hypothyroid): Include iodine-rich foods (seaweed, fish, dairy, iodized salt). Add selenium-rich foods (Brazil nuts, tuna, eggs, sunflower seeds). Limit raw goitrogenic vegetables (broccoli, cabbage — cook them instead). Support thyroid function with zinc-rich foods.');
+    }
+
+    if (abnormals.length === 0) {
+      return { text: 'All key biomarkers within normal range.', abnormals: [], rules: [], labDate: latest.upload_date };
+    }
+
+    const text = `CRITICAL HEALTH OPTIMIZATION REQUIRED based on lab results from ${latest.upload_date}:
 - Abnormal markers: ${abnormals.join(', ')}
 - Dietary adjustments needed: ${dietaryGuidance.join('; ')}
-Every meal MUST be designed to help correct these markers. Prioritize foods that lower these markers and avoid foods that worsen them.`;
 
-    return { text, abnormals };
+SPECIFIC DIETARY RULES (follow all of these):
+${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+
+Every single meal MUST reflect these adjustments. Prioritize foods that correct these markers.`;
+
+    return { text, abnormals, rules, labDate: latest.upload_date };
   };
 
   const handleGenerate = async () => {
@@ -312,7 +382,7 @@ Every meal MUST be designed to help correct these markers. Prioritize foods that
     const daysCount = duration === 'day' ? 1 : duration === '3days' ? 3 : 7;
     const dayNames = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
     
-    const { text: healthContext, abnormals: labAbnormals } = getHealthContext();
+    const { text: healthContext, abnormals: labAbnormals, rules: labRules, labDate } = getHealthContext();
     const hasLabOptimization = labAbnormals.length > 0;
     const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
     
@@ -403,89 +473,101 @@ For each day, provide:
   * difficulty (Easy/Medium/Hard)
   * equipment (array, e.g., ["skillet", "cutting board"])
   * healthBenefit (specific health benefit for the goal, e.g., "Turmeric supports liver detoxification")
+  * meal_tag: a short 2-4 word label describing the key health benefit of THIS meal (e.g., "💛 Heart-healthy", "🩸 Blood sugar friendly", "🔥 Anti-inflammatory", "🦴 Bone-strengthening", "⚡ Iron-boosting", "🌿 Liver-supportive"). Make these specific to the biomarker conditions present.
 
-Return a JSON object with the meal plan, health notes, estimated weekly cost, and average daily macros.`;
+${hasLabOptimization ? `Also return a "lab_adjustments" array with 2-3 bullet points explaining what KEY dietary changes were made to this plan based on the lab results and WHY. Be specific (e.g., "Added salmon 3x/week to raise HDL cholesterol from 35 mg/dL").` : ''}
+
+Return a JSON object with the meal plan, health notes, estimated weekly cost, average daily macros${hasLabOptimization ? ', and lab_adjustments' : ''}.`;
 
     try {
       const response = await base44.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: {
-          type: "object",
-          properties: {
-            health_notes: {
-              type: "string",
-              description: "2-3 sentences about how this plan supports their health goals"
-            },
-            estimated_weekly_cost: {
-              type: "number",
-              description: "Estimated total cost for the plan duration in dollars"
-            },
-            average_daily_macros: {
+        type: "object",
+        properties: {
+          health_notes: {
+            type: "string",
+            description: "2-3 sentences about how this plan supports their health goals"
+          },
+          lab_adjustments: {
+            type: "array",
+            items: { type: "string" },
+            description: "2-3 bullet points explaining key dietary changes made based on lab results and why"
+          },
+          estimated_weekly_cost: {
+            type: "number",
+            description: "Estimated total cost for the plan duration in dollars"
+          },
+          average_daily_macros: {
+            type: "object",
+            properties: {
+              protein: { type: "number", description: "Grams per person per day" },
+              carbs: { type: "number", description: "Grams per person per day" },
+              fat: { type: "number", description: "Grams per person per day" }
+            }
+          },
+          days: {
+            type: "array",
+            items: {
               type: "object",
               properties: {
-                protein: { type: "number", description: "Grams per person per day" },
-                carbs: { type: "number", description: "Grams per person per day" },
-                fat: { type: "number", description: "Grams per person per day" }
-              }
-            },
-            days: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  day: { type: "string" },
-                  breakfast: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      description: { type: "string" },
-                      calories: { type: "string" },
-                      protein: { type: "number" },
-                      carbs: { type: "number" },
-                      fat: { type: "number" },
-                      health_benefit: { type: "string" }
-                    }
-                  },
-                  lunch: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      description: { type: "string" },
-                      calories: { type: "string" },
-                      protein: { type: "number" },
-                      carbs: { type: "number" },
-                      fat: { type: "number" },
-                      health_benefit: { type: "string" }
-                    }
-                  },
-                  dinner: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      description: { type: "string" },
-                      calories: { type: "string" },
-                      protein: { type: "number" },
-                      carbs: { type: "number" },
-                      fat: { type: "number" },
-                      health_benefit: { type: "string" }
-                    }
-                  },
-                  snacks: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      description: { type: "string" },
-                      calories: { type: "string" },
-                      protein: { type: "number" },
-                      carbs: { type: "number" },
-                      fat: { type: "number" },
-                      health_benefit: { type: "string" }
-                    }
+                day: { type: "string" },
+                breakfast: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    description: { type: "string" },
+                    calories: { type: "string" },
+                    protein: { type: "number" },
+                    carbs: { type: "number" },
+                    fat: { type: "number" },
+                    health_benefit: { type: "string" },
+                    meal_tag: { type: "string" }
+                  }
+                },
+                lunch: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    description: { type: "string" },
+                    calories: { type: "string" },
+                    protein: { type: "number" },
+                    carbs: { type: "number" },
+                    fat: { type: "number" },
+                    health_benefit: { type: "string" },
+                    meal_tag: { type: "string" }
+                  }
+                },
+                dinner: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    description: { type: "string" },
+                    calories: { type: "string" },
+                    protein: { type: "number" },
+                    carbs: { type: "number" },
+                    fat: { type: "number" },
+                    health_benefit: { type: "string" },
+                    meal_tag: { type: "string" }
+                  }
+                },
+                snacks: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    description: { type: "string" },
+                    calories: { type: "string" },
+                    protein: { type: "number" },
+                    carbs: { type: "number" },
+                    fat: { type: "number" },
+                    health_benefit: { type: "string" },
+                    meal_tag: { type: "string" }
                   }
                 }
               }
             }
           }
+        }
         }
       });
 
@@ -508,6 +590,8 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       setPlanName(`${goalDescription}${culturalLabel} Plan${peopleText}${budgetText} - ${new Date().toLocaleDateString()}`);
 
       setLabsOptimized(hasLabOptimization);
+      setLabAdjustments(response?.lab_adjustments || []);
+      setLabResultDate(labDate || null);
 
       // Fetch real grocery prices
       fetchGroceryPrices(response);
@@ -1208,21 +1292,55 @@ Make it nutritionally appropriate for ${mealType}, different from the current me
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {/* Lab / Pantry Badges */}
-            <div className="flex flex-wrap gap-2">
-              {labsOptimized && (
-                <Badge className="bg-rose-100 text-rose-700 border-rose-200 border px-3 py-1 text-sm flex items-center gap-1.5">
-                  <FlaskConical className="w-3.5 h-3.5" />
-                  Optimized for your labs
-                </Badge>
-              )}
-              {usePantry && pantryItems.length > 0 && (
+            {/* Lab personalization banner */}
+            {labsOptimized && (
+              <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-4">
+                <div className="flex items-start gap-3">
+                  <FlaskConical className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-indigo-900 text-sm">
+                      🧬 This plan was personalized based on your lab results
+                      {labResultDate && (
+                        <span className="font-normal text-indigo-600 ml-1">
+                          from {new Date(labResultDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      )}
+                    </p>
+                    {labAdjustments.length > 0 && (
+                      <ul className="mt-2 space-y-1">
+                        {labAdjustments.map((adj, i) => (
+                          <li key={i} className="text-xs text-indigo-700 flex items-start gap-1.5">
+                            <span className="text-indigo-400 mt-0.5">•</span>
+                            {adj}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No-labs nudge */}
+            {!labsOptimized && labResults.length === 0 && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex items-center gap-3">
+                <FlaskConical className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                <p className="text-sm text-slate-600">
+                  Upload your labs to get a plan tailored to your exact biomarkers.{' '}
+                  <a href="/LabResults" className="text-indigo-600 font-medium hover:underline">Upload now →</a>
+                </p>
+              </div>
+            )}
+
+            {/* Pantry badge */}
+            {usePantry && pantryItems.length > 0 && (
+              <div className="flex">
                 <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 border px-3 py-1 text-sm flex items-center gap-1.5">
                   <Package className="w-3.5 h-3.5" />
                   Uses {pantryItems.length} pantry items
                 </Badge>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Summary Cards */}
             <div className="grid md:grid-cols-3 gap-4">
@@ -1470,10 +1588,15 @@ Make it nutritionally appropriate for ${mealType}, different from the current me
                                       </div>
                                     )}
 
-                                    <div className="flex items-start gap-2 text-xs">
+                                    <div className="flex flex-wrap items-start gap-2 text-xs">
                                       <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
                                         💚 {meal.health_benefit}
                                       </Badge>
+                                      {meal.meal_tag && (
+                                        <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">
+                                          {meal.meal_tag}
+                                        </Badge>
+                                      )}
                                     </div>
                                   </div>
                                 </div>

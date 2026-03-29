@@ -1,0 +1,49 @@
+{
+  "name": "AffiliateClick",
+  "type": "object",
+  "properties": {
+    "affiliate_type": {
+      "type": "string",
+      "enum": [
+        "instacart",
+        "amazon_fresh"
+      ],
+      "description": "Type of affiliate link clicked"
+    },
+    "item_count": {
+      "type": "integer",
+      "description": "Number of items in the order"
+    },
+    "estimated_value": {
+      "type": "number",
+      "description": "Estimated order value in dollars"
+    },
+    "grocery_list_id": {
+      "type": "string",
+      "description": "ID of the grocery list used for this order"
+    },
+    "items_data": {
+      "type": "object",
+      "description": "Snapshot of items included in the order"
+    },
+    "order_arrived": {
+      "type": "boolean",
+      "default": null,
+      "description": "User confirmation if order arrived (tracked after 2 days)"
+    },
+    "follow_up_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether follow-up notification was sent"
+    },
+    "follow_up_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when follow-up was sent"
+    }
+  },
+  "required": [
+    "affiliate_type",
+    "item_count"
+  ]
+}

@@ -4,6 +4,8 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2, Share2, Mail, MessageSquare, List, Calendar, Trash2, Save, BookOpen } from 'lucide-react';
 import RetailerShopLinks, { ShopAllRetailersButton } from '../components/grocery/RetailerShopLinks';
+import AffiliateOrderButtons from '../components/grocery/AffiliateOrderButtons';
+import OrderFeedbackDialog from '../components/grocery/OrderFeedbackDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { calculateListTotal } from '../utils/groceryPriceEstimates';
 
 export default function GroceryLists() {
   const [selectedPlanId, setSelectedPlanId] = useState('');
@@ -31,6 +34,8 @@ export default function GroceryLists() {
   const [createListDialogOpen, setCreateListDialogOpen] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [organizationMode, setOrganizationMode] = useState('category'); // 'category' or 'aisle'
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
+  const [selectedAffiliateClickId, setSelectedAffiliateClickId] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -531,30 +536,45 @@ export default function GroceryLists() {
 
       {/* Organization Toggle & Quick Info */}
       {(selectedPlan || selectedStandaloneList) && groceryList && (
-        <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex-1 space-y-1">
-                <h3 className="font-semibold text-slate-900">Shopping List Ready! 🛒</h3>
-                <p className="text-sm text-slate-600">
-                  {totalItems} items • {checkedCount} purchased • Organized by {organizationMode === 'category' ? 'food category' : 'store aisle'}
-                </p>
+        <>
+          <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+            <CardContent className="p-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex-1 space-y-1">
+                  <h3 className="font-semibold text-slate-900">Shopping List Ready! 🛒</h3>
+                  <p className="text-sm text-slate-600">
+                    {totalItems} items • {checkedCount} purchased • Organized by {organizationMode === 'category' ? 'food category' : 'store aisle'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium whitespace-nowrap">Organize By:</Label>
+                  <Select value={organizationMode} onValueChange={setOrganizationMode}>
+                    <SelectTrigger className="w-40 bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="category">🍎 Food Category</SelectItem>
+                      <SelectItem value="aisle">🏪 Store Aisle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium whitespace-nowrap">Organize By:</Label>
-                <Select value={organizationMode} onValueChange={setOrganizationMode}>
-                  <SelectTrigger className="w-40 bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="category">🍎 Food Category</SelectItem>
-                    <SelectItem value="aisle">🏪 Store Aisle</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Affiliate Order Buttons */}
+          <AffiliateOrderButtons 
+            groceryItems={Object.values(groceryList).flat()}
+            estimatedTotal={calculateListTotal(
+              Object.values(groceryList).flat(),
+              Object.values(groceryList).flat().reduce((acc, item, idx) => {
+                acc[idx] = item.quantity || 1;
+                return acc;
+              }, {})
+            )}
+            groceryListId={selectedStandaloneId || selectedPlanId}
+          />
+        </>
       )}
 
       {/* Grocery List */}
@@ -1093,6 +1113,16 @@ export default function GroceryLists() {
           </div>
         </div>
       )}
+
+      {/* Order Feedback Dialog */}
+      <OrderFeedbackDialog 
+        affiliateClickId={selectedAffiliateClickId}
+        isOpen={feedbackDialogOpen}
+        onClose={() => {
+          setFeedbackDialogOpen(false);
+          setSelectedAffiliateClickId(null);
+        }}
+      />
 
       {/* Create List Dialog */}
       <Dialog open={createListDialogOpen} onOpenChange={setCreateListDialogOpen}>

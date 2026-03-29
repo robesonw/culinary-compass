@@ -12,7 +12,8 @@ import {
   Clock,
   ArrowRight,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Mic
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,9 +24,14 @@ import OnboardingTour from '../components/onboarding/OnboardingTour';
 import StreakCard from '../components/dashboard/StreakCard';
 import StreakCounter from '../components/streaks/StreakCounter';
 import HealthScoreCard from '../components/dashboard/HealthScoreCard';
+import VoiceMealLogger from '../components/meals/VoiceMealLogger';
+import VoiceTranscriptionReview from '../components/meals/VoiceTranscriptionReview';
 import { useSubscription } from '../lib/useSubscription';
 
 export default function Dashboard() {
+  const [voiceReviewOpen, setVoiceReviewOpen] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState(null);
+
   const { data: mealPlans = [] } = useQuery({
     queryKey: ['mealPlans'],
     queryFn: () => base44.entities.MealPlan.list('-created_date', 10),
@@ -168,6 +174,11 @@ export default function Dashboard() {
       { action: 'Welcome!', plan: 'Start by creating your first meal plan', time: 'Get started' }
     ];
   }, [mealPlans, labResults]);
+
+  const handleVoiceTranscribed = (transcript) => {
+    setVoiceTranscript(transcript);
+    setVoiceReviewOpen(true);
+  };
 
   const quickActions = [
     { title: 'Create AI Meal Plan', description: 'Generate personalized plan', icon: Sparkles, href: 'HealthDietHub' },
@@ -336,7 +347,24 @@ export default function Dashboard() {
         transition={{ delay: 0.6 }}
       >
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-4 gap-4">
+          <Card className="border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group">
+            <CardContent className="p-6 h-full flex flex-col items-start justify-between">
+              <div className="w-full">
+                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center mb-3 group-hover:bg-red-100 transition-colors">
+                  <Mic className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 className="font-semibold text-slate-900 mb-1">Quick Voice Log</h3>
+                <p className="text-sm text-slate-600">Log meal by voice</p>
+              </div>
+              <div className="w-full mt-4">
+                <VoiceMealLogger 
+                  onTranscriptionComplete={handleVoiceTranscribed}
+                  isProcessing={voiceReviewOpen}
+                />
+              </div>
+            </CardContent>
+          </Card>
           {quickActions.map((action, index) => {
             const Icon = action.icon;
             return (
@@ -405,6 +433,23 @@ export default function Dashboard() {
           </div>
         </motion.div>
       )}
-    </div>
-  );
-}
+
+      {/* Voice Transcription Review Dialog */}
+      {voiceReviewOpen && voiceTranscript && (
+        <VoiceTranscriptionReview
+          transcript={voiceTranscript}
+          mealType="lunch"
+          logDate={new Date().toISOString().split('T')[0]}
+          onSuccess={() => {
+            setVoiceReviewOpen(false);
+            setVoiceTranscript(null);
+          }}
+          onCancel={() => {
+            setVoiceReviewOpen(false);
+            setVoiceTranscript(null);
+          }}
+        />
+      )}
+      </div>
+      );
+      }

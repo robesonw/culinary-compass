@@ -22,6 +22,8 @@ import MicronutrientTargetSelector from '../components/nutrition/MicronutrientTa
 import MicronutrientProgressCard from '../components/nutrition/MicronutrientProgressCard';
 import FoodPhotoLogger from '../components/meals/FoodPhotoLogger';
 import FoodPhotoReview from '../components/meals/FoodPhotoReview';
+import VoiceMealLogger from '../components/meals/VoiceMealLogger';
+import VoiceTranscriptionReview from '../components/meals/VoiceTranscriptionReview';
 
 export default function NutritionTracking() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
@@ -40,6 +42,8 @@ export default function NutritionTracking() {
   const [weeklyGoalDateRange, setWeeklyGoalDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   const [photoReviewOpen, setPhotoReviewOpen] = useState(false);
   const [photoToReview, setPhotoToReview] = useState(null);
+  const [voiceReviewOpen, setVoiceReviewOpen] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState(null);
   
   const [goalForm, setGoalForm] = useState({
     goal_type: 'daily',
@@ -204,6 +208,11 @@ export default function NutritionTracking() {
     setIsAnalyzingPhoto(true);
     setPhotoToReview(photoData);
     setPhotoReviewOpen(true);
+  };
+
+  const handleVoiceTranscribed = (transcript) => {
+    setVoiceTranscript(transcript);
+    setVoiceReviewOpen(true);
   };
 
   const handleGenerateNutrition = async () => {
@@ -548,6 +557,10 @@ export default function NutritionTracking() {
           <FoodPhotoLogger 
             onPhotoSelected={handlePhotoSelected}
             isLoading={isAnalyzingPhoto}
+          />
+          <VoiceMealLogger 
+            onTranscriptionComplete={handleVoiceTranscribed}
+            isProcessing={voiceReviewOpen}
           />
           <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
             <Share2 className="w-4 h-4 mr-2" />
@@ -1535,6 +1548,25 @@ export default function NutritionTracking() {
             setPhotoReviewOpen(false);
             setPhotoToReview(null);
             setIsAnalyzingPhoto(false);
+          }}
+        />
+      )}
+
+      {/* Voice Transcription Review Dialog */}
+      {voiceReviewOpen && voiceTranscript && (
+        <VoiceTranscriptionReview
+          transcript={voiceTranscript}
+          mealType={logForm.meal_type}
+          logDate={logForm.log_date}
+          onSuccess={() => {
+            setVoiceReviewOpen(false);
+            setVoiceTranscript(null);
+            queryClient.invalidateQueries({ queryKey: ['nutritionLogs'] });
+            toast.success('Meal logged from voice!');
+          }}
+          onCancel={() => {
+            setVoiceReviewOpen(false);
+            setVoiceTranscript(null);
           }}
         />
       )}

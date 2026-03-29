@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AppleHealthCard from '@/components/integrations/AppleHealthCard';
+import OuraRingCard from '@/components/integrations/OuraRingCard';
+import WHOOPCard from '@/components/integrations/WHOOPCard';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,6 +64,17 @@ export default function Integrations() {
           lastSync={latestSync?.created_date}
           onSyncComplete={() => refetchSync()}
         />
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <OuraRingCard 
+            lastSync={latestSync?.wearable_source === 'oura' ? latestSync?.created_date : null}
+            onSyncComplete={() => refetchSync()}
+          />
+          <WHOOPCard 
+            lastSync={latestSync?.wearable_source === 'whoop' ? latestSync?.created_date : null}
+            onSyncComplete={() => refetchSync()}
+          />
+        </div>
       </div>
 
       {/* Coming Soon */}
@@ -72,7 +85,6 @@ export default function Integrations() {
             { name: 'Fitbit', icon: '⌚', status: 'In Development' },
             { name: 'Google Fit', icon: '🔄', status: 'Planned' },
             { name: 'Garmin Connect', icon: '🗺️', status: 'Planned' },
-            { name: 'Oura Ring', icon: '💍', status: 'Planned' },
           ].map(integration => (
             <Card key={integration.name} className="border-slate-200 opacity-75">
               <CardContent className="p-4">

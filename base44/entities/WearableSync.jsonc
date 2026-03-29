@@ -52,6 +52,36 @@
     "notes": {
       "type": "string",
       "description": "User notes about the day"
+    },
+    "recovery_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Recovery score percentage (0-100)"
+    },
+    "readiness_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Readiness score from Oura Ring (0-100)"
+    },
+    "hrv": {
+      "type": "number",
+      "description": "Heart Rate Variability in milliseconds"
+    },
+    "strain_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "WHOOP strain score (0-100)"
+    },
+    "wearable_source": {
+      "type": "string",
+      "enum": [
+        "oura",
+        "whoop"
+      ],
+      "description": "Which wearable device provided the data"
     }
   },
   "required": [

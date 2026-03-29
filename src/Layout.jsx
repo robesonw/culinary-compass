@@ -174,6 +174,26 @@ export default function Layout({ children, currentPageName }) {
               </>
             )}
 
+            {user?.role === 'corporate' && (
+              <>
+                <div className="border-t border-slate-200 my-2" />
+                <Link
+                  to={createPageUrl('CorporateAdmin')}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                    ${isActive('CorporateAdmin')
+                      ? 'bg-blue-50 text-blue-700' 
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <Users className={`w-5 h-5 ${isActive('CorporateAdmin') ? 'text-blue-600' : 'text-slate-400'}`} />
+                  Corporate Dashboard
+                </Link>
+              </>
+            )}
+
             {user?.role === 'admin' && (
               <>
                 <div className="border-t border-slate-200 my-2" />

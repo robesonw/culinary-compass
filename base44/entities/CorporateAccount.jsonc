@@ -1,0 +1,105 @@
+{
+  "name": "CorporateAccount",
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "description": "Name of the company"
+    },
+    "admin_email": {
+      "type": "string",
+      "description": "Email of the primary account administrator"
+    },
+    "company_size": {
+      "type": "string",
+      "enum": [
+        "10-50",
+        "50-200",
+        "200+"
+      ],
+      "description": "Employee count range"
+    },
+    "industry": {
+      "type": "string",
+      "description": "Industry or sector"
+    },
+    "website": {
+      "type": "string",
+      "description": "Company website"
+    },
+    "contact_name": {
+      "type": "string",
+      "description": "Primary contact person"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "seat_count": {
+      "type": "integer",
+      "description": "Total purchased seats/licenses"
+    },
+    "seats_used": {
+      "type": "integer",
+      "default": 0,
+      "description": "Currently activated employee seats"
+    },
+    "price_per_seat": {
+      "type": "number",
+      "description": "Monthly cost per employee based on tier"
+    },
+    "total_monthly_cost": {
+      "type": "number",
+      "description": "Total monthly subscription cost"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID for billing"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID (quantity-based)"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "trialing",
+        "past_due",
+        "cancelled"
+      ],
+      "default": "active",
+      "description": "Current subscription status"
+    },
+    "billing_period_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Current billing period start date"
+    },
+    "billing_period_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Current billing period end date"
+    },
+    "custom_pricing": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether account has custom pricing (200+)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "onboarding"
+      ],
+      "default": "onboarding",
+      "description": "Account status"
+    }
+  },
+  "required": [
+    "company_name",
+    "admin_email",
+    "seat_count"
+  ]
+}

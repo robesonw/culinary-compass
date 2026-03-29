@@ -1,0 +1,63 @@
+{
+  "name": "CorporateEmployee",
+  "type": "object",
+  "properties": {
+    "corporate_account_id": {
+      "type": "string",
+      "description": "ID of the corporate account"
+    },
+    "employee_email": {
+      "type": "string",
+      "description": "Employee email address"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Employee full name"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department or team"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "invited",
+        "active",
+        "inactive",
+        "cancelled"
+      ],
+      "default": "invited",
+      "description": "Employee status"
+    },
+    "signup_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date employee signed up"
+    },
+    "invitation_sent_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date invitation was sent"
+    },
+    "last_active_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last activity date"
+    },
+    "pro_access_granted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether Pro access has been granted"
+    },
+    "health_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Current health score (for aggregate reporting)"
+    }
+  },
+  "required": [
+    "corporate_account_id",
+    "employee_email"
+  ]
+}

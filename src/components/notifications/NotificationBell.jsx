@@ -8,7 +8,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function NotificationBell() {
+function NotificationBellContent() {
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -121,4 +121,13 @@ export default function NotificationBell() {
       </PopoverContent>
     </Popover>
   );
+}
+
+export default function NotificationBell() {
+  try {
+    useQueryClient();
+    return <NotificationBellContent />;
+  } catch {
+    return null;
+  }
 }

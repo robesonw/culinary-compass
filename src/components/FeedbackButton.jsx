@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { MessageSquare, Star, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function FeedbackButton() {
+function FeedbackButtonContent() {
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [feedbackType, setFeedbackType] = useState('general');
@@ -146,4 +146,14 @@ export default function FeedbackButton() {
       </Dialog>
     </>
   );
+}
+
+export default function FeedbackButton() {
+  try {
+    useLocation();
+    useQuery;
+    return <FeedbackButtonContent />;
+  } catch {
+    return null;
+  }
 }

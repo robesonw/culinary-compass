@@ -51,6 +51,7 @@ const navigation = [
   { name: 'My Profile', href: 'Profile', icon: User },
   { name: 'Pricing', href: 'Pricing', icon: Zap },
   { name: 'Settings', href: 'Settings', icon: Settings },
+  { name: 'Integrations', href: 'Integrations', icon: Link2 },
 ];
 
 export default function Layout({ children, currentPageName }) {

@@ -1,0 +1,61 @@
+{
+  "name": "WearableSync",
+  "type": "object",
+  "properties": {
+    "sync_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the synced activity"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "apple_health",
+        "manual"
+      ],
+      "description": "Source of the data"
+    },
+    "steps": {
+      "type": "number",
+      "description": "Steps taken"
+    },
+    "active_calories": {
+      "type": "number",
+      "description": "Active/exercise calories burned"
+    },
+    "resting_calories": {
+      "type": "number",
+      "description": "Resting metabolic calories"
+    },
+    "sleep_hours": {
+      "type": "number",
+      "description": "Hours of sleep"
+    },
+    "sleep_quality": {
+      "type": "string",
+      "enum": [
+        "poor",
+        "fair",
+        "good",
+        "excellent"
+      ],
+      "description": "Sleep quality rating"
+    },
+    "resting_heart_rate": {
+      "type": "number",
+      "description": "Resting heart rate in bpm"
+    },
+    "body_weight": {
+      "type": "number",
+      "description": "Body weight in kg"
+    },
+    "notes": {
+      "type": "string",
+      "description": "User notes about the day"
+    }
+  },
+  "required": [
+    "sync_date",
+    "source"
+  ]
+}

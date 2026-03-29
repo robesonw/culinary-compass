@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import QuickStartChecklist from '../components/onboarding/QuickStartChecklist';
 import OnboardingTour from '../components/onboarding/OnboardingTour';
 import StreakCard from '../components/dashboard/StreakCard';
+import StreakCounter from '../components/streaks/StreakCounter';
 import HealthScoreCard from '../components/dashboard/HealthScoreCard';
 import { useSubscription } from '../lib/useSubscription';
 
@@ -54,6 +55,16 @@ export default function Dashboard() {
   const { data: nutritionLogs = [] } = useQuery({
     queryKey: ['nutritionLogsStreak'],
     queryFn: () => base44.entities.NutritionLog.list('-log_date', 90),
+  });
+
+  const { data: streakData = {} } = useQuery({
+    queryKey: ['userStreak'],
+    queryFn: async () => {
+      const currentUser = await base44.auth.me();
+      const streaks = await base44.entities.UserStreak.filter({ created_by: currentUser.email });
+      return streaks?.[0] || {};
+    },
+    retry: false
   });
 
   // Calculate accurate statistics
@@ -188,8 +199,8 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Streak Card */}
-      <StreakCard nutritionLogs={nutritionLogs} />
+      {/* Streak Counter Widget */}
+      <StreakCounter streakData={streakData} />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

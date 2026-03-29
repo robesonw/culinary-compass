@@ -11,9 +11,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Heart, ChefHat, ShoppingCart, Save, Loader2, CheckCircle2, Calendar, FileText, Settings, Bell, Edit, Trash2, Eye } from 'lucide-react';
+import { User, Heart, ChefHat, ShoppingCart, Save, Loader2, CheckCircle2, Calendar, FileText, Settings, Bell, Edit, Trash2, Eye, Flame, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import StreaksAchievementsSection from '../components/streaks/StreaksAchievementsSection';
 
 const healthGoals = [
   { value: 'liver_health', label: 'Liver Health' },
@@ -328,10 +329,14 @@ export default function Profile() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">
             <User className="w-4 h-4 mr-2" />
             Overview
+          </TabsTrigger>
+          <TabsTrigger value="streaks">
+            <Flame className="w-4 h-4 mr-2" />
+            Streaks
           </TabsTrigger>
           <TabsTrigger value="recipes">
             <ChefHat className="w-4 h-4 mr-2" />
@@ -358,6 +363,11 @@ export default function Profile() {
             Settings
           </TabsTrigger>
         </TabsList>
+
+        {/* Streaks & Achievements Tab */}
+        <TabsContent value="streaks">
+          <StreaksAchievementsSection />
+        </TabsContent>
 
         {/* Overview Tab */}
         <TabsContent value="overview">

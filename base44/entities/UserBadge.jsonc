@@ -1,0 +1,43 @@
+{
+  "name": "UserBadge",
+  "type": "object",
+  "properties": {
+    "badge_id": {
+      "type": "string",
+      "description": "Unique identifier for the badge"
+    },
+    "badge_name": {
+      "type": "string",
+      "description": "Name of the badge"
+    },
+    "badge_emoji": {
+      "type": "string",
+      "description": "Emoji representing the badge"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of how to earn the badge"
+    },
+    "earned_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when the badge was earned"
+    },
+    "is_earned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the badge has been earned"
+    },
+    "progress": {
+      "type": "number",
+      "default": 0,
+      "description": "Progress towards earning the badge (0-100%)"
+    }
+  },
+  "required": [
+    "badge_id",
+    "badge_name",
+    "badge_emoji",
+    "description"
+  ]
+}

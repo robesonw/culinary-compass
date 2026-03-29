@@ -1,0 +1,54 @@
+{
+  "name": "UserStreak",
+  "type": "object",
+  "properties": {
+    "meal_log_streak": {
+      "type": "integer",
+      "default": 0,
+      "description": "Current meal logging streak (days)"
+    },
+    "checkin_streak": {
+      "type": "integer",
+      "default": 0,
+      "description": "Current daily check-in streak (days)"
+    },
+    "plan_follow_streak": {
+      "type": "integer",
+      "default": 0,
+      "description": "Current meal plan following streak (days)"
+    },
+    "longest_streak": {
+      "type": "integer",
+      "default": 0,
+      "description": "Longest streak ever achieved (days)"
+    },
+    "last_activity_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last date user logged activity"
+    },
+    "total_days_logged": {
+      "type": "integer",
+      "default": 0,
+      "description": "Total number of days with logged activity"
+    },
+    "shields_remaining": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 2,
+      "description": "Number of streak shields available (max 2)"
+    },
+    "shields_earned": {
+      "type": "integer",
+      "default": 0,
+      "description": "Total shields ever earned"
+    },
+    "last_shield_used_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when last shield was used"
+    }
+  },
+  "required": []
+}

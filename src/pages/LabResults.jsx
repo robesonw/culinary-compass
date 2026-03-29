@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Upload, TrendingUp, TrendingDown, Minus, Loader2, Calendar, Trash2, CheckCircle2, AlertCircle, FlaskConical } from 'lucide-react';
+import { FileText, Upload, TrendingUp, TrendingDown, Minus, Loader2, Calendar, Trash2, CheckCircle2, AlertCircle, FlaskConical, Pill } from 'lucide-react';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -436,6 +437,17 @@ Return ONLY the biomarkers object - use the exact test name as the key (e.g. "Gl
                           <FileText className="w-4 h-4 mr-2" />
                           View PDF
                         </a>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        asChild
+                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
+                      >
+                        <Link to={`/SupplementRecommendations?labResultId=${result.id}`}>
+                          <Pill className="w-4 h-4 mr-2" />
+                          Supplements
+                        </Link>
                       </Button>
                       <Button 
                         variant="outline" 

@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Bell, Shield, Palette, LogOut } from 'lucide-react';
 import AffiliateSettings from '../components/settings/AffiliateSettings';
+import ReferralSection from '../components/settings/ReferralSection';
 import { toast } from 'sonner';
 
 export default function Settings() {
@@ -220,6 +221,15 @@ export default function Settings() {
             <Button variant="outline">Update Password</Button>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* Referral Program */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <ReferralSection user={user} />
       </motion.div>
 
       {/* Affiliate Settings */}

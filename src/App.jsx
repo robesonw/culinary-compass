@@ -24,6 +24,7 @@ import MyClients from './pages/MyClients';
 import PractitionerPricing from './pages/PractitionerPricing';
 import CorporateSignup from './pages/CorporateSignup';
 import CorporateAdmin from './pages/CorporateAdmin';
+import HealthAlerts from './pages/HealthAlerts';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -96,6 +97,7 @@ const AuthenticatedApp = () => {
       <Route path="/FindPractitioner" element={<LayoutWrapper currentPageName="FindPractitioner"><FindPractitioner /></LayoutWrapper>} />
       <Route path="/corporate" element={<CorporateSignup />} />
       <Route path="/CorporateAdmin" element={<LayoutWrapper currentPageName="CorporateAdmin"><CorporateAdmin /></LayoutWrapper>} />
+      <Route path="/HealthAlerts" element={<LayoutWrapper currentPageName="HealthAlerts"><HealthAlerts /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

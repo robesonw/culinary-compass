@@ -22,7 +22,8 @@ import {
   Package,
   Link2,
   Bot,
-  Camera
+  Camera,
+  Gift
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ const navigation = [
   { name: 'Pantry', href: 'Pantry', icon: Package },
   { name: 'My Progress', href: 'MyProgress', icon: Camera },
   { name: 'Progress Tracking', href: 'ProgressTracking', icon: TrendingUp },
+  { name: 'Refer a Friend', href: 'ReferAFriend', icon: Gift },
   { name: 'Community', href: 'Community', icon: Users },
   { name: 'Progress Feed', href: 'ProgressFeed', icon: TrendingUp },
   { name: 'Recipes', href: 'SharedRecipes', icon: Search },

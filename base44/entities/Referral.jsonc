@@ -6,28 +6,59 @@
       "type": "string",
       "description": "Email of the user who referred"
     },
-    "referral_code": {
-      "type": "string",
-      "description": "Unique referral code"
-    },
     "referred_email": {
       "type": "string",
       "description": "Email of the referred user (once they sign up)"
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "Unique referral code (e.g., VP-A3X9K)"
     },
     "status": {
       "type": "string",
       "enum": [
         "pending",
-        "completed",
+        "joined",
+        "upgraded",
         "rewarded"
       ],
       "default": "pending",
       "description": "Status of the referral"
     },
-    "reward_granted": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether the reward has been granted"
+    "completed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when referred user joined"
+    },
+    "upgraded_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when referred user upgraded to Pro"
+    },
+    "reward_applied_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when reward was applied"
+    },
+    "referrer_reward_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "applied",
+        "used"
+      ],
+      "default": "pending",
+      "description": "Status of referrer's reward"
+    },
+    "referred_reward_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "applied",
+        "used"
+      ],
+      "default": "pending",
+      "description": "Status of referred user's reward"
     }
   },
   "required": [

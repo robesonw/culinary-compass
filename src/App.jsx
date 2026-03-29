@@ -14,6 +14,8 @@ import AICoach from './pages/AICoach';
 import Integrations from './pages/Integrations';
 import SupplementRecommendations from './pages/SupplementRecommendations';
 import MyProgress from './pages/MyProgress';
+import ReferAFriend from './pages/ReferAFriend';
+import ReferralLanding from './pages/ReferralLanding';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -76,6 +78,8 @@ const AuthenticatedApp = () => {
       <Route path="/Integrations" element={<LayoutWrapper currentPageName="Integrations"><Integrations /></LayoutWrapper>} />
       <Route path="/SupplementRecommendations" element={<LayoutWrapper currentPageName="SupplementRecommendations"><SupplementRecommendations /></LayoutWrapper>} />
       <Route path="/MyProgress" element={<LayoutWrapper currentPageName="MyProgress"><MyProgress /></LayoutWrapper>} />
+      <Route path="/ReferAFriend" element={<LayoutWrapper currentPageName="ReferAFriend"><ReferAFriend /></LayoutWrapper>} />
+      <Route path="/refer/:code" element={<ReferralLanding />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

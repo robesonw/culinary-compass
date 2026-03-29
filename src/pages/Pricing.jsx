@@ -97,23 +97,52 @@ export default function Pricing() {
       const response = await base44.functions.invoke('createCheckoutSession', {
         plan_id: plan.id,
       });
-      if (response?.data?.url) {
-        window.location.href = response.data.url;
+      const url = response?.data?.url;
+      if (url) {
+        window.location.href = url;
+      } else {
+        const errMsg = response?.data?.error || 'No checkout URL returned';
+        console.error('Checkout error:', errMsg);
+        toast.error(`Checkout failed: ${errMsg}`);
+        setLoadingPlan(null);
       }
     } catch (err) {
-      toast.error('Failed to start checkout. Please try again.');
-    } finally {
+      const errMsg = err?.response?.data?.error || err?.message || 'Unknown error';
+      console.error('Checkout exception:', errMsg);
+      toast.error(`Checkout failed: ${errMsg}`, { duration: 6000 });
       setLoadingPlan(null);
     }
+    // Note: on success we don't reset loadingPlan — user is being redirected to Stripe
   };
 
-  // Handle success/cancel redirects
+  // Handle success/cancel redirects — immediately update UserSettings on success
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
-      toast.success(`Successfully subscribed to ${params.get('plan')} plan! Your 7-day trial has started.`);
+    const planParam = params.get('plan');
+    if (params.get('success') === 'true' && planParam) {
+      // Optimistically update UserSettings so UI reflects new plan immediately
+      (async () => {
+        try {
+          const existing = await base44.entities.UserSettings.list();
+          const data = {
+            subscription_plan: planParam,
+            subscription_status: 'trialing',
+          };
+          if (existing.length > 0) {
+            await base44.entities.UserSettings.update(existing[0].id, data);
+          } else {
+            await base44.entities.UserSettings.create(data);
+          }
+        } catch (e) {
+          console.error('Failed to update UserSettings after checkout:', e);
+        }
+      })();
+      toast.success(`🎉 Welcome to ${planParam.charAt(0).toUpperCase() + planParam.slice(1)}! Your 7-day trial has started.`);
+      // Clean up URL
+      window.history.replaceState({}, '', '/Pricing');
     } else if (params.get('cancelled') === 'true') {
-      toast.info('Checkout cancelled.');
+      toast.info('Checkout cancelled. You can upgrade anytime.');
+      window.history.replaceState({}, '', '/Pricing');
     }
   }, []);
 

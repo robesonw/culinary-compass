@@ -1,247 +1,218 @@
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import SupplementCard from '@/components/supplements/SupplementCard';
-import { Loader2, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, AlertCircle, Lock } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import SupplementRecommendationCard from '../components/supplements/SupplementRecommendationCard';
 
 export default function SupplementRecommendations() {
   const [searchParams] = useSearchParams();
   const labResultId = searchParams.get('labResultId');
-  const [recommendations, setRecommendations] = useState(null);
-  const [topPriority, setTopPriority] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isIframe, setIsIframe] = useState(false);
 
-  // Get user subscription status
-  const { data: userSettings } = useQuery({
-    queryKey: ['userSettings'],
-    queryFn: () => base44.entities.UserSettings.filter({ user_id: '' }, '', 1).then(res => res[0]),
+  useEffect(() => {
+    setIsIframe(window.self !== window.top);
+  }, []);
+
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
   });
 
-  // Get lab result
   const { data: labResult } = useQuery({
     queryKey: ['labResult', labResultId],
-    queryFn: () => labResultId ? base44.entities.LabResult.filter({ id: labResultId }, '', 1).then(res => res[0]) : null,
+    queryFn: async () => {
+      if (!labResultId) return null;
+      const results = await base44.entities.LabResult.filter({ id: labResultId });
+      return results?.[0] || null;
+    },
     enabled: !!labResultId,
   });
 
-  // Generate recommendations
+  const { data: userPrefs } = useQuery({
+    queryKey: ['userPreferences'],
+    queryFn: async () => {
+      if (!user?.email) return null;
+      const prefs = await base44.entities.UserPreferences.filter({ created_by: user.email });
+      return prefs?.[0] || null;
+    },
+    enabled: !!user?.email,
+  });
+
+  const generatePlanMutation = useMutation({
+    mutationFn: (id) =>
+      base44.functions.invoke('generateSupplementPlan', { labResultId: id }),
+    onError: (err) => {
+      toast.error('Failed to generate supplement plan');
+      console.error(err);
+    },
+  });
+
   useEffect(() => {
-    const generateRecommendations = async () => {
-      if (!labResultId) {
-        setError('No lab result selected');
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const response = await base44.functions.invoke('generateSupplementRecommendations', {
-          labResultId
-        });
-
-        if (response.data.success) {
-          setRecommendations(response.data.recommendations);
-          setTopPriority(response.data.topPriority);
-        } else {
-          setError('Failed to generate recommendations');
-        }
-      } catch (err) {
-        console.error('Error:', err);
-        setError(err.message || 'Failed to generate recommendations');
-        toast.error('Failed to generate recommendations');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    generateRecommendations();
+    if (labResultId && !generatePlanMutation.data) {
+      generatePlanMutation.mutate(labResultId);
+    }
   }, [labResultId]);
 
-  // Determine if user can see all recommendations
-  const isPremium = userSettings?.subscription_plan === 'premium' || userSettings?.subscription_plan === 'pro';
-  const visibleRecommendations = isPremium 
-    ? recommendations 
-    : recommendations?.slice(0, 1);
+  const plan = generatePlanMutation.data?.data;
+  const isLoading = generatePlanMutation.isPending;
 
-  if (isLoading) {
+  // Check user tier (simplified - in production use subscription service)
+  const isPro = userPrefs?.tier === 'pro' || userPrefs?.tier === 'premium';
+  const maxRecommendations = isPro ? plan?.recommendationCount : 2;
+
+  if (!labResultId || !labResult) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-3" />
-          <p className="text-slate-600">Analyzing lab results...</p>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Supplement Recommendations</h1>
+          <p className="text-slate-600 mt-2">
+            No lab result selected. Go to Lab Results to generate a supplement plan.
+          </p>
         </div>
-      </div>
-    );
-  }
-
-  if (error || !recommendations) {
-    return (
-      <div className="max-w-3xl mx-auto p-6">
-        <Link to="/LabResults">
-          <Button variant="outline" className="mb-6">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Lab Results
-          </Button>
-        </Link>
-
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-red-900 mb-1">Unable to Generate Recommendations</h3>
-                <p className="text-sm text-red-800">{error || 'Please try again or contact support'}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
+          <a href="/LabResults">Go to Lab Results</a>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Supplement Recommendations</h1>
-          <p className="text-slate-600 mt-1">
-            Based on your lab results from {labResult?.upload_date ? new Date(labResult.upload_date).toLocaleDateString() : 'recent test'}
-          </p>
-        </div>
-        <Link to="/LabResults">
-          <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-        </Link>
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Your Supplement Plan</h1>
+        <p className="text-slate-600 mt-1">
+          Based on your labs from{' '}
+          {new Date(labResult.upload_date).toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </p>
       </div>
 
-      {/* Disclaimer */}
-      <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-800">
-              <p className="font-medium mb-1">⚠️ Important Disclaimer</p>
-              <p>These are general suggestions based on your lab values. <strong>Always consult your doctor</strong> before starting any supplement regimen, especially if you're on medications or have health conditions.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Top Priority Section */}
-      {topPriority.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-xl font-bold text-slate-900">Top {topPriority.length} Priority Supplements</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            {topPriority.map((supplement) => (
-              <SupplementCard
-                key={supplement.name}
-                supplement={supplement}
-                labResultId={labResultId}
-                isPriority={true}
-              />
-            ))}
-          </div>
-        </div>
+      {isIframe && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            Amazon links work best on the published app. Open VitaPlate directly for the best shopping experience.
+          </AlertDescription>
+        </Alert>
       )}
 
-      {/* All Recommendations or Upsell */}
-      {!isPremium && recommendations && recommendations.length > 1 ? (
-        <div className="space-y-3">
-          <h2 className="text-xl font-bold text-slate-900">Additional Recommendations</h2>
-          
+      {isLoading ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-indigo-600 mr-2" />
+            <p className="text-slate-600">Generating your supplement plan...</p>
+          </CardContent>
+        </Card>
+      ) : plan ? (
+        <>
+          {/* Overview */}
           <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
-            <CardHeader>
-              <CardTitle className="text-indigo-900">🔒 Unlock All Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-indigo-800">
-                You're viewing <strong>1 of {recommendations.length}</strong> recommendations. Upgrade to Pro or Premium to see all personalized suggestions based on your complete lab profile.
-              </p>
-              <div className="space-y-2 text-sm text-indigo-800 ml-3 list-disc">
-                <p>✓ See all {recommendations.length} supplement recommendations</p>
-                <p>✓ Get detailed health insights from advanced lab analysis</p>
-                <p>✓ Track supplement effectiveness with follow-up testing</p>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {plan.recommendationCount} supplements recommended
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Estimated monthly cost: <span className="font-bold text-indigo-600">~${plan.totalMonthlyCost}</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-indigo-500 text-white mb-2">Personalized Plan</Badge>
+                  <p className="text-xs text-slate-600">Based on your lab results</p>
+                </div>
               </div>
-              <Link to="/Pricing" className="block">
-                <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
-                  Upgrade to Pro
-                </Button>
-              </Link>
             </CardContent>
           </Card>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <h2 className="text-xl font-bold text-slate-900">All Recommendations</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {visibleRecommendations?.map((supplement) => (
-              <SupplementCard
-                key={supplement.name}
-                supplement={supplement}
-                labResultId={labResultId}
-                isPriority={topPriority.some(p => p.name === supplement.name)}
-              />
-            ))}
+
+          {/* Top Priority Stack */}
+          {plan.recommendations.filter((r) => r.priority === 'HIGH').length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900 mb-3">🎯 Top Priority Stack</h2>
+              <p className="text-sm text-slate-600 mb-4">
+                Start with these supplements for the biggest health impact:
+              </p>
+              <div className="grid gap-4">
+                {plan.recommendations
+                  .filter((r) => r.priority === 'HIGH')
+                  .slice(0, 3)
+                  .map((rec, idx) => (
+                    <SupplementRecommendationCard key={idx} recommendation={rec} />
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* All Recommendations */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-slate-900">All Recommendations</h2>
+              {!isPro && <Badge className="bg-rose-100 text-rose-700">Free Tier Preview</Badge>}
+            </div>
+
+            <div className="grid gap-4">
+              {plan.recommendations.map((rec, idx) => {
+                const isBlurred = !isPro && idx >= maxRecommendations;
+
+                return (
+                  <div
+                    key={idx}
+                    className={`relative ${isBlurred ? 'opacity-60 pointer-events-none' : ''}`}
+                  >
+                    <SupplementRecommendationCard recommendation={rec} />
+
+                    {isBlurred && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-slate-900 bg-opacity-20 rounded-lg backdrop-blur-sm">
+                        <div className="bg-white rounded-lg p-4 text-center">
+                          <Lock className="w-6 h-6 text-slate-600 mx-auto mb-2" />
+                          <p className="text-sm font-semibold text-slate-900">Upgrade to Pro</p>
+                          <p className="text-xs text-slate-600 mt-1">
+                            See all {plan.recommendationCount} supplement recommendations
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+
+          {/* Disclaimer */}
+          <Card className="border-slate-200 bg-slate-50">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-slate-600" />
+                Medical Disclaimer
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-700 leading-relaxed">
+                These recommendations are based on your lab values and general nutritional science. They are
+                <strong> not medical advice</strong>. Always consult your doctor or registered dietitian before
+                starting any new supplement regimen, especially if you take prescription medications. Some supplements
+                can interact with medications or medical conditions.
+              </p>
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <p className="text-slate-600">Unable to generate supplement plan. Please try again.</p>
+          </CardContent>
+        </Card>
       )}
-
-      {/* Info Section */}
-      <Card className="border-slate-200 bg-slate-50">
-        <CardHeader>
-          <CardTitle className="text-slate-900">📋 How to Use These Recommendations</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <ol className="space-y-2 text-sm text-slate-700 list-decimal ml-5">
-            <li><strong>Consult Your Doctor</strong> - Share these recommendations with your healthcare provider</li>
-            <li><strong>Start Slowly</strong> - Introduce one supplement at a time to monitor for effects</li>
-            <li><strong>Check Interactions</strong> - Verify that supplements won't interact with medications</li>
-            <li><strong>Track Results</strong> - Retest after 8-12 weeks to see improvements</li>
-            <li><strong>Quality Matters</strong> - Look for third-party testing (USP, NSF, ConsumerLab)</li>
-          </ol>
-        </CardContent>
-      </Card>
-
-      {/* Quality Tips */}
-      <Card className="border-slate-200 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="text-blue-900">💡 Pro Tips for Supplement Quality</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2 text-sm text-blue-800 ml-3 list-disc">
-            <li><strong>Look for third-party testing</strong> - USP, NSF, or ConsumerLab verified</li>
-            <li><strong>Check the form</strong> - Glycinate, Picolinate, and Methylated forms are more bioavailable</li>
-            <li><strong>Avoid unnecessary fillers</strong> - Fewer additives is usually better</li>
-            <li><strong>Storage matters</strong> - Keep supplements away from heat and moisture</li>
-            <li><strong>Timing is important</strong> - Fat-soluble vitamins (D, K) are best with meals</li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Footer */}
-      <div className="text-center py-6 border-t border-slate-200">
-        <p className="text-xs text-slate-600 mb-3">
-          💰 We may earn a small affiliate commission on Amazon purchases at no extra cost to you. This helps us keep VitaPlate free and developing.
-        </p>
-        <Link to="/LabResults">
-          <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Lab Results
-          </Button>
-        </Link>
-      </div>
     </div>
   );
 }

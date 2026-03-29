@@ -458,10 +458,10 @@ Return ONLY the biomarkers object - use the exact test name as the key (e.g. "Gl
                         asChild
                         className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
                       >
-                        <Link to={`/SupplementRecommendations?labResultId=${result.id}`}>
+                        <a href={`/SupplementRecommendations?labResultId=${result.id}`}>
                           <Pill className="w-4 h-4 mr-2" />
                           Supplements
-                        </Link>
+                        </a>
                       </Button>
                       <Button 
                         variant="outline" 

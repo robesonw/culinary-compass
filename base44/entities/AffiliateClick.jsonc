@@ -10,21 +10,30 @@
       "type": "string",
       "enum": [
         "instacart",
-        "amazon_fresh"
+        "amazon_fresh",
+        "amazon_supplement"
       ],
       "description": "Affiliate platform used"
     },
     "item_count": {
       "type": "integer",
-      "description": "Number of items in the order"
+      "description": "Number of items in the order (for grocery/meal kits)"
+    },
+    "supplement_name": {
+      "type": "string",
+      "description": "Name of supplement clicked (for supplement recommendations)"
+    },
+    "amazon_search_term": {
+      "type": "string",
+      "description": "Amazon search term used for supplement"
     },
     "estimated_order_value": {
       "type": "number",
-      "description": "Estimated total order value in USD"
+      "description": "Estimated order value in USD"
     },
     "grocery_list_id": {
       "type": "string",
-      "description": "ID of the grocery list or meal plan used"
+      "description": "ID of the grocery list or meal plan used (for grocery orders)"
     },
     "clicked_at": {
       "type": "string",
@@ -44,7 +53,6 @@
   },
   "required": [
     "user_email",
-    "platform",
-    "item_count"
+    "platform"
   ]
 }

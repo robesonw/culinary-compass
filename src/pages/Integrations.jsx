@@ -1,9 +1,9 @@
-import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppleHealthCard from '@/components/integrations/AppleHealthCard';
 import GoogleFitCard from '@/components/integrations/GoogleFitCard';
 import OuraRingCard from '@/components/integrations/OuraRingCard';
 import WHOOPCard from '@/components/integrations/WHOOPCard';
+import GoogleCalendarCard from '@/components/integrations/GoogleCalendarCard';
 
 export default function Integrations() {
   return (
@@ -67,6 +67,20 @@ export default function Integrations() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Calendar Integration */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-900">📅 Calendar & Scheduling</h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Sync your meal plans directly to your calendar.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <GoogleCalendarCard />
+        </div>
+      </div>
 
       {/* Additional Wearables */}
       <div className="space-y-4">

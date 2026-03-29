@@ -1,0 +1,57 @@
+{
+  "name": "CalendarSync",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of user who synced"
+    },
+    "meal_plan_id": {
+      "type": "string",
+      "description": "ID of the meal plan synced"
+    },
+    "calendar_event_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Google Calendar event IDs created for this plan"
+    },
+    "sync_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when sync was performed"
+    },
+    "meal_times": {
+      "type": "object",
+      "description": "Scheduled times for meals",
+      "properties": {
+        "breakfast": {
+          "type": "string",
+          "description": "Time in HH:MM format (e.g., 08:00)"
+        },
+        "lunch": {
+          "type": "string",
+          "description": "Time in HH:MM format"
+        },
+        "dinner": {
+          "type": "string",
+          "description": "Time in HH:MM format"
+        },
+        "snacks": {
+          "type": "string",
+          "description": "Time in HH:MM format"
+        }
+      }
+    },
+    "auto_sync_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether to auto-sync future meal plans"
+    }
+  },
+  "required": [
+    "user_email",
+    "meal_plan_id"
+  ]
+}

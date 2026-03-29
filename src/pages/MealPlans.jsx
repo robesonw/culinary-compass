@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import PlanDetailsView from '../components/plans/PlanDetailsView';
 import FavoriteMealsPanel from '../components/meals/FavoriteMealsPanel';
 import SharePlanDialog from '../components/share/SharePlanDialog';
 import MealKitOffer from '../components/meals/MealKitOffer';
+import SyncToCalendarDialog from '../components/meals/SyncToCalendarDialog';
 
 export default function MealPlans() {
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -19,6 +20,8 @@ export default function MealPlans() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [planToShare, setPlanToShare] = useState(null);
   const [exportingPlanId, setExportingPlanId] = useState(null);
+  const [syncCalendarDialogOpen, setSyncCalendarDialogOpen] = useState(false);
+  const [planToSync, setPlanToSync] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -44,6 +47,11 @@ export default function MealPlans() {
   const handleSharePlan = (plan) => {
     setPlanToShare(plan);
     setShareDialogOpen(true);
+  };
+
+  const handleSyncToCalendar = (plan) => {
+    setPlanToSync(plan);
+    setSyncCalendarDialogOpen(true);
   };
 
   const handleExportPDF = async (plan) => {
@@ -175,6 +183,14 @@ export default function MealPlans() {
                     <Button
                       variant="outline"
                       size="sm"
+                      title="Sync to Google Calendar"
+                      onClick={() => handleSyncToCalendar(plan)}
+                    >
+                      <Calendar className="w-4 h-4 text-blue-600" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleSharePlan(plan)}
                     >
                       <Share2 className="w-4 h-4" />
@@ -224,6 +240,16 @@ export default function MealPlans() {
         plan={planToShare}
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
+      />
+
+      <SyncToCalendarDialog
+        open={syncCalendarDialogOpen}
+        onOpenChange={setSyncCalendarDialogOpen}
+        mealPlan={planToSync}
+        onSuccess={() => {
+          toast.success('Meal plan synced to Google Calendar!');
+          setSyncCalendarDialogOpen(false);
+        }}
       />
     </div>
   );

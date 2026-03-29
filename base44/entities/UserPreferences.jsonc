@@ -98,6 +98,19 @@
       "default": "none",
       "description": "Thyroid or hormone health condition"
     },
+    "inflammation_condition": {
+      "type": "string",
+      "enum": [
+        "none",
+        "autoimmune",
+        "chronic_inflammation",
+        "arthritis",
+        "ibd_crohns",
+        "lupus"
+      ],
+      "default": "none",
+      "description": "Inflammatory disease or condition"
+    },
     "dietary_restrictions": {
       "type": "string",
       "description": "Any dietary restrictions or allergies"

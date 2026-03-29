@@ -1,0 +1,40 @@
+{
+  "name": "PantryItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the ingredient"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Proteins",
+        "Vegetables",
+        "Fruits",
+        "Grains",
+        "Dairy/Alternatives",
+        "Spices & Condiments",
+        "Other"
+      ],
+      "default": "Other",
+      "description": "Category of the item"
+    },
+    "quantity": {
+      "type": "string",
+      "description": "Amount on hand (e.g. '2 lbs', 'half a bag')"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Expiration date if known"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

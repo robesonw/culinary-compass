@@ -20,6 +20,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import QuickStartChecklist from '../components/onboarding/QuickStartChecklist';
 import OnboardingTour from '../components/onboarding/OnboardingTour';
+import StreakCard from '../components/dashboard/StreakCard';
 
 export default function Dashboard() {
   const { data: mealPlans = [] } = useQuery({
@@ -41,6 +42,11 @@ export default function Dashboard() {
   const { data: labResults = [] } = useQuery({
     queryKey: ['labResults'],
     queryFn: () => base44.entities.LabResult.list('-upload_date', 1),
+  });
+
+  const { data: nutritionLogs = [] } = useQuery({
+    queryKey: ['nutritionLogsStreak'],
+    queryFn: () => base44.entities.NutritionLog.list('-log_date', 90),
   });
 
   // Calculate accurate statistics
@@ -174,6 +180,9 @@ export default function Dashboard() {
           </Link>
         </Button>
       </div>
+
+      {/* Streak Card */}
+      <StreakCard nutritionLogs={nutritionLogs} />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

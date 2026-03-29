@@ -18,7 +18,8 @@ import {
   Sparkles,
   TrendingUp,
   MessageSquare,
-  Zap
+  Zap,
+  Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ const navigation = [
   { name: 'Meal Plans', href: 'MealPlans', icon: Calendar },
   { name: 'Nutrition Tracking', href: 'NutritionTracking', icon: TrendingUp },
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
+  { name: 'Pantry', href: 'Pantry', icon: Package },
   { name: 'Community', href: 'Community', icon: Users },
   { name: 'Progress Feed', href: 'ProgressFeed', icon: TrendingUp },
   { name: 'Recipes', href: 'SharedRecipes', icon: Search },

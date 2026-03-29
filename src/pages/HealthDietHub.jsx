@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Loader2, Heart, Users, Calendar, ShoppingCart, Save, Flame, Salad, DollarSign, AlertTriangle, RefreshCw, Utensils } from 'lucide-react';
+import { Sparkles, Loader2, Heart, Users, Calendar, ShoppingCart, Save, Flame, Salad, DollarSign, AlertTriangle, RefreshCw, Utensils, Package, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 
 const healthGoals = [
@@ -89,14 +89,17 @@ export default function HealthDietHub() {
   const [customCulturalStyle, setCustomCulturalStyle] = useState('');
   const [customCuisineInput, setCustomCuisineInput] = useState('');
   const [lifeStage, setLifeStage] = useState('general');
+  const [usePantry, setUsePantry] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
+  const [labsOptimized, setLabsOptimized] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const [planName, setPlanName] = useState('');
   const [isFetchingPrices, setIsFetchingPrices] = useState(false);
   const [editingPrice, setEditingPrice] = useState(null);
   const [regeneratingImage, setRegeneratingImage] = useState(null);
+  const [swappingMeal, setSwappingMeal] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -233,6 +236,11 @@ export default function HealthDietHub() {
     queryFn: () => base44.entities.LabResult.list('-upload_date'),
   });
 
+  const { data: pantryItems = [] } = useQuery({
+    queryKey: ['pantryItems'],
+    queryFn: () => base44.entities.PantryItem.list(),
+  });
+
   const savePlanMutation = useMutation({
     mutationFn: (planData) => base44.entities.MealPlan.create(planData),
     onSuccess: () => {
@@ -242,27 +250,49 @@ export default function HealthDietHub() {
   });
 
   const getHealthContext = () => {
-    if (!labResults.length) return '';
+    if (!labResults.length) return { text: '', abnormals: [] };
     
     const latest = labResults[0];
     const abnormals = [];
-    
-    if (latest.biomarkers?.ALT?.status === 'high') {
-      abnormals.push('elevated ALT (liver enzyme)');
+    const dietaryGuidance = [];
+
+    const b = latest.biomarkers || {};
+
+    if (b.ALT?.status === 'high' || b.AST?.status === 'high') {
+      abnormals.push('elevated liver enzymes (ALT/AST)');
+      dietaryGuidance.push('liver-friendly foods (leafy greens, beets, cruciferous vegetables), avoid saturated fats and alcohol');
     }
-    if (latest.biomarkers?.AST?.status === 'high') {
-      abnormals.push('elevated AST (liver enzyme)');
+    if (b.Glucose?.status === 'high') {
+      abnormals.push('high blood glucose');
+      dietaryGuidance.push('low-glycemic foods, high fiber, limit refined carbs and sugars');
     }
-    if (latest.biomarkers?.Glucose?.status === 'high') {
-      abnormals.push('high glucose');
+    if (b.Glucose?.status === 'low') {
+      abnormals.push('low blood glucose');
+      dietaryGuidance.push('complex carbohydrates and regular snacks to stabilize blood sugar');
     }
-    if (latest.biomarkers?.Glucose?.status === 'low') {
-      abnormals.push('low glucose');
+    if (b.Sodium?.status === 'high') {
+      abnormals.push('high sodium');
+      dietaryGuidance.push('low-sodium meals, potassium-rich foods like bananas and sweet potatoes');
     }
-    
-    if (abnormals.length === 0) return 'All biomarkers within normal range.';
-    
-    return `IMPORTANT HEALTH CONSIDERATIONS: Patient has ${abnormals.join(', ')}. Prioritize anti-inflammatory, liver-friendly, and low-glycemic foods.`;
+    if (b.Potassium?.status === 'low') {
+      abnormals.push('low potassium');
+      dietaryGuidance.push('potassium-rich foods (avocado, spinach, potatoes, bananas)');
+    }
+    if (b.eGFR?.status === 'low' || b.BUN?.status === 'high' || b.Creatinine?.status === 'high') {
+      abnormals.push('kidney stress markers');
+      dietaryGuidance.push('kidney-friendly diet: limit protein to moderate levels, avoid excessive potassium/phosphorus');
+    }
+
+    if (abnormals.length === 0) {
+      return { text: 'All biomarkers within normal range.', abnormals: [] };
+    }
+
+    const text = `CRITICAL HEALTH OPTIMIZATION REQUIRED based on lab results:
+- Abnormal markers: ${abnormals.join(', ')}
+- Dietary adjustments needed: ${dietaryGuidance.join('; ')}
+Every meal MUST be designed to help correct these markers. Prioritize foods that lower these markers and avoid foods that worsen them.`;
+
+    return { text, abnormals };
   };
 
   const handleGenerate = async () => {
@@ -271,7 +301,8 @@ export default function HealthDietHub() {
     const daysCount = duration === 'day' ? 1 : duration === '3days' ? 3 : 7;
     const dayNames = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
     
-    const healthContext = getHealthContext();
+    const { text: healthContext, abnormals: labAbnormals } = getHealthContext();
+    const hasLabOptimization = labAbnormals.length > 0;
     const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
     
     const allergenText = allergens.length > 0 ? `- STRICT ALLERGEN RESTRICTIONS (NEVER include): ${allergens.join(', ')}` : '';
@@ -298,6 +329,10 @@ export default function HealthDietHub() {
 
     const lifeStageText = lifeStage !== 'general' ? `- LIFE STAGE: ${lifeStage.toUpperCase()} - Adjust portions, textures, and nutrients accordingly` : '';
 
+    const pantryText = (usePantry && pantryItems.length > 0) 
+      ? `\nPANTRY ITEMS AVAILABLE (prioritize using these to reduce grocery cost): ${pantryItems.map(i => i.name + (i.quantity ? ` (${i.quantity})` : '')).join(', ')}`
+      : '';
+
     const prompt = `You are a professional nutritionist specializing in culturally authentic, health-focused meal planning. Create a ${daysCount}-day personalized meal plan.
 
 HEALTH PROFILE:
@@ -315,6 +350,7 @@ ${customRequirements ? `- Custom Requirements: ${customRequirements}` : ''}
 ${foodsLiked ? `- Foods they enjoy: ${foodsLiked}` : ''}
 ${foodsAvoided ? `- Foods to avoid: ${foodsAvoided}` : ''}
 ${userPrefs?.dietary_restrictions ? `- Dietary restrictions: ${userPrefs.dietary_restrictions}` : ''}
+${pantryText}
 
 IMPORTANT REQUIREMENTS:
 - Scale ALL portions and ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
@@ -444,6 +480,8 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       const peopleText = numPeople > 1 ? ` for ${numPeople}` : '';
       setPlanName(`${goalDescription}${culturalLabel} Plan${peopleText}${budgetText} - ${new Date().toLocaleDateString()}`);
 
+      setLabsOptimized(hasLabOptimization);
+
       // Fetch real grocery prices
       fetchGroceryPrices(response);
 
@@ -531,6 +569,51 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
     } finally {
       setRegeneratingImage(null);
+    }
+  };
+
+  const handleSwapMeal = async (dayIndex, mealType) => {
+    const key = `${dayIndex}-${mealType}`;
+    setSwappingMeal(key);
+    const currentMeal = generatedPlan.days[dayIndex][mealType];
+    const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
+    const { text: healthContext } = getHealthContext();
+
+    try {
+      const newMeal = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a DIFFERENT ${mealType} meal to replace "${currentMeal?.name}" in a meal plan.
+Goal: ${goalDescription}
+${healthContext ? `Health context: ${healthContext}` : ''}
+${allergens.length ? `STRICT ALLERGENS TO AVOID: ${allergens.join(', ')}` : ''}
+${foodsAvoided ? `Also avoid: ${foodsAvoided}` : ''}
+${usePantry && pantryItems.length > 0 ? `Prefer using these pantry items if possible: ${pantryItems.map(i => i.name).join(', ')}` : ''}
+Make it nutritionally appropriate for ${mealType}, different from the current meal, and include full details.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            description: { type: "string" },
+            calories: { type: "string" },
+            protein: { type: "number" },
+            carbs: { type: "number" },
+            fat: { type: "number" },
+            health_benefit: { type: "string" },
+            prepTime: { type: "string" },
+            difficulty: { type: "string" },
+            prepSteps: { type: "array", items: { type: "string" } },
+            equipment: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+
+      const updatedDays = [...generatedPlan.days];
+      updatedDays[dayIndex] = { ...updatedDays[dayIndex], [mealType]: newMeal };
+      setGeneratedPlan(prev => ({ ...prev, days: updatedDays }));
+      toast.success(`${mealType} swapped!`);
+    } catch (e) {
+      toast.error('Failed to swap meal');
+    } finally {
+      setSwappingMeal(null);
     }
   };
 
@@ -686,19 +769,33 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
       </div>
 
       {/* Health Alert */}
-      {labResults.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <Heart className="w-5 h-5 text-amber-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-amber-900">Health-Optimized Recommendations</p>
-                <p className="text-sm text-amber-700 mt-1">{getHealthContext()}</p>
+      {labResults.length > 0 && (() => {
+        const { text, abnormals } = getHealthContext();
+        return (
+          <Card className={`border-2 ${abnormals.length > 0 ? 'border-rose-200 bg-rose-50' : 'border-emerald-200 bg-emerald-50'}`}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <FlaskConical className={`w-5 h-5 mt-0.5 ${abnormals.length > 0 ? 'text-rose-600' : 'text-emerald-600'}`} />
+                <div className="flex-1">
+                  <p className={`text-sm font-medium ${abnormals.length > 0 ? 'text-rose-900' : 'text-emerald-900'}`}>
+                    {abnormals.length > 0 ? '⚠️ Lab Results Will Optimize Your Plan' : '✅ Lab Results Detected'}
+                  </p>
+                  {abnormals.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {abnormals.map(a => (
+                        <Badge key={a} className="bg-rose-100 text-rose-700 border-rose-200 text-xs">{a}</Badge>
+                      ))}
+                    </div>
+                  )}
+                  <p className={`text-xs mt-2 ${abnormals.length > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                    {abnormals.length > 0 ? 'Your meal plan will be specifically designed to address these markers.' : 'All biomarkers within normal range.'}
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Customization Form */}
       <Card className="border-slate-200">
@@ -1005,6 +1102,23 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
             />
           </div>
 
+          {/* Pantry Toggle */}
+          {pantryItems.length > 0 && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-50 border border-indigo-100">
+              <Package className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-indigo-900">Use Pantry Items ({pantryItems.length} items available)</p>
+                <p className="text-xs text-indigo-600">Factor in what you already have to reduce grocery costs</p>
+              </div>
+              <button
+                onClick={() => setUsePantry(p => !p)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${usePantry ? 'bg-indigo-600' : 'bg-slate-200'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${usePantry ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          )}
+
           <Button
             onClick={handleGenerate}
             disabled={isGenerating}
@@ -1034,6 +1148,22 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
+            {/* Lab / Pantry Badges */}
+            <div className="flex flex-wrap gap-2">
+              {labsOptimized && (
+                <Badge className="bg-rose-100 text-rose-700 border-rose-200 border px-3 py-1 text-sm flex items-center gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5" />
+                  Optimized for your labs
+                </Badge>
+              )}
+              {usePantry && pantryItems.length > 0 && (
+                <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 border px-3 py-1 text-sm flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5" />
+                  Uses {pantryItems.length} pantry items
+                </Badge>
+              )}
+            </div>
+
             {/* Summary Cards */}
             <div className="grid md:grid-cols-3 gap-4">
               {/* Health Notes */}
@@ -1236,7 +1366,21 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, an
                                   <div className="flex-1">
                                     <div className="flex items-center justify-between mb-2">
                                       <h4 className="font-semibold text-slate-900 capitalize">{mealType}</h4>
-                                      <div className="flex gap-2">
+                                      <div className="flex gap-2 flex-wrap items-center">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-7 text-xs px-2"
+                                          onClick={() => handleSwapMeal(index, mealType)}
+                                          disabled={swappingMeal === `${index}-${mealType}`}
+                                        >
+                                          {swappingMeal === `${index}-${mealType}` ? (
+                                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                          ) : (
+                                            <RefreshCw className="w-3 h-3 mr-1" />
+                                          )}
+                                          Swap
+                                        </Button>
                                         <Badge variant="outline" className="flex items-center gap-1">
                                           <Flame className="w-3 h-3 text-orange-500" />
                                           {meal.calories}

@@ -183,10 +183,11 @@ export default function MealPlans() {
                     <Button
                       variant="outline"
                       size="sm"
-                      title="Sync to Google Calendar"
-                      onClick={() => handleSyncToCalendar(plan)}
+                      title="Sync to Google Calendar (Coming Soon)"
+                      onClick={() => toast.info('Google Calendar sync coming soon!')}
+                      disabled
                     >
-                      <Calendar className="w-4 h-4 text-blue-600" />
+                      <Calendar className="w-4 h-4 text-slate-400" />
                     </Button>
                     <Button
                       variant="outline"

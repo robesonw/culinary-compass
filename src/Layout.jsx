@@ -17,7 +17,8 @@ import {
   Users,
   Sparkles,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@ const navigation = [
   { name: 'Analytics', href: 'Analytics', icon: BarChart3 },
   { name: 'Help Center', href: 'HelpCenter', icon: MessageSquare },
   { name: 'My Profile', href: 'Profile', icon: User },
+  { name: 'Pricing', href: 'Pricing', icon: Zap },
   { name: 'Settings', href: 'Settings', icon: Settings },
 ];
 

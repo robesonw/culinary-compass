@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +35,7 @@ const PLANS = [
     icon: Zap,
     color: 'indigo',
     description: 'For serious nutrition tracking',
-    priceId: 'price_pro_monthly',
+    priceId: 'price_1TGB0B2fkJjbFUOaMdWx6fIM',
     popular: true,
     features: [
       'Unlimited meal plans',
@@ -54,7 +54,7 @@ const PLANS = [
     icon: Crown,
     color: 'purple',
     description: 'For complete health optimization',
-    priceId: 'price_premium_monthly',
+    priceId: 'price_1TGB0B2fkJjbFUOaY7OGXV9D',
     features: [
       'Everything in Pro',
       'Meal swap suggestions',
@@ -82,12 +82,17 @@ export default function Pricing() {
       toast.error('Please sign in to subscribe');
       return;
     }
+
+    // Block checkout inside iframe (must be used from published app)
+    if (window.self !== window.top) {
+      alert('Checkout is only available from the published app. Please open the app in a new tab.');
+      return;
+    }
+
     setLoadingPlan(plan.id);
     try {
       const response = await base44.functions.invoke('createCheckoutSession', {
         plan_id: plan.id,
-        price_id: plan.priceId,
-        user_email: user.email,
       });
       if (response?.data?.url) {
         window.location.href = response.data.url;
@@ -98,6 +103,16 @@ export default function Pricing() {
       setLoadingPlan(null);
     }
   };
+
+  // Handle success/cancel redirects
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      toast.success(`Successfully subscribed to ${params.get('plan')} plan! Your 7-day trial has started.`);
+    } else if (params.get('cancelled') === 'true') {
+      toast.info('Checkout cancelled.');
+    }
+  }, []);
 
   const currentPlan = user?.subscription_plan || 'free';
 

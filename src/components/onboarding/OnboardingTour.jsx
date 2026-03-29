@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Joyride, { ACTIONS, EVENTS, STATUS } from 'react-joyride';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 export default function OnboardingTour() {
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+  const tourStarted = useRef(false);
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -13,10 +14,13 @@ export default function OnboardingTour() {
   });
 
   useEffect(() => {
+    if (!user || tourStarted.current) return;
     const hasSeenTour = localStorage.getItem('vitaplate_tour_completed');
-    if (!hasSeenTour && user) {
-      // Start tour after a short delay
+    if (!hasSeenTour) {
+      tourStarted.current = true;
       setTimeout(() => setRun(true), 1000);
+    } else {
+      tourStarted.current = true; // prevent future checks
     }
   }, [user]);
 

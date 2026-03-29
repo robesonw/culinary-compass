@@ -9,9 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Package, Plus, Trash2, ChefHat, AlertTriangle, Search } from 'lucide-react';
+import { Package, Plus, Trash2, ChefHat, AlertTriangle, Search, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import QuickAddSection from '../components/pantry/QuickAddSection';
+import BarcodeScanner from '../components/pantry/BarcodeScanner';
+import UseItUpCard from '../components/pantry/UseItUpCard';
 
 const CATEGORIES = ['Proteins', 'Vegetables', 'Fruits', 'Grains', 'Dairy/Alternatives', 'Spices & Condiments', 'Other'];
 
@@ -38,6 +41,7 @@ const categoryColors = {
 export default function Pantry() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', category: 'Other', quantity: '', expiry_date: '', notes: '' });
 
   const queryClient = useQueryClient();
@@ -70,6 +74,20 @@ export default function Pantry() {
     createMutation.mutate(newItem);
   };
 
+  const handleQuickAdd = (itemData) => {
+    createMutation.mutate({
+      ...itemData,
+      category: itemData.category || 'Other',
+    });
+  };
+
+  const handleBarcodeScanned = (barcode) => {
+    // In a real implementation, you'd send this to a barcode database API
+    // For now, just show a prompt to manually select/confirm the item
+    toast.info(`Barcode: ${barcode}\n\nPlease manually confirm or add the item.`);
+    setShowAddDialog(true);
+  };
+
   const filteredItems = pantryItems.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -97,13 +115,38 @@ export default function Pantry() {
           <p className="text-slate-600 mt-1">Track ingredients you have at home to reduce grocery costs</p>
         </div>
         <Button
-          onClick={() => setShowAddDialog(true)}
+          asChild
           className="bg-indigo-600 hover:bg-indigo-700"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Item
+          <a href="#" onClick={(e) => { e.preventDefault(); setShowAddDialog(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Item
+          </a>
         </Button>
       </div>
+
+      {/* Quick Add Section */}
+      <QuickAddSection 
+        onAdd={handleQuickAdd}
+        onBarcodeClick={() => setScannerOpen(true)}
+      />
+
+      {/* Barcode Scanner */}
+      <BarcodeScanner
+        isOpen={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onBarcodeDetected={handleBarcodeScanned}
+      />
+
+      {/* Use It Up Card */}
+      {pantryItems.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <UseItUpCard itemCount={pantryItems.length} />
+        </motion.div>
+      )}
 
       {/* Expiring soon banner */}
       {expiringItems.length > 0 && (

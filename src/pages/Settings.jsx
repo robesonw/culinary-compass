@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Bell, Shield, Palette, LogOut } from 'lucide-react';
+import AffiliateSettings from '../components/settings/AffiliateSettings';
 import { toast } from 'sonner';
 
 export default function Settings() {
@@ -219,6 +220,15 @@ export default function Settings() {
             <Button variant="outline">Update Password</Button>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* Affiliate Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+      >
+        <AffiliateSettings />
       </motion.div>
 
       {/* Danger Zone */}

@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2, Share2, Mail, MessageSquare, List, Calendar, Trash2 } from 'lucide-react';
+import RetailerShopLinks, { ShopAllRetailersButton } from '../components/grocery/RetailerShopLinks';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -566,6 +567,17 @@ export default function GroceryLists() {
 
               <Separator />
 
+              {/* Shop All Buttons */}
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-slate-700">Shop Online</div>
+                <ShopAllRetailersButton
+                  items={Object.values(groceryList).flat().filter(i => !checkedItems.has(i.name))}
+                />
+                <p className="text-xs text-slate-400">Opens unchecked items on selected retailer</p>
+              </div>
+
+              <Separator />
+
               {/* Cost Summary */}
               {selectedPlan && (selectedPlan.estimated_cost || selectedPlan.current_total_cost) && (
                 <div className="space-y-2">
@@ -815,6 +827,11 @@ export default function GroceryLists() {
                                 )}
                               </div>
                               
+                              {/* Retailer Shop Links */}
+                              <div className="mt-1.5 pl-6">
+                               <RetailerShopLinks itemName={itemName} compact />
+                              </div>
+
                               {/* Notes Input */}
                               {editingNotes === `${category}-${idx}` ? (
                                 <Input

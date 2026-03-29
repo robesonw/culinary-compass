@@ -6,6 +6,7 @@ import GarminCard from '@/components/integrations/GarminCard';
 import OuraRingCard from '@/components/integrations/OuraRingCard';
 import WHOOPCard from '@/components/integrations/WHOOPCard';
 import GoogleCalendarCard from '@/components/integrations/GoogleCalendarCard';
+import DexcomCard from '@/components/integrations/DexcomCard';
 
 export default function Integrations() {
   return (
@@ -86,6 +87,20 @@ export default function Integrations() {
         </div>
       </div>
 
+      {/* Health Monitoring */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-900">🩺 Health Monitoring</h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Monitor blood sugar, biometrics, and other health markers in real time.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DexcomCard />
+        </div>
+      </div>
+
       {/* Additional Wearables */}
       <div className="space-y-4">
         <div>
@@ -121,7 +136,6 @@ export default function Integrations() {
               <ul className="space-y-1 text-slate-700">
                 <li>• Lab results sync</li>
                 <li>• Epic/EHR integration</li>
-                <li>• Continuous glucose monitors</li>
               </ul>
             </div>
           </div>

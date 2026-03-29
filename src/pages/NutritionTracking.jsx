@@ -20,6 +20,8 @@ import ShareProgressDialog from '../components/progress/ShareProgressDialog';
 import FoodDatabaseSearch from '../components/nutrition/FoodDatabaseSearch';
 import MicronutrientTargetSelector from '../components/nutrition/MicronutrientTargetSelector';
 import MicronutrientProgressCard from '../components/nutrition/MicronutrientProgressCard';
+import FoodPhotoLogger from '../components/meals/FoodPhotoLogger';
+import FoodPhotoReview from '../components/meals/FoodPhotoReview';
 
 export default function NutritionTracking() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
@@ -36,6 +38,8 @@ export default function NutritionTracking() {
   const [dailyGoalDateRange, setDailyGoalDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
   const [weeklyGoalTimeRange, setWeeklyGoalTimeRange] = useState('month'); // 'week', 'month', 'custom'
   const [weeklyGoalDateRange, setWeeklyGoalDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
+  const [photoReviewOpen, setPhotoReviewOpen] = useState(false);
+  const [photoToReview, setPhotoToReview] = useState(null);
   
   const [goalForm, setGoalForm] = useState({
     goal_type: 'daily',
@@ -196,48 +200,10 @@ export default function NutritionTracking() {
     }
   };
 
-  const handlePhotoUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const handlePhotoSelected = async (photoData) => {
     setIsAnalyzingPhoto(true);
-    try {
-      // Upload the photo
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-      // Analyze the food using AI
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this food photo and identify the meal/food items. Provide nutritional estimates per serving including calories, protein, carbs, and fat. Be specific about what you see.`,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            meal_name: { type: "string", description: "Name of the meal or food items identified" },
-            description: { type: "string", description: "Brief description of what you see" },
-            calories: { type: "number", description: "Estimated calories per serving" },
-            protein: { type: "number", description: "Estimated protein in grams" },
-            carbs: { type: "number", description: "Estimated carbs in grams" },
-            fat: { type: "number", description: "Estimated fat in grams" },
-            confidence: { type: "string", enum: ["high", "medium", "low"], description: "Confidence in the estimate" }
-          }
-        }
-      });
-
-      setLogForm({
-        ...logForm,
-        recipe_name: result.meal_name,
-        calories: result.calories || 0,
-        protein: result.protein || 0,
-        carbs: result.carbs || 0,
-        fat: result.fat || 0
-      });
-
-      toast.success(`Identified: ${result.meal_name}. ${result.confidence === 'low' ? 'Please verify the nutrition info.' : ''}`);
-    } catch (error) {
-      toast.error('Failed to analyze photo. Please enter nutrition info manually.');
-    } finally {
-      setIsAnalyzingPhoto(false);
-    }
+    setPhotoToReview(photoData);
+    setPhotoReviewOpen(true);
   };
 
   const handleGenerateNutrition = async () => {
@@ -570,7 +536,7 @@ export default function NutritionTracking() {
           <h1 className="text-3xl font-bold text-slate-900">Nutrition Tracking</h1>
           <p className="text-slate-600 mt-1">Monitor your nutrition and track progress toward your goals</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setGoalDialogOpen(true)}>
             <Target className="w-4 h-4 mr-2" />
             Set Goals
@@ -579,6 +545,10 @@ export default function NutritionTracking() {
             <ChefHat className="w-4 h-4 mr-2" />
             Recipe Builder
           </Button>
+          <FoodPhotoLogger 
+            onPhotoSelected={handlePhotoSelected}
+            isLoading={isAnalyzingPhoto}
+          />
           <Button variant="outline" onClick={() => setShareDialogOpen(true)}>
             <Share2 className="w-4 h-4 mr-2" />
             Share Progress
@@ -1378,36 +1348,9 @@ export default function NutritionTracking() {
               </TabsContent>
 
               <TabsContent value="photo" className="space-y-3">
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
-                  <Camera className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                  <p className="text-sm text-slate-600 mb-3">
-                    Upload a photo of your meal for AI analysis
-                  </p>
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handlePhotoUpload}
-                      disabled={isAnalyzingPhoto}
-                    />
-                    <Button variant="outline" disabled={isAnalyzingPhoto} asChild>
-                      <span>
-                        {isAnalyzingPhoto ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Analyzing...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload Photo
-                          </>
-                        )}
-                      </span>
-                    </Button>
-                  </label>
-                </div>
+                <p className="text-sm text-slate-600 text-center py-4">
+                  Use the Photo Log button above, or take a photo here to analyze your meal.
+                </p>
               </TabsContent>
 
               <TabsContent value="plan" className="space-y-3">
@@ -1575,6 +1518,26 @@ export default function NutritionTracking() {
         onOpenChange={setShareDialogOpen}
         logs={logs}
       />
+
+      {/* Food Photo Review Dialog */}
+      {photoReviewOpen && photoToReview && (
+        <FoodPhotoReview
+          photo={photoToReview}
+          mealType={logForm.meal_type}
+          logDate={logForm.log_date}
+          onSuccess={() => {
+            setPhotoReviewOpen(false);
+            setPhotoToReview(null);
+            queryClient.invalidateQueries({ queryKey: ['nutritionLogs'] });
+            toast.success('Meal logged from photo!');
+          }}
+          onCancel={() => {
+            setPhotoReviewOpen(false);
+            setPhotoToReview(null);
+            setIsAnalyzingPhoto(false);
+          }}
+        />
+      )}
     </div>
   );
 }

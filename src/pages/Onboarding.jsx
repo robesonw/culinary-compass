@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,26 +52,27 @@ export default function Onboarding() {
   const [numPeople, setNumPeople] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const savePrefs = useMutation({
-    mutationFn: (data) => base44.entities.UserPreferences.create(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userPreferences'] }),
-  });
-
-  const savePlan = useMutation({
-    mutationFn: (data) => base44.entities.MealPlan.create(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mealPlans'] }),
-  });
-
   const handleFinish = async () => {
     setIsGenerating(true);
     try {
-      // Save user preferences
-      await savePrefs.mutateAsync({
+      // Save ALL user preferences — upsert (update if exists, create if not)
+      const allPrefs = {
         health_goal: healthGoal,
+        dietary_restrictions: dietType !== 'custom' ? dietType : '',
         allergens,
         num_people: numPeople,
         weekly_budget: weeklyBudget,
-      });
+        // These fields aren't collected in this flow but set sensible defaults
+        cooking_time: 'any',
+        skill_level: 'intermediate',
+      };
+      const existingPrefs = await base44.entities.UserPreferences.list();
+      if (existingPrefs.length > 0) {
+        await base44.entities.UserPreferences.update(existingPrefs[0].id, allPrefs);
+      } else {
+        await base44.entities.UserPreferences.create(allPrefs);
+      }
+      queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
 
       // Generate first meal plan
       const goalLabel = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
@@ -136,7 +137,7 @@ For each day provide breakfast, lunch, dinner, snacks with name, calories (as st
           };
         });
 
-        await savePlan.mutateAsync({
+        await base44.entities.MealPlan.create({
           name: `My First ${goalLabel} Plan`,
           diet_type: dietType || 'custom',
           days: mappedDays,
@@ -144,12 +145,15 @@ For each day provide breakfast, lunch, dinner, snacks with name, calories (as st
           estimated_cost: response.estimated_weekly_cost,
           preferences: { health_goal: healthGoal, allergens, num_people: numPeople, weekly_budget: weeklyBudget }
         });
+        queryClient.invalidateQueries({ queryKey: ['mealPlans'] });
       }
 
-      toast.success('Your first meal plan is ready!');
-      navigate('/MealPlans');
+      toast.success('Your first meal plan is ready! Welcome to VitaPlate 🎉');
+      navigate('/Dashboard');
     } catch (err) {
-      toast.error('Something went wrong. Please try again.');
+      console.error('Onboarding error:', err);
+      const msg = err?.message || 'Unknown error';
+      toast.error(`Setup failed: ${msg}. Please try again.`, { duration: 6000 });
     } finally {
       setIsGenerating(false);
     }

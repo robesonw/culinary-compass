@@ -17,6 +17,8 @@ import { Sparkles, Loader2, Heart, Users, Calendar, ShoppingCart, Save, Flame, S
 import { toast } from 'sonner';
 import SwapMealButton from '@/components/meals/SwapMealButton';
 import { useSubscription } from '@/lib/useSubscription';
+import CarbBudgetTracker from '@/components/diabetes/CarbBudgetTracker';
+import BloodSugarTips from '@/components/diabetes/BloodSugarTips';
 
 // Small inline component to show free users how many swaps they have left
 function FreeTierSwapCounter() {
@@ -58,6 +60,13 @@ const healthGoals = [
   { value: 'anti_inflammatory', label: 'Anti-Inflammatory', icon: Heart, color: 'pink' },
   { value: 'bone_health', label: 'Bone Health', icon: Salad, color: 'amber' },
   { value: 'general_wellness', label: 'General Wellness', icon: Sparkles, color: 'purple' },
+];
+
+const diabetesTypes = [
+  { value: 'none', label: 'No Diabetes' },
+  { value: 'type_1', label: 'Type 1 Diabetes' },
+  { value: 'type_2', label: 'Type 2 Diabetes' },
+  { value: 'pre_diabetes', label: 'Pre-Diabetes' },
 ];
 
 const culturalStylesList = [
@@ -104,6 +113,7 @@ const cuisineOptions = [
 
 export default function HealthDietHub() {
   const [healthGoal, setHealthGoal] = useState('liver_health');
+  const [diabetesType, setDiabetesType] = useState('none');
   const [foodsLiked, setFoodsLiked] = useState('');
   const [foodsAvoided, setFoodsAvoided] = useState('');
   const [customRequirements, setCustomRequirements] = useState('');
@@ -228,6 +238,7 @@ export default function HealthDietHub() {
   React.useEffect(() => {
     if (userPrefs) {
       if (userPrefs.health_goal) setHealthGoal(userPrefs.health_goal);
+      if (userPrefs.diabetes_type) setDiabetesType(userPrefs.diabetes_type);
       if (userPrefs.foods_liked) setFoodsLiked(userPrefs.foods_liked);
       if (userPrefs.foods_avoided) setFoodsAvoided(userPrefs.foods_avoided);
       if (userPrefs.allergens) setAllergens(userPrefs.allergens);
@@ -406,6 +417,15 @@ Every single meal MUST reflect these adjustments. Prioritize foods that correct 
       return;
     }
 
+    // Save diabetes type to preferences
+    if (userPrefs && diabetesType !== userPrefs.diabetes_type) {
+      try {
+        await base44.entities.UserPreferences.update(userPrefs.id, { diabetes_type: diabetesType });
+      } catch (err) {
+        console.log('Could not update diabetes type');
+      }
+    }
+
     setIsGenerating(true);
     setAiError(null);
 
@@ -415,6 +435,27 @@ Every single meal MUST reflect these adjustments. Prioritize foods that correct 
     const { text: healthContext, abnormals: labAbnormals, rules: labRules, labDate } = getHealthContext();
     const hasLabOptimization = labAbnormals.length > 0;
     const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
+
+    // Determine diabetes carb targets from HbA1c
+    let diabetesRules = '';
+    let carbTargetPerMeal = 45;
+    if (diabetesType !== 'none' && labResults.length > 0) {
+      const b = labResults[0].biomarkers || {};
+      const hba1c = b.HbA1c?.value || b['Hemoglobin A1c']?.value || b['A1c']?.value || null;
+      
+      if (hba1c) {
+        if (hba1c > 8) {
+          carbTargetPerMeal = 35;
+          diabetesRules = `DIABETES MEAL PLAN (HbA1c ${hba1c}%): Strict carb control at 30-45g per meal, consistent across all meals. Every meal MUST include: protein source, healthy fat, non-starchy vegetables, and carbs from low-GI foods only (GI < 55). Avoid white bread, white rice, sugary foods, fruit juice. Include blood sugar stabilizers: cinnamon, leafy greens, legumes, vinegar. Space meals 4-5 hours apart.`;
+        } else if (hba1c >= 6.5 && hba1c <= 8) {
+          carbTargetPerMeal = 50;
+          diabetesRules = `DIABETES MEAL PLAN (HbA1c ${hba1c}%): Moderate carb control at 45-60g per meal, carb-consistent daily. Every meal includes: lean protein, healthy fat, vegetables, and low-GI carbs (GI < 55). Flag any high-GI foods. Prioritize cinnamon, apple cider vinegar, and whole grains. Balance macros: 30% protein, 40% carbs, 30% fat.`;
+        } else if (hba1c >= 5.7 && hba1c < 6.5) {
+          carbTargetPerMeal = 50;
+          diabetesRules = `PRE-DIABETES MEAL PLAN (HbA1c ${hba1c}%): Focus on low glycemic index foods (GI < 55) at 45-60g carbs per meal. Every meal includes: protein, healthy fat, and plenty of non-starchy vegetables. Avoid added sugars, refined grains, and sugary drinks. Include soluble fiber (oats, beans, apples) and blood sugar-supporting foods (cinnamon, vinegar).`;
+        }
+      }
+    }
     
     const allergenText = allergens.length > 0 ? `- STRICT ALLERGEN RESTRICTIONS (NEVER include): ${allergens.join(', ')}` : '';
 
@@ -479,6 +520,7 @@ ${userPrefs.cuisine_preferences?.length ? `- Saved cuisine preferences: ${userPr
 - ${healthContext}
 ${labRawText}
 ${pantryText}
+${diabetesRules}
 
 IMPORTANT REQUIREMENTS:
 - Scale ALL portions and ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
@@ -498,6 +540,7 @@ For each day, provide:
   * description
   * calories PER PERSON (as string like "400 kcal")
   * protein, carbs, fat (in grams, as numbers)
+  * glycemic_load: LOW, MEDIUM, or HIGH (GI 55 threshold)
   * prepSteps (array of 3-5 clear cooking steps)
   * prepTime (e.g., "15 minutes")
   * difficulty (Easy/Medium/Hard)
@@ -551,6 +594,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
                     protein: { type: "number" },
                     carbs: { type: "number" },
                     fat: { type: "number" },
+                    glycemic_load: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
                     health_benefit: { type: "string" },
                     meal_tag: { type: "string" }
                   }
@@ -564,6 +608,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
                     protein: { type: "number" },
                     carbs: { type: "number" },
                     fat: { type: "number" },
+                    glycemic_load: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
                     health_benefit: { type: "string" },
                     meal_tag: { type: "string" }
                   }
@@ -577,6 +622,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
                     protein: { type: "number" },
                     carbs: { type: "number" },
                     fat: { type: "number" },
+                    glycemic_load: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
                     health_benefit: { type: "string" },
                     meal_tag: { type: "string" }
                   }
@@ -590,6 +636,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
                     protein: { type: "number" },
                     carbs: { type: "number" },
                     fat: { type: "number" },
+                    glycemic_load: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
                     health_benefit: { type: "string" },
                     meal_tag: { type: "string" }
                   }
@@ -917,6 +964,28 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
           <CardTitle>Customize Your Meal Plan</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Diabetes Type */}
+          <div>
+            <Label className="mb-2 block">Diabetes Status</Label>
+            <Select value={diabetesType} onValueChange={setDiabetesType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {diabetesTypes.map(dt => (
+                  <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {diabetesType !== 'none' && (
+              <p className="text-xs text-emerald-600 mt-2">
+                ✓ Diabetes mode enabled: Your meals will be designed for stable blood sugar with carb-consistent targets.
+              </p>
+            )}
+          </div>
+
+          <Separator />
+
           {/* Health Goal */}
           <div>
             <Label className="mb-3 block">Primary Health Goal</Label>
@@ -1295,6 +1364,16 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
+            {/* Diabetes-specific sections */}
+            {diabetesType !== 'none' && (
+              <>
+                <CarbBudgetTracker 
+                  days={generatedPlan.days} 
+                  hba1c={labResults[0]?.biomarkers?.HbA1c?.value || labResults[0]?.biomarkers?.['Hemoglobin A1c']?.value}
+                />
+                <BloodSugarTips />
+              </>
+            )}
             {/* Lab personalization banner */}
             {labsOptimized && (
               <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-4">
@@ -1594,15 +1673,26 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
                                     )}
 
                                     <div className="flex flex-wrap items-start gap-2 text-xs">
-                                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
-                                        💚 {meal.health_benefit}
-                                      </Badge>
-                                      {meal.meal_tag && (
-                                        <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">
-                                          {meal.meal_tag}
-                                        </Badge>
-                                      )}
-                                    </div>
+                                       <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                                         💚 {meal.health_benefit}
+                                       </Badge>
+                                       {meal.meal_tag && (
+                                         <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">
+                                           {meal.meal_tag}
+                                         </Badge>
+                                       )}
+                                       {meal.glycemic_load && (
+                                         <Badge className={`border-2 ${
+                                           meal.glycemic_load === 'LOW' 
+                                             ? 'bg-emerald-100 text-emerald-700 border-emerald-300' 
+                                             : meal.glycemic_load === 'MEDIUM'
+                                             ? 'bg-amber-100 text-amber-700 border-amber-300'
+                                             : 'bg-rose-100 text-rose-700 border-rose-300'
+                                         }`}>
+                                           {meal.glycemic_load === 'HIGH' && '⚠️ '} GL: {meal.glycemic_load}
+                                         </Badge>
+                                       )}
+                                     </div>
                                   </div>
                                 </div>
                               </div>

@@ -85,6 +85,19 @@
       ],
       "description": "CKD stage (1-5), only relevant if kidney_condition is ckd"
     },
+    "thyroid_condition": {
+      "type": "string",
+      "enum": [
+        "none",
+        "hypothyroidism",
+        "hyperthyroidism",
+        "hashimotos",
+        "pcos",
+        "hormone_imbalance"
+      ],
+      "default": "none",
+      "description": "Thyroid or hormone health condition"
+    },
     "dietary_restrictions": {
       "type": "string",
       "description": "Any dietary restrictions or allergies"

@@ -1,0 +1,112 @@
+{
+  "name": "HealthAlert",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user receiving the alert"
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "saturated_fat_ldl",
+        "vitamin_d_deficiency",
+        "high_carbs_prediabetic",
+        "sodium_hypertension",
+        "low_fiber",
+        "high_inflammation",
+        "potassium_kidney",
+        "calcium_bone_health"
+      ],
+      "description": "Type of health alert"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "urgent",
+        "warning",
+        "advisory"
+      ],
+      "description": "Alert severity level"
+    },
+    "message": {
+      "type": "string",
+      "description": "Main alert message"
+    },
+    "current_metric": {
+      "type": "string",
+      "description": "What the user is currently doing (e.g., '18g saturated fat/day')"
+    },
+    "recommended_action": {
+      "type": "string",
+      "description": "Specific action to take"
+    },
+    "suggested_foods": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of foods to add or swap"
+    },
+    "lab_reference": {
+      "type": "object",
+      "description": "Last relevant lab result",
+      "properties": {
+        "marker_name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "predicted_direction": {
+      "type": "string",
+      "enum": [
+        "trending_up",
+        "trending_down",
+        "stable"
+      ],
+      "description": "Predicted direction of lab marker"
+    },
+    "days_of_data": {
+      "type": "integer",
+      "description": "Days of nutrition data analyzed"
+    },
+    "acknowledged": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user acknowledged this alert"
+    },
+    "acknowledged_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date alert was acknowledged"
+    },
+    "action_taken": {
+      "type": "string",
+      "enum": [
+        "none",
+        "updated_meal_plan",
+        "dismissed"
+      ],
+      "default": "none",
+      "description": "What action user took"
+    },
+    "email_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether notification email was sent"
+    }
+  },
+  "required": [
+    "user_email",
+    "alert_type",
+    "severity",
+    "message"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "name": "ProgressEntry",
+  "type": "object",
+  "properties": {
+    "entry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the progress entry"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Current weight in kg or lbs"
+    },
+    "weight_unit": {
+      "type": "string",
+      "enum": [
+        "kg",
+        "lbs"
+      ],
+      "default": "kg",
+      "description": "Unit of weight measurement"
+    },
+    "body_fat_percentage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Body fat percentage (optional)"
+    },
+    "waist_cm": {
+      "type": "number",
+      "description": "Waist measurement in cm"
+    },
+    "hip_cm": {
+      "type": "number",
+      "description": "Hip measurement in cm"
+    },
+    "chest_cm": {
+      "type": "number",
+      "description": "Chest measurement in cm"
+    },
+    "arm_cm": {
+      "type": "number",
+      "description": "Arm measurement in cm"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL to privately stored progress photo"
+    },
+    "notes": {
+      "type": "string",
+      "description": "User notes about progress and feelings"
+    },
+    "energy_level": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Energy level from 1 (very low) to 5 (very high)"
+    },
+    "mood": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Mood level from 1 (very low) to 5 (very high)"
+    }
+  },
+  "required": [
+    "entry_date"
+  ]
+}

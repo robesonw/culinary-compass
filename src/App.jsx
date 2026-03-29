@@ -13,6 +13,7 @@ import RecipeImport from './pages/RecipeImport';
 import AICoach from './pages/AICoach';
 import Integrations from './pages/Integrations';
 import SupplementRecommendations from './pages/SupplementRecommendations';
+import MyProgress from './pages/MyProgress';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -74,6 +75,7 @@ const AuthenticatedApp = () => {
       <Route path="/AICoach" element={<LayoutWrapper currentPageName="AICoach"><AICoach /></LayoutWrapper>} />
       <Route path="/Integrations" element={<LayoutWrapper currentPageName="Integrations"><Integrations /></LayoutWrapper>} />
       <Route path="/SupplementRecommendations" element={<LayoutWrapper currentPageName="SupplementRecommendations"><SupplementRecommendations /></LayoutWrapper>} />
+      <Route path="/MyProgress" element={<LayoutWrapper currentPageName="MyProgress"><MyProgress /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

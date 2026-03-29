@@ -21,7 +21,8 @@ import {
   Zap,
   Package,
   Link2,
-  Bot
+  Bot,
+  Camera
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ const navigation = [
   { name: 'Nutrition Tracking', href: 'NutritionTracking', icon: TrendingUp },
   { name: 'Grocery Lists', href: 'GroceryLists', icon: ShoppingCart },
   { name: 'Pantry', href: 'Pantry', icon: Package },
+  { name: 'My Progress', href: 'MyProgress', icon: Camera },
   { name: 'Progress Tracking', href: 'ProgressTracking', icon: TrendingUp },
   { name: 'Community', href: 'Community', icon: Users },
   { name: 'Progress Feed', href: 'ProgressFeed', icon: TrendingUp },

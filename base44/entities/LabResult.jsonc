@@ -1,0 +1,39 @@
+{
+  "name": "LabResult",
+  "type": "object",
+  "properties": {
+    "upload_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of lab test"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to uploaded PDF file (for PDF uploads)"
+    },
+    "biomarkers": {
+      "type": "object",
+      "description": "Extracted biomarker values"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "pdf_upload",
+        "apple_health_fhir"
+      ],
+      "default": "pdf_upload",
+      "description": "Source of the lab result"
+    },
+    "provider": {
+      "type": "string",
+      "description": "Lab provider name (e.g., LabCorp, Quest, Epic)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the lab result"
+    }
+  },
+  "required": [
+    "upload_date"
+  ]
+}

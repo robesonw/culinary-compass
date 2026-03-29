@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Upload, TrendingUp, TrendingDown, Minus, Loader2, Calendar, Trash2, CheckCircle2, AlertCircle, FlaskConical, Pill } from 'lucide-react';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import AppleHealthFHIRImport from '../components/labs/AppleHealthFHIRImport';
 
 export default function LabResults() {
   const [isUploading, setIsUploading] = useState(false);
@@ -229,6 +230,16 @@ Return ONLY the biomarkers object - use the exact test name as the key (e.g. "Gl
         </p>
       </div>
 
+      {/* Apple Health FHIR Import */}
+      <AppleHealthFHIRImport
+        onImportSuccess={() => queryClient.invalidateQueries({ queryKey: ['labResults'] })}
+        lastImport={labResults.find(r => r.source === 'apple_health_fhir') ? {
+          date: labResults.find(r => r.source === 'apple_health_fhir').upload_date,
+          count: Object.keys(labResults.find(r => r.source === 'apple_health_fhir').biomarkers || {}).length,
+          provider: labResults.find(r => r.source === 'apple_health_fhir').provider || 'Apple Health'
+        } : null}
+      />
+
       {/* Upload Form */}
       <Card className="border-slate-200">
         <CardHeader>
@@ -419,12 +430,15 @@ Return ONLY the biomarkers object - use the exact test name as the key (e.g. "Gl
                         <Calendar className="w-5 h-5 text-indigo-600" />
                       </div>
                       <div>
-                        <CardTitle className="text-base">
+                        <CardTitle className="text-base flex items-center gap-2">
                           {new Date(result.upload_date).toLocaleDateString('en-US', { 
                             year: 'numeric', 
                             month: 'long', 
                             day: 'numeric' 
                           })}
+                          {result.source === 'apple_health_fhir' && (
+                            <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Apple Health</Badge>
+                          )}
                         </CardTitle>
                         {result.notes && (
                           <p className="text-sm text-slate-500">{result.notes}</p>

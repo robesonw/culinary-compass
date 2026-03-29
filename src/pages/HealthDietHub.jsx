@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,6 +102,7 @@ export default function HealthDietHub() {
   const [regeneratingImage, setRegeneratingImage] = useState(null);
   const [swappingMeal, setSwappingMeal] = useState(null);
 
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const fetchGroceryPrices = async (plan) => {
@@ -296,6 +298,13 @@ Every meal MUST be designed to help correct these markers. Prioritize foods that
   };
 
   const handleGenerate = async () => {
+    // Guard: require saved preferences
+    if (!userPrefs) {
+      toast.error('Complete your profile first to get a personalized plan!', { duration: 4000 });
+      navigate('/Onboarding');
+      return;
+    }
+
     setIsGenerating(true);
     
     const daysCount = duration === 'day' ? 1 : duration === '3days' ? 3 : 7;
@@ -333,23 +342,40 @@ Every meal MUST be designed to help correct these markers. Prioritize foods that
       ? `\nPANTRY ITEMS AVAILABLE (prioritize using these to reduce grocery cost): ${pantryItems.map(i => i.name + (i.quantity ? ` (${i.quantity})` : '')).join(', ')}`
       : '';
 
+    // Build raw biomarker string from latest lab result
+    const latestLab = labResults[0];
+    const biomarkerLines = latestLab?.biomarkers
+      ? Object.entries(latestLab.biomarkers)
+          .filter(([, v]) => v?.value != null)
+          .map(([key, v]) => `  ${key}: ${v.value} ${v.unit || ''} (${v.status || 'unknown'})`)
+          .join('\n')
+      : '';
+    const labRawText = biomarkerLines
+      ? `\nLAB RESULTS (latest, use these to fine-tune meals):\n${biomarkerLines}`
+      : '';
+
     const prompt = `You are a professional nutritionist specializing in culturally authentic, health-focused meal planning. Create a ${daysCount}-day personalized meal plan.
 
 HEALTH PROFILE:
 - Primary Goal: ${goalDescription}
-- ${healthContext}
+- Age: ${userPrefs.age || 'not specified'}, Gender: ${userPrefs.gender || 'not specified'}
+- Height: ${userPrefs.height ? userPrefs.height + ' cm' : 'not specified'}, Weight: ${userPrefs.weight ? userPrefs.weight + ' kg' : 'not specified'}
 - Number of people: ${numPeople}
 - Plan Budget Target: $${weeklyBudget}
+- Cooking skill level: ${skillLevel}
+- Max cooking time: ${cookingTime}
 ${culturalText}
 ${lifeStageText}
 ${allergenText}
 ${cuisineText}
 ${timeText}
-${skillText}
 ${customRequirements ? `- Custom Requirements: ${customRequirements}` : ''}
-${foodsLiked ? `- Foods they enjoy: ${foodsLiked}` : ''}
-${foodsAvoided ? `- Foods to avoid: ${foodsAvoided}` : ''}
-${userPrefs?.dietary_restrictions ? `- Dietary restrictions: ${userPrefs.dietary_restrictions}` : ''}
+${userPrefs.dietary_restrictions ? `- Dietary restrictions: ${userPrefs.dietary_restrictions}` : ''}
+${foodsLiked || userPrefs.foods_liked ? `- Foods they enjoy: ${[foodsLiked, userPrefs.foods_liked].filter(Boolean).join(', ')}` : ''}
+${foodsAvoided || userPrefs.foods_avoided ? `- Foods to avoid: ${[foodsAvoided, userPrefs.foods_avoided].filter(Boolean).join(', ')}` : ''}
+${userPrefs.cuisine_preferences?.length ? `- Saved cuisine preferences: ${userPrefs.cuisine_preferences.join(', ')}` : ''}
+- ${healthContext}
+${labRawText}
 ${pantryText}
 
 IMPORTANT REQUIREMENTS:

@@ -81,7 +81,7 @@ export default function Layout({ children, currentPageName }) {
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <Link to={createPageUrl('Index')} className="flex items-center gap-3 px-6 py-5 border-b border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
+          <Link to="/" className="flex items-center gap-3 px-6 py-5 border-b border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
             <img 
               src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/695042d8937b0c0cf7f7afd6/1812bfbf0_image.png" 
               alt="VitaPlate Logo" 

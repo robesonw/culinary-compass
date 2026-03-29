@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -16,12 +17,21 @@ import { toast } from 'sonner';
 
 export default function Settings() {
   const [darkMode, setDarkMode] = useState(false);
+  const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(true);
+  const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
     retry: false,
   });
+
+  // Load user's weekly digest preference
+  useEffect(() => {
+    if (user?.weekly_digest_enabled !== undefined) {
+      setWeeklyDigestEnabled(user.weekly_digest_enabled);
+    }
+  }, [user]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -45,6 +55,23 @@ export default function Settings() {
 
   const handleLogout = () => {
     base44.auth.logout();
+  };
+
+  const digestMutation = useMutation({
+    mutationFn: (enabled) => base44.auth.updateMe({ weekly_digest_enabled: enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      toast.success(`Weekly digest ${weeklyDigestEnabled ? 'enabled' : 'disabled'}`);
+    },
+    onError: () => {
+      toast.error('Failed to update preference');
+      setWeeklyDigestEnabled(!weeklyDigestEnabled);
+    },
+  });
+
+  const handleDigestToggle = (checked) => {
+    setWeeklyDigestEnabled(checked);
+    digestMutation.mutate(checked);
   };
 
   return (
@@ -133,10 +160,10 @@ export default function Settings() {
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-slate-900">Weekly Reports</p>
-                <p className="text-sm text-slate-500">Get weekly nutrition summaries</p>
+                <p className="font-medium text-slate-900">Weekly Health Digest</p>
+                <p className="text-sm text-slate-500">Every Monday morning, get a personalized summary of your nutrition, lab insights, and AI coaching tips</p>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={weeklyDigestEnabled} onCheckedChange={handleDigestToggle} disabled={digestMutation.isPending} />
             </div>
 
             <Separator />

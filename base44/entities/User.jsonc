@@ -1,0 +1,21 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user",
+      "description": "User role"
+    },
+    "weekly_digest_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Receive weekly health digest email"
+    }
+  },
+  "required": []
+}

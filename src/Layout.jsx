@@ -126,6 +126,54 @@ export default function Layout({ children, currentPageName }) {
               );
             })}
 
+            {user?.role === 'practitioner' && (
+              <>
+                <div className="border-t border-slate-200 my-2" />
+                <Link
+                  to={createPageUrl('PractitionerPortal')}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                    ${isActive('PractitionerPortal')
+                      ? 'bg-purple-50 text-purple-700' 
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <ChefHat className={`w-5 h-5 ${isActive('PractitionerPortal') ? 'text-purple-600' : 'text-slate-400'}`} />
+                  Practitioner Portal
+                </Link>
+                <Link
+                  to={createPageUrl('MyClients')}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                    ${isActive('MyClients')
+                      ? 'bg-purple-50 text-purple-700' 
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <Users className={`w-5 h-5 ${isActive('MyClients') ? 'text-purple-600' : 'text-slate-400'}`} />
+                  My Clients
+                </Link>
+                <Link
+                  to={createPageUrl('PractitionerPricing')}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                    ${isActive('PractitionerPricing')
+                      ? 'bg-purple-50 text-purple-700' 
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <Zap className={`w-5 h-5 ${isActive('PractitionerPricing') ? 'text-purple-600' : 'text-slate-400'}`} />
+                  Upgrade Plan
+                </Link>
+              </>
+            )}
+
             {user?.role === 'admin' && (
               <>
                 <div className="border-t border-slate-200 my-2" />

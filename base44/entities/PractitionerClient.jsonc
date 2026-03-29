@@ -1,0 +1,77 @@
+{
+  "name": "PractitionerClient",
+  "type": "object",
+  "properties": {
+    "practitioner_email": {
+      "type": "string",
+      "description": "Email of the practitioner"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client patient"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Client's full name"
+    },
+    "client_photo_url": {
+      "type": "string",
+      "description": "Client's profile photo URL"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "cancelled"
+      ],
+      "default": "active",
+      "description": "Client's VitaPlate subscription status"
+    },
+    "last_active_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last date client logged activity"
+    },
+    "health_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Current health score"
+    },
+    "last_lab_upload": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of last lab result upload"
+    },
+    "meal_plan_adherence_week": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Meal plan adherence percentage this week"
+    },
+    "current_meal_plan_id": {
+      "type": "string",
+      "description": "ID of the current assigned meal plan"
+    },
+    "data_consent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether client consented to share data"
+    },
+    "managed_since": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when practitioner started managing this client"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Practitioner's private notes on client"
+    }
+  },
+  "required": [
+    "practitioner_email",
+    "client_email",
+    "client_name"
+  ]
+}

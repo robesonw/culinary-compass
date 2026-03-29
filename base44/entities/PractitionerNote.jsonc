@@ -1,0 +1,44 @@
+{
+  "name": "PractitionerNote",
+  "type": "object",
+  "properties": {
+    "practitioner_email": {
+      "type": "string",
+      "description": "Email of the practitioner"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client"
+    },
+    "note": {
+      "type": "string",
+      "description": "Private note content"
+    },
+    "note_type": {
+      "type": "string",
+      "enum": [
+        "general",
+        "health_observation",
+        "meal_plan_feedback",
+        "progress_note",
+        "follow_up"
+      ],
+      "default": "general",
+      "description": "Type of note"
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date note was created"
+    },
+    "related_to": {
+      "type": "string",
+      "description": "What this note is about (e.g., lab_result_id, meal_plan_id)"
+    }
+  },
+  "required": [
+    "practitioner_email",
+    "client_email",
+    "note"
+  ]
+}

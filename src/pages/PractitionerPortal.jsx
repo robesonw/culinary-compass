@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -202,11 +203,60 @@ export default function PractitionerPortal() {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="patients" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue="overview" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="patients">Your Patients</TabsTrigger>
               <TabsTrigger value="earnings">Earnings History</TabsTrigger>
             </TabsList>
+
+            {/* Overview Tab */}
+            <TabsContent value="overview">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Practitioner Dashboard</CardTitle>
+                  <CardDescription>
+                    Manage your referrals and client accounts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Button asChild className="h-20 text-left justify-start p-6 text-base">
+                      <Link to="/MyClients">
+                        <Users className="w-6 h-6 mr-3" />
+                        <div>
+                          <div className="font-semibold">Manage Clients</div>
+                          <div className="text-xs opacity-90">View lab results, nutrition, meal plans</div>
+                        </div>
+                      </Link>
+                    </Button>
+
+                    <Button variant="outline" asChild className="h-20 text-left justify-start p-6 text-base">
+                      <a href="#subscription">
+                        <TrendingUp className="w-6 h-6 mr-3" />
+                        <div>
+                          <div className="font-semibold">Upgrade Plan</div>
+                          <div className="text-xs opacity-90">Manage up to 10 or unlimited clients</div>
+                        </div>
+                      </a>
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">How it works:</h4>
+                    <ul className="space-y-1 text-sm text-blue-800">
+                      <li>✓ Patients sign up with your referral code</li>
+                      <li>✓ They consent to share their health data with you</li>
+                      <li>✓ You can view their labs, meals, and progress</li>
+                      <li>✓ Create custom meal plans for each client</li>
+                      <li>✓ Earn $2/month per active patient subscription</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             {/* Patients Tab */}
             <TabsContent value="patients">

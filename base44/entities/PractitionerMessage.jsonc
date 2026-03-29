@@ -1,0 +1,51 @@
+{
+  "name": "PractitionerMessage",
+  "type": "object",
+  "properties": {
+    "practitioner_email": {
+      "type": "string",
+      "description": "Email of the practitioner"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email of the client"
+    },
+    "sender_email": {
+      "type": "string",
+      "description": "Email of message sender"
+    },
+    "sender_type": {
+      "type": "string",
+      "enum": [
+        "practitioner",
+        "client"
+      ],
+      "description": "Who sent the message"
+    },
+    "message": {
+      "type": "string",
+      "description": "Message content"
+    },
+    "sent_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date message was sent"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether recipient has read the message"
+    },
+    "attachment_url": {
+      "type": "string",
+      "description": "Optional attachment URL (document, image)"
+    }
+  },
+  "required": [
+    "practitioner_email",
+    "client_email",
+    "sender_email",
+    "sender_type",
+    "message"
+  ]
+}

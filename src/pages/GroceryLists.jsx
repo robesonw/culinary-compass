@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2, Share2, Mail, MessageSquare, List, Calendar, Trash2 } from 'lucide-react';
+import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2, Share2, Mail, MessageSquare, List, Calendar, Trash2, Save, BookOpen } from 'lucide-react';
 import RetailerShopLinks, { ShopAllRetailersButton } from '../components/grocery/RetailerShopLinks';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,6 +84,28 @@ export default function GroceryLists() {
       setGroceryList(null);
     },
   });
+
+  const saveAsNewListMutation = useMutation({
+    mutationFn: (data) => base44.entities.GroceryList.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['standaloneLists'] });
+      toast.success('Grocery list saved!');
+    },
+    onError: () => {
+      toast.error('Failed to save grocery list');
+    },
+  });
+
+  const handleSaveCurrentList = () => {
+    if (!groceryList) return;
+    const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const name = selectedPlan ? `${selectedPlan.name} — ${dateStr}` : `Week of ${dateStr}`;
+    const allItems = Object.entries(groceryList).flatMap(([category, items]) =>
+      items.map(item => ({ ...item, category }))
+    );
+    const total_cost = allItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+    saveAsNewListMutation.mutate({ name, items: groceryList, total_cost });
+  };
 
   const handleCreateStandaloneList = () => {
     if (!newListName.trim()) {
@@ -442,7 +464,20 @@ export default function GroceryLists() {
                 </Select>
               </div>
               {selectedPlan && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    onClick={handleSaveCurrentList}
+                    disabled={saveAsNewListMutation.isPending || !groceryList}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {saveAsNewListMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    Save List
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
                     <Share2 className="w-4 h-4 mr-2" />
                     Share
@@ -998,6 +1033,66 @@ export default function GroceryLists() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* My Saved Lists Section */}
+      {standaloneLists.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-600" />
+            <h2 className="text-xl font-bold text-slate-900">My Saved Lists</h2>
+            <Badge variant="secondary">{standaloneLists.length}</Badge>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {standaloneLists.map((list) => {
+              const allItems = list.items ? Object.values(list.items).flat() : [];
+              const totalCost = list.total_cost || allItems.reduce((s, i) => s + ((i.price || 0) * (i.quantity || 1)), 0);
+              return (
+                <Card key={list.id} className="border-slate-200 hover:border-indigo-300 transition-colors">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-slate-900 truncate">{list.name}</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {new Date(list.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 flex-shrink-0"
+                        onClick={() => deleteStandaloneListMutation.mutate(list.id)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between text-sm mb-3">
+                      <span className="text-slate-600">{allItems.length} items</span>
+                      {totalCost > 0 && (
+                        <span className="font-semibold text-indigo-600">${totalCost.toFixed(2)}</span>
+                      )}
+                    </div>
+                    {list.notes && (
+                      <p className="text-xs text-slate-500 italic mb-3">{list.notes}</p>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setListType('standalone');
+                        setSelectedStandaloneId(list.id);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    >
+                      Open List
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Create List Dialog */}
       <Dialog open={createListDialogOpen} onOpenChange={setCreateListDialogOpen}>

@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppleHealthCard from '@/components/integrations/AppleHealthCard';
 import GoogleFitCard from '@/components/integrations/GoogleFitCard';
+import FitbitCard from '@/components/integrations/FitbitCard';
+import GarminCard from '@/components/integrations/GarminCard';
 import OuraRingCard from '@/components/integrations/OuraRingCard';
 import WHOOPCard from '@/components/integrations/WHOOPCard';
 import GoogleCalendarCard from '@/components/integrations/GoogleCalendarCard';
@@ -28,6 +30,8 @@ export default function Integrations() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AppleHealthCard />
           <GoogleFitCard />
+          <FitbitCard />
+          <GarminCard />
         </div>
       </div>
 
@@ -105,11 +109,11 @@ export default function Integrations() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div>
-              <h4 className="font-semibold text-slate-900 mb-2">🎯 More Wearables</h4>
+              <h4 className="font-semibold text-slate-900 mb-2">⌚ More Wearables</h4>
               <ul className="space-y-1 text-slate-700">
-                <li>• Fitbit</li>
-                <li>• Garmin</li>
                 <li>• Apple Watch Health</li>
+                <li>• Withings Health Devices</li>
+                <li>• Polar Sports Watch</li>
               </ul>
             </div>
             <div>

@@ -12,6 +12,8 @@
       "enum": [
         "apple_health",
         "google_fit",
+        "fitbit",
+        "garmin",
         "manual"
       ],
       "description": "Source of the data"
@@ -55,6 +57,18 @@
       "minimum": 0,
       "maximum": 100,
       "description": "Body fat percentage (0-100)"
+    },
+    "body_battery": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Garmin Body Battery score (0-100)"
+    },
+    "stress_level": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Garmin stress level score"
     },
     "notes": {
       "type": "string",

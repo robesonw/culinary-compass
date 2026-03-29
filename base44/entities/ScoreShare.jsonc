@@ -1,0 +1,57 @@
+{
+  "name": "ScoreShare",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who shared"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "instagram",
+        "twitter",
+        "facebook",
+        "link_copy",
+        "download"
+      ],
+      "description": "Platform where score was shared"
+    },
+    "health_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Health score at time of share"
+    },
+    "top_biomarkers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "optimal",
+              "good",
+              "warning",
+              "low"
+            ]
+          }
+        }
+      },
+      "description": "Top 3 biomarkers shared"
+    },
+    "public_scorecard_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether user's scorecard is publicly visible"
+    }
+  },
+  "required": [
+    "user_email",
+    "platform"
+  ]
+}

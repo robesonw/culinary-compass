@@ -1,0 +1,63 @@
+{
+  "name": "DailyCheckIn",
+  "type": "object",
+  "properties": {
+    "check_in_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the check-in"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Weight in kg or lbs"
+    },
+    "weight_unit": {
+      "type": "string",
+      "enum": [
+        "kg",
+        "lbs"
+      ],
+      "default": "kg",
+      "description": "Unit of weight measurement"
+    },
+    "energy_level": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Energy level from 1 (very low) to 5 (very high)"
+    },
+    "sleep_hours": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 12,
+      "description": "Hours of sleep last night"
+    },
+    "water_glasses": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20,
+      "description": "Number of glasses of water consumed (8oz per glass)"
+    },
+    "systolic_bp": {
+      "type": "integer",
+      "description": "Systolic blood pressure (optional)"
+    },
+    "diastolic_bp": {
+      "type": "integer",
+      "description": "Diastolic blood pressure (optional)"
+    },
+    "mood": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Mood level from 1 (very low) to 5 (very high)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes about the day"
+    }
+  },
+  "required": [
+    "check_in_date"
+  ]
+}

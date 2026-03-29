@@ -1,0 +1,51 @@
+{
+  "name": "PractitionerConsent",
+  "type": "object",
+  "properties": {
+    "patient_email": {
+      "type": "string",
+      "description": "Email of the patient"
+    },
+    "practitioner_email": {
+      "type": "string",
+      "description": "Email of the practitioner"
+    },
+    "practitioner_name": {
+      "type": "string",
+      "description": "Name of the practitioner"
+    },
+    "consent_given": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether patient consented to share data"
+    },
+    "consent_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date consent was given or declined"
+    },
+    "data_access": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "lab_results",
+          "meal_adherence",
+          "progress_photos",
+          "health_score"
+        ]
+      },
+      "description": "What data the patient allows practitioner to see",
+      "default": []
+    },
+    "practitioner_code": {
+      "type": "string",
+      "description": "The practitioner code used during signup"
+    }
+  },
+  "required": [
+    "patient_email",
+    "practitioner_email",
+    "practitioner_code"
+  ]
+}

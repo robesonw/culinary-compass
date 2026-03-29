@@ -1,0 +1,104 @@
+{
+  "name": "PractitionerApplication",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Full name of applicant"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "profession": {
+      "type": "string",
+      "enum": [
+        "registered_dietitian",
+        "nutritionist",
+        "doctor",
+        "nurse_practitioner",
+        "health_coach",
+        "wellness_consultant",
+        "other"
+      ],
+      "description": "Professional credential"
+    },
+    "license_number": {
+      "type": "string",
+      "description": "Professional license or certification number"
+    },
+    "practice_location": {
+      "type": "string",
+      "description": "City and state of practice"
+    },
+    "practice_name": {
+      "type": "string",
+      "description": "Name of clinic, practice, or organization"
+    },
+    "website": {
+      "type": "string",
+      "description": "Professional website or practice website"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short professional bio for directory listing"
+    },
+    "specialties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Areas of specialization (e.g., diabetes, heart health, weight loss)"
+    },
+    "patients_per_month": {
+      "type": "integer",
+      "description": "Estimated patients per month who could benefit"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Application status"
+    },
+    "approval_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when approved"
+    },
+    "practitioner_code": {
+      "type": "string",
+      "description": "Unique code assigned to practitioner (e.g., DR-SMITH-2026)"
+    },
+    "show_in_directory": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to show in public practitioner directory"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "paypal",
+        "bank_transfer"
+      ],
+      "description": "Preferred payment method for commissions"
+    },
+    "payment_details": {
+      "type": "object",
+      "description": "Encrypted payment details (handle securely)"
+    }
+  },
+  "required": [
+    "full_name",
+    "email",
+    "profession",
+    "practice_location"
+  ]
+}

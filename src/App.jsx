@@ -17,6 +17,9 @@ import MyProgress from './pages/MyProgress';
 import ReferAFriend from './pages/ReferAFriend';
 import ReferralLanding from './pages/ReferralLanding';
 import ScorecardView from './pages/ScorecardView';
+import PractitionerPortal from './pages/PractitionerPortal';
+import PractitionerSignup from './pages/PractitionerSignup';
+import FindPractitioner from './pages/FindPractitioner';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -82,6 +85,9 @@ const AuthenticatedApp = () => {
       <Route path="/ReferAFriend" element={<LayoutWrapper currentPageName="ReferAFriend"><ReferAFriend /></LayoutWrapper>} />
       <Route path="/refer/:code" element={<ReferralLanding />} />
       <Route path="/scorecard/:userId" element={<ScorecardView />} />
+      <Route path="/PractitionerPortal" element={<LayoutWrapper currentPageName="PractitionerPortal"><PractitionerPortal /></LayoutWrapper>} />
+      <Route path="/practitioners" element={<PractitionerSignup />} />
+      <Route path="/FindPractitioner" element={<LayoutWrapper currentPageName="FindPractitioner"><FindPractitioner /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

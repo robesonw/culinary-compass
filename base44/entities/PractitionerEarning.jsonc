@@ -1,0 +1,62 @@
+{
+  "name": "PractitionerEarning",
+  "type": "object",
+  "properties": {
+    "practitioner_email": {
+      "type": "string",
+      "description": "Email of the practitioner"
+    },
+    "practitioner_name": {
+      "type": "string",
+      "description": "Name of the practitioner"
+    },
+    "month": {
+      "type": "string",
+      "format": "date",
+      "description": "Month for earnings (first day of month)"
+    },
+    "active_patients": {
+      "type": "integer",
+      "description": "Number of active paying patients in this month"
+    },
+    "commission_per_patient": {
+      "type": "number",
+      "default": 2,
+      "description": "Commission amount per patient per month"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Total amount owed (active_patients * commission_per_patient)"
+    },
+    "is_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the earnings have been paid out"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when payment was made"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "paypal",
+        "bank_transfer",
+        "pending"
+      ],
+      "default": "pending",
+      "description": "Payment method selected by practitioner"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "Transaction ID from payment processor"
+    }
+  },
+  "required": [
+    "practitioner_email",
+    "practitioner_name",
+    "month",
+    "active_patients"
+  ]
+}

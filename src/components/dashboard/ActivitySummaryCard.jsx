@@ -1,112 +1,117 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Activity, Flame, Heart, Moon, Footprints } from 'lucide-react';
+import { Activity, Zap, Moon, Heart } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { formatDistanceToNow } from 'date-fns';
 
-export default function ActivitySummaryCard({ todayActivity = null }) {
-  if (!todayActivity) {
+export default function ActivitySummaryCard() {
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: todaySync } = useQuery({
+    queryKey: ['todayActivitySync'],
+    queryFn: async () => {
+      try {
+        const syncs = await base44.asServiceRole.entities.WearableSync.filter({
+          sync_date: today,
+        });
+        return syncs?.[0];
+      } catch {
+        return null;
+      }
+    },
+    refetchInterval: 60000, // Refetch every minute
+  });
+
+  if (!todaySync) {
     return (
-      <Card className="border-slate-200">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-slate-900 flex items-center gap-2">
-            <Activity className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-blue-500" />
             Today's Activity
           </CardTitle>
+          <CardDescription>No activity data synced yet</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600">No activity data synced yet. Sync from Apple Health to see your stats.</p>
+          <p className="text-sm text-slate-600">
+            Connect Apple Health or Google Fit in your Integrations settings to see activity data.
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  const adjustedCalories = todayActivity.active_calories 
-    ? Math.round(todayActivity.active_calories * 0.8)
-    : 0;
-
-  const stats = [
-    {
-      icon: Footprints,
-      label: 'Steps',
-      value: todayActivity.steps ? todayActivity.steps.toLocaleString() : '—',
-      color: 'blue'
-    },
-    {
-      icon: Flame,
-      label: 'Active Calories',
-      value: todayActivity.active_calories ? todayActivity.active_calories.toLocaleString() : '—',
-      color: 'orange',
-      adjustment: adjustedCalories > 0 ? `+${adjustedCalories} added to meals` : null
-    },
-    {
-      icon: Heart,
-      label: 'Resting HR',
-      value: todayActivity.resting_heart_rate ? `${todayActivity.resting_heart_rate} bpm` : '—',
-      color: 'rose'
-    },
-    {
-      icon: Moon,
-      label: 'Sleep',
-      value: todayActivity.sleep_hours ? `${todayActivity.sleep_hours}h` : '—',
-      color: 'indigo'
-    }
-  ];
-
-  const colorMap = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    orange: 'bg-orange-50 text-orange-700 border-orange-200',
-    rose: 'bg-rose-50 text-rose-700 border-rose-200',
-    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200'
+  const getActivityBadge = (steps) => {
+    if (steps >= 15000) return { label: 'Extremely Active 🔥', color: 'bg-red-100 text-red-900' };
+    if (steps >= 10000) return { label: 'Very Active ⭐', color: 'bg-orange-100 text-orange-900' };
+    if (steps >= 7500) return { label: 'Active 💪', color: 'bg-blue-100 text-blue-900' };
+    if (steps >= 5000) return { label: 'Lightly Active 👟', color: 'bg-green-100 text-green-900' };
+    return { label: 'Sedentary 🚶', color: 'bg-slate-100 text-slate-900' };
   };
 
+  const activityBadge = getActivityBadge(todaySync.steps || 0);
+  const lastSyncTime = formatDistanceToNow(new Date(todaySync.synced_at), { addSuffix: true });
+
   return (
-    <Card className="border-slate-200">
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-900 flex items-center gap-2">
-            <Activity className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-blue-500" />
             Today's Activity
           </CardTitle>
-          <Badge variant="outline" className="bg-emerald-50 text-emerald-700">
-            Synced
-          </Badge>
+          <Badge className={`${activityBadge.color} border-0`}>{activityBadge.label}</Badge>
         </div>
+        <CardDescription>Synced {lastSyncTime}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-3">
-          {stats.map((stat, idx) => {
-            const Icon = stat.icon;
-            const bgColor = colorMap[stat.color];
-
-            return (
-              <div key={idx} className={`p-3 rounded-lg border ${bgColor}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  <p className="text-xs font-medium">{stat.label}</p>
-                </div>
-                <p className="text-lg font-bold text-slate-900">{stat.value}</p>
-                {stat.adjustment && (
-                  <p className="text-xs text-emerald-700 font-medium mt-1">{stat.adjustment}</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {adjustedCalories > 0 && (
-          <div className="mt-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-            <p className="text-sm font-medium text-emerald-900 mb-1">🎯 Activity Adjustment</p>
-            <p className="text-xs text-emerald-700">
-              You burned <strong>{todayActivity.active_calories}</strong> active calories. We've added a <strong>recovery snack (+{adjustedCalories} kcal)</strong> to your meal plan.
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {/* Steps */}
+          <div className="bg-slate-50 rounded-lg p-4 text-center">
+            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full mx-auto mb-2">
+              <Activity className="w-5 h-5 text-blue-600" />
+            </div>
+            <p className="text-sm text-slate-600">Steps</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {todaySync.steps?.toLocaleString() || '0'}
             </p>
           </div>
-        )}
 
-        {todayActivity.sleep_quality && (
-          <div className="mt-3 p-2 rounded-lg bg-slate-50 border border-slate-200">
-            <p className="text-xs text-slate-600">Sleep Quality: <span className="font-semibold text-slate-900 capitalize">{todayActivity.sleep_quality}</span></p>
+          {/* Active Calories */}
+          <div className="bg-slate-50 rounded-lg p-4 text-center">
+            <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-full mx-auto mb-2">
+              <Zap className="w-5 h-5 text-orange-600" />
+            </div>
+            <p className="text-sm text-slate-600">Active Cal</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {todaySync.active_calories?.toLocaleString() || '0'}
+            </p>
           </div>
-        )}
+
+          {/* Sleep */}
+          {todaySync.sleep_hours !== undefined && (
+            <div className="bg-slate-50 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full mx-auto mb-2">
+                <Moon className="w-5 h-5 text-purple-600" />
+              </div>
+              <p className="text-sm text-slate-600">Sleep</p>
+              <p className="text-2xl font-bold text-slate-900">{todaySync.sleep_hours}h</p>
+            </div>
+          )}
+
+          {/* Heart Rate */}
+          {todaySync.resting_heart_rate && (
+            <div className="bg-slate-50 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center w-10 h-10 bg-red-100 rounded-full mx-auto mb-2">
+                <Heart className="w-5 h-5 text-red-600" />
+              </div>
+              <p className="text-sm text-slate-600">Heart Rate</p>
+              <p className="text-2xl font-bold text-slate-900">{todaySync.resting_heart_rate} bpm</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

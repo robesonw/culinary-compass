@@ -25,6 +25,7 @@ import StreakCard from '../components/dashboard/StreakCard';
 import StreakCounter from '../components/streaks/StreakCounter';
 import HealthScoreCard from '../components/dashboard/HealthScoreCard';
 import HealthAlertsCard from '../components/dashboard/HealthAlertsCard';
+import ActivitySummaryCard from '../components/dashboard/ActivitySummaryCard';
 import VoiceMealLogger from '../components/meals/VoiceMealLogger';
 import VoiceTranscriptionReview from '../components/meals/VoiceTranscriptionReview';
 import { useSubscription } from '../lib/useSubscription';
@@ -267,6 +268,15 @@ export default function Dashboard() {
         transition={{ delay: 0.35 }}
       >
         <HealthScoreCard labResults={labResults} isPro={isPro} />
+      </motion.div>
+
+      {/* Activity Summary Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.38 }}
+      >
+        <ActivitySummaryCard />
       </motion.div>
 
       <div className="grid lg:grid-cols-3 gap-6">

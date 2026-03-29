@@ -1,25 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, RefreshCw } from 'lucide-react';
+import { Activity, RefreshCw, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function AppleHealthCard() {
+export default function GoogleFitCard() {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState(null);
   const queryClient = useQueryClient();
 
-  // Check if user is on iOS
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  // Check if user is on Android
+  const isAndroid = /android/i.test(navigator.userAgent);
 
   const { data: lastSync } = useQuery({
-    queryKey: ['lastAppleHealthSync'],
+    queryKey: ['lastGoogleFitSync'],
     queryFn: async () => {
       try {
         const syncs = await base44.asServiceRole.entities.WearableSync.filter(
-          { source: 'apple_health' },
+          { source: 'google_fit' },
           '-sync_date',
           1
         );
@@ -31,39 +32,84 @@ export default function AppleHealthCard() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await base44.functions.invoke('syncAppleHealth', data);
+    mutationFn: async (tokens) => {
+      const response = await base44.functions.invoke('syncGoogleFit', tokens);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lastAppleHealthSync'] });
+      queryClient.invalidateQueries({ queryKey: ['lastGoogleFitSync'] });
+      setError(null);
+    },
+    onError: (err) => {
+      setError(err.message || 'Failed to sync data');
     },
   });
 
-  const handleManualSync = async () => {
-    // In a real app, this would prompt user to select data from Health app
-    // For now, show instructions
-    alert(
-      'To sync Apple Health data:\n\n' +
-      '1. Open Health app on your iPhone/iPad\n' +
-      '2. Tap on your profile\n' +
-      '3. Go to Data Access & Devices\n' +
-      '4. Select VitaPlate\n' +
-      '5. Toggle on the data types you want to share\n\n' +
-      'Data will sync automatically from there.'
-    );
+  const handleConnectGoogleFit = async () => {
+    setIsConnecting(true);
+    setError(null);
+
+    try {
+      // Generate OAuth URL for Google Fit
+      const clientId = 'YOUR_GOOGLE_CLIENT_ID'; // Set via environment variable
+      const redirectUri = `${window.location.origin}/oauth/callback/google-fit`;
+      const scope = [
+        'https://www.googleapis.com/auth/fitness.activity.read',
+        'https://www.googleapis.com/auth/fitness.sleep.read',
+        'https://www.googleapis.com/auth/fitness.body.read',
+        'https://www.googleapis.com/auth/fitness.heart_rate.read',
+      ].join(' ');
+
+      const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      authUrl.searchParams.set('client_id', clientId);
+      authUrl.searchParams.set('redirect_uri', redirectUri);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', scope);
+      authUrl.searchParams.set('access_type', 'offline');
+
+      // Open OAuth popup
+      const popup = window.open(authUrl.toString(), 'GoogleFitAuth', 'width=500,height=600');
+
+      if (!popup) {
+        setError('Failed to open authorization window. Please check pop-up settings.');
+        return;
+      }
+
+      // Poll for completion
+      const checkInterval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkInterval);
+          setIsConnecting(false);
+          // Try to sync after OAuth completes
+          queryClient.invalidateQueries({ queryKey: ['lastGoogleFitSync'] });
+        }
+      }, 500);
+    } catch (err) {
+      setError(err.message);
+      setIsConnecting(false);
+    }
   };
 
-  if (!isIOS) {
+  const handleManualSync = async () => {
+    if (!lastSync) {
+      setError('Please connect Google Fit first');
+      return;
+    }
+    syncMutation.mutate({
+      accessToken: localStorage.getItem('google_fit_access_token'),
+    });
+  };
+
+  if (!isAndroid) {
     return (
       <Card className="opacity-50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Heart className="w-5 h-5 text-red-500" />
+              <Activity className="w-5 h-5 text-blue-500" />
               <div>
-                <CardTitle>Apple Health</CardTitle>
-                <CardDescription>iOS only</CardDescription>
+                <CardTitle>Google Fit / Health Connect</CardTitle>
+                <CardDescription>Android only</CardDescription>
               </div>
             </div>
             <Badge variant="outline">Not Available</Badge>
@@ -71,7 +117,7 @@ export default function AppleHealthCard() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-slate-600">
-            Apple Health sync is only available on iOS devices (iPhone, iPad).
+            Google Fit sync is only available on Android devices with Health Connect installed.
           </p>
         </CardContent>
       </Card>
@@ -92,13 +138,11 @@ export default function AppleHealthCard() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Heart className="w-5 h-5 text-red-500" />
+            <Activity className="w-5 h-5 text-blue-500" />
             <div>
-              <CardTitle>Apple Health</CardTitle>
+              <CardTitle>Google Fit / Health Connect</CardTitle>
               <CardDescription>
-                {isSynced
-                  ? `Last synced ${lastSyncTime}`
-                  : 'Not connected'}
+                {isSynced ? `Last synced ${lastSyncTime}` : 'Not connected'}
               </CardDescription>
             </div>
           </div>
@@ -116,9 +160,15 @@ export default function AppleHealthCard() {
           </div>
         )}
 
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs text-red-900">{error}</p>
+          </div>
+        )}
+
         <p className="text-sm text-slate-600">
-          Sync steps, calories, sleep, heart rate, and weight from Apple Health to adjust your
-          meal plans and track activity.
+          Sync steps, calories, sleep, and heart rate from Google Fit or Health Connect to adjust
+          your meal plans and track activity.
         </p>
 
         {isSynced && lastSync && (
@@ -153,7 +203,11 @@ export default function AppleHealthCard() {
                 disabled={syncMutation.isPending}
                 className="flex-1"
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
+                {syncMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
                 Sync Now
               </Button>
               <Button size="sm" variant="outline" className="flex-1">
@@ -163,11 +217,18 @@ export default function AppleHealthCard() {
           ) : (
             <Button
               size="sm"
-              onClick={handleManualSync}
+              onClick={handleConnectGoogleFit}
               className="w-full"
               disabled={isConnecting}
             >
-              {isConnecting ? 'Connecting...' : 'Connect'}
+              {isConnecting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                'Connect'
+              )}
             </Button>
           )}
         </div>

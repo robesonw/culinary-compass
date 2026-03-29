@@ -18,8 +18,17 @@ function NotificationBellContent() {
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications', user?.email],
-    queryFn: () => base44.entities.Notification.filter({ recipient_email: user?.email }, '-created_date', 50),
+    queryFn: async () => {
+      if (!user?.email) return [];
+      try {
+        return await base44.entities.Notification.filter({ user_email: user?.email }, '-created_date', 50);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        return [];
+      }
+    },
     enabled: !!user?.email,
+    refetchInterval: 30000,
   });
 
   const markAsReadMutation = useMutation({
@@ -47,13 +56,20 @@ function NotificationBellContent() {
     if (!notification.is_read) {
       markAsReadMutation.mutate(notification.id);
     }
-    if (notification.link) {
-      window.location.href = notification.link;
+    if (notification.action_url) {
+      window.location.href = notification.action_url;
     }
   };
 
   const getNotificationIcon = (type) => {
     switch (type) {
+      case 'meal_reminder': return '🍴';
+      case 'streak_alert': return '🔥';
+      case 'weekly_plan': return '📅';
+      case 'supplement_reminder': return '💊';
+      case 'lab_reminder': return '🧬';
+      case 'health_digest': return '📊';
+      case 'goal_checkin': return '🎯';
       case 'new_follower': return '👤';
       case 'plan_comment': return '💬';
       case 'recipe_comment': return '💬';

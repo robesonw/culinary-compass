@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import StreaksAchievementsSection from '../components/streaks/StreaksAchievementsSection';
 import MonthlyReportDialog from '../components/progress/MonthlyReportDialog';
+import NotificationSettingsPanel from '../components/notifications/NotificationSettingsPanel';
 
 const healthGoals = [
   { value: 'liver_health', label: 'Liver Health' },
@@ -331,7 +332,7 @@ export default function Profile() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview">
             <User className="w-4 h-4 mr-2" />
             Overview
@@ -360,8 +361,12 @@ export default function Profile() {
             <Settings className="w-4 h-4 mr-2" />
             Preferences
           </TabsTrigger>
-          <TabsTrigger value="settings">
+          <TabsTrigger value="notifications">
             <Bell className="w-4 h-4 mr-2" />
+            Notifications
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="w-4 h-4 mr-2" />
             Settings
           </TabsTrigger>
         </TabsList>
@@ -856,6 +861,11 @@ export default function Profile() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Notifications Tab */}
+        <TabsContent value="notifications">
+          <NotificationSettingsPanel />
         </TabsContent>
 
         {/* Settings Tab */}

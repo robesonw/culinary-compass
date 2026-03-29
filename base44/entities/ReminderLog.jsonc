@@ -1,0 +1,53 @@
+{
+  "name": "ReminderLog",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of user who received reminder"
+    },
+    "reminder_type": {
+      "type": "string",
+      "enum": [
+        "breakfast_reminder",
+        "lunch_reminder",
+        "dinner_reminder",
+        "streak_alert",
+        "weekly_plan",
+        "weekly_digest",
+        "goal_checkin",
+        "lab_reminder",
+        "supplement_reminder"
+      ],
+      "description": "Type of reminder sent"
+    },
+    "reminder_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date reminder was sent"
+    },
+    "was_sent": {
+      "type": "boolean",
+      "description": "Whether reminder was successfully sent"
+    },
+    "skip_reason": {
+      "type": "string",
+      "description": "Why reminder was skipped (if applicable)"
+    },
+    "notification_id": {
+      "type": "string",
+      "description": "ID of created notification (if sent)"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Exact timestamp reminder was sent"
+    }
+  },
+  "required": [
+    "user_email",
+    "reminder_type",
+    "reminder_date",
+    "was_sent"
+  ]
+}

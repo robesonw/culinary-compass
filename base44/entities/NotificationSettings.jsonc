@@ -1,0 +1,72 @@
+{
+  "name": "NotificationSettings",
+  "type": "object",
+  "properties": {
+    "meal_reminders": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable meal logging reminders (breakfast, lunch, dinner)"
+    },
+    "weekly_plan_reminder": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Sunday evening plan reminder"
+    },
+    "streak_alerts": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable streak at-risk alerts"
+    },
+    "supplement_reminders": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable morning supplement reminders"
+    },
+    "lab_reminders": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable 90-day lab result reminders"
+    },
+    "weekly_digest": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Monday morning email digest"
+    },
+    "goal_checkin": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable weekly progress check-in nudge"
+    },
+    "quiet_hours_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable quiet hours (no notifications 10 PM - 7 AM)"
+    },
+    "timezone": {
+      "type": "string",
+      "default": "America/Chicago",
+      "description": "User's timezone for notification timing"
+    },
+    "breakfast_reminder_time": {
+      "type": "string",
+      "default": "09:30",
+      "description": "Time to send breakfast reminder (HH:MM format)"
+    },
+    "lunch_reminder_time": {
+      "type": "string",
+      "default": "14:00",
+      "description": "Time to send lunch reminder (HH:MM format)"
+    },
+    "dinner_reminder_time": {
+      "type": "string",
+      "default": "20:00",
+      "description": "Time to send dinner reminder (HH:MM format)"
+    },
+    "streak_alert_time": {
+      "type": "string",
+      "default": "21:00",
+      "description": "Time to send streak alert (HH:MM format)"
+    }
+  },
+  "required": []
+}

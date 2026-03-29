@@ -1,0 +1,66 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the notification recipient"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "meal_reminder",
+        "streak_alert",
+        "weekly_plan",
+        "supplement_reminder",
+        "lab_reminder",
+        "health_digest",
+        "goal_checkin",
+        "new_follower",
+        "plan_comment",
+        "recipe_comment",
+        "plan_like",
+        "recipe_like",
+        "forum_reply"
+      ],
+      "description": "Type of notification"
+    },
+    "title": {
+      "type": "string",
+      "description": "Notification title"
+    },
+    "message": {
+      "type": "string",
+      "description": "Notification message"
+    },
+    "action_url": {
+      "type": "string",
+      "description": "URL to navigate to when notification is clicked"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether notification has been read"
+    },
+    "read_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the notification was marked as read"
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "Name of the person who triggered the notification"
+    },
+    "notification_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the notification was created"
+    }
+  },
+  "required": [
+    "user_email",
+    "type",
+    "title",
+    "message"
+  ]
+}

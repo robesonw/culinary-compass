@@ -25,6 +25,7 @@ import PractitionerPricing from './pages/PractitionerPricing';
 import CorporateSignup from './pages/CorporateSignup';
 import CorporateAdmin from './pages/CorporateAdmin';
 import HealthAlerts from './pages/HealthAlerts';
+import Settings from './pages/Settings';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 

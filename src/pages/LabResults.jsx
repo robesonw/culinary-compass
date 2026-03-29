@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Upload, TrendingUp, TrendingDown, Minus, Loader2, Calendar, Trash2 } from 'lucide-react';
+import { FileText, Upload, TrendingUp, TrendingDown, Minus, Loader2, Calendar, Trash2, CheckCircle2, AlertCircle, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function LabResults() {
   const [isUploading, setIsUploading] = useState(false);
+  const [parseStep, setParseStep] = useState(''); // 'uploading' | 'parsing' | 'saving' | ''
+  const [lastParsedResult, setLastParsedResult] = useState(null); // { biomarkers, date, error }
   const [uploadDate, setUploadDate] = useState('');
   const [notes, setNotes] = useState('');
   const [file, setFile] = useState(null);
@@ -67,6 +69,20 @@ export default function LabResults() {
     }
   };
 
+  const biomarkerSchema = {
+    type: "object",
+    description: "All biomarkers found in the lab report",
+    additionalProperties: {
+      type: "object",
+      properties: {
+        value: { type: "number", description: "Numeric result value" },
+        unit: { type: "string", description: "Unit of measurement (e.g. mg/dL, U/L, %)" },
+        status: { type: "string", enum: ["normal", "high", "low"], description: "Whether the value is normal, high, or low based on the reference range shown" },
+        reference_range: { type: "string", description: "The reference range shown in the report e.g. '70-99 mg/dL'" }
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file || !uploadDate) {
@@ -75,119 +91,102 @@ export default function LabResults() {
     }
 
     setIsUploading(true);
+    setLastParsedResult(null);
 
     try {
-      // Upload file
+      // Step 1: Upload file
+      setParseStep('uploading');
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      // Extract multiple test results from PDF (handles historical data)
-      const extractedData = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
-          type: "object",
-          properties: {
-            test_results: {
-              type: "array",
-              description: "Extract ALL test results with dates from the PDF, including historical data",
-              items: {
-                type: "object",
-                properties: {
-                  test_date: { 
-                    type: "string",
-                    description: "The date of this specific test in YYYY-MM-DD format"
-                  },
-                  biomarkers: {
-                    type: "object",
-                    properties: {
-                      ALT: { 
-                        type: "object", 
-                        properties: { 
-                          value: { type: "number" }, 
-                          unit: { type: "string" }, 
-                          status: { 
-                            type: "string",
-                            enum: ["normal", "high", "low"],
-                            description: "Extract the exact status shown: 'High', 'Low', or 'normal' if blank"
-                          } 
-                        } 
-                      },
-                      AST: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                      Glucose: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                      Sodium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                      Potassium: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                      eGFR: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                      BUN: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } },
-                      Creatinine: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" }, status: { type: "string", enum: ["normal", "high", "low"] } } }
-                    }
-                  }
-                }
-              }
+      // Step 2: AI parsing - use InvokeLLM with file_urls for broad biomarker extraction
+      setParseStep('parsing');
+      let biomarkers = {};
+      let parseError = null;
+
+      try {
+        const aiResult = await base44.integrations.Core.InvokeLLM({
+          prompt: `You are a medical lab report parser. Analyze this lab report PDF and extract ALL biomarkers present.
+Extract every single test result you can find, including but not limited to:
+- Metabolic panel: Glucose, BUN, Creatinine, eGFR, Sodium, Potassium, Chloride, CO2, Calcium
+- Liver enzymes: ALT, AST, ALP, GGT, Bilirubin (Total, Direct)
+- Lipid panel: Total Cholesterol, LDL, HDL, Triglycerides, Non-HDL
+- Complete blood count: WBC, RBC, Hemoglobin, Hematocrit, Platelets, MCV, MCH, MCHC
+- Diabetes markers: HbA1c, Fasting Glucose, Insulin
+- Thyroid: TSH, T3, T4, Free T3, Free T4
+- Vitamins & minerals: Vitamin D (25-OH), Vitamin B12, Folate, Iron, Ferritin, TIBC, Transferrin Saturation
+- Hormones: Testosterone, Estradiol, Cortisol, DHEA-S
+- Inflammation: CRP, ESR, Homocysteine
+- Other: Uric Acid, Albumin, Total Protein, A/G Ratio, Phosphorus, Magnesium
+
+For each biomarker found, record its exact numeric value, unit, reference range, and whether it's normal/high/low based on the reference range in the report. If a value is flagged as abnormal (H or L or out of range), set status accordingly.
+
+Return ONLY the biomarkers object - use the exact test name as the key (e.g. "Glucose", "HbA1c", "Vitamin D", "LDL Cholesterol").`,
+          file_urls: [file_url],
+          response_json_schema: {
+            type: "object",
+            properties: {
+              biomarkers: biomarkerSchema,
+              test_date: { type: "string", description: "Test date found in the report, YYYY-MM-DD format if possible" }
             }
           }
+        });
+
+        if (aiResult?.biomarkers && Object.keys(aiResult.biomarkers).length > 0) {
+          biomarkers = aiResult.biomarkers;
+          // Use date from report if found and user didn't specify
+          if (aiResult.test_date && !uploadDate) {
+            setUploadDate(aiResult.test_date);
+          }
+        } else {
+          parseError = 'No biomarkers could be extracted from this file. The file may not be a standard lab report, or the format is not supported.';
         }
+      } catch (err) {
+        console.error('AI parsing error:', err);
+        parseError = 'AI parsing failed. The file was saved without biomarker data.';
+      }
+
+      // Step 3: Save to database
+      setParseStep('saving');
+      const existingDates = new Set(labResults.map(r => r.upload_date));
+      if (existingDates.has(uploadDate)) {
+        toast.error('A result for this date already exists');
+        setLastParsedResult({ error: 'A result for this date already exists' });
+        return;
+      }
+
+      await createLabResult.mutateAsync({
+        upload_date: uploadDate,
+        file_url,
+        biomarkers,
+        notes: parseError ? `${notes} [Parse error: ${parseError}]` : notes
       });
 
-      if (extractedData.status === 'success' && extractedData.output?.test_results) {
-        // Create a lab result record for each test date found in the PDF
-        const results = extractedData.output.test_results;
+      setLastParsedResult({ biomarkers, date: uploadDate, error: parseError });
 
-        // Get existing lab result dates to avoid duplicates
-        const existingDates = new Set(labResults.map(r => r.upload_date));
-        let createdCount = 0;
-        let skippedCount = 0;
-
-        for (const result of results) {
-          const testDate = result.test_date || uploadDate;
-
-          // Skip if we already have a result for this date
-          if (existingDates.has(testDate)) {
-            skippedCount++;
-            continue;
-          }
-
-          await createLabResult.mutateAsync({
-            upload_date: testDate,
-            file_url,
-            biomarkers: result.biomarkers || {},
-            notes: results.length > 1 ? `${notes} (Extracted from PDF)` : notes
-          });
-          createdCount++;
-          existingDates.add(testDate); // Add to set to prevent duplicates within same upload
-        }
-
-        if (createdCount > 0) {
-          toast.success(`Extracted ${createdCount} new test result${createdCount !== 1 ? 's' : ''} from PDF`);
-        } else {
-          toast.info('All test dates from this PDF already exist');
-        }
-
-        // Reset form
-        const fileInput = document.querySelector('input[type="file"]');
-        if (fileInput) fileInput.value = '';
+      if (parseError) {
+        toast.warning('File saved, but biomarker extraction failed. See details below.');
       } else {
-        // Only save without biomarkers if extraction failed and date doesn't exist
-        const existingDates = new Set(labResults.map(r => r.upload_date));
-        if (!existingDates.has(uploadDate)) {
-          await createLabResult.mutateAsync({
-            upload_date: uploadDate,
-            file_url,
-            biomarkers: {},
-            notes: notes || 'Biomarker extraction failed'
-          });
-          toast.warning('File uploaded but biomarker extraction failed');
-        } else {
-          toast.error('A result for this date already exists');
-        }
+        toast.success(`Successfully extracted ${Object.keys(biomarkers).length} biomarkers!`);
       }
+
+      // Reset form
+      setUploadDate('');
+      setNotes('');
+      setFile(null);
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) fileInput.value = '';
+
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(`Upload failed: ${error.message || 'Unknown error'}`);
+      setLastParsedResult({ error: error.message || 'Upload failed' });
     } finally {
       setIsUploading(false);
+      setParseStep('');
     }
   };
 
-  const biomarkerList = ['ALT', 'AST', 'Glucose', 'Sodium', 'Potassium', 'eGFR', 'BUN', 'Creatinine'];
+  const biomarkerList = ['ALT', 'AST', 'Glucose', 'Sodium', 'Potassium', 'eGFR', 'BUN', 'Creatinine', 'HbA1c', 'Total Cholesterol', 'LDL', 'HDL', 'Triglycerides', 'Vitamin D', 'Iron', 'Ferritin', 'TSH', 'Hemoglobin', 'WBC', 'Platelets'];
 
   const getTrendData = (biomarkerName) => {
     const seen = new Set();
@@ -239,12 +238,12 @@ export default function LabResults() {
         </CardHeader>
         <CardContent>
           <div className="mb-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
-            <p className="text-sm text-blue-900 font-medium mb-2">📋 Accepted File Types & Analysis</p>
+            <p className="text-sm text-blue-900 font-medium mb-2">📋 AI-Powered Lab Analysis</p>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• <strong>PDF files only</strong> (.pdf format)</li>
-              <li>• Our AI automatically extracts biomarkers: ALT, AST, Glucose, Sodium, Potassium, eGFR, BUN, Creatinine</li>
-              <li>• Supports multiple test dates in a single PDF (historical data)</li>
-              <li>• Identifies abnormal values and trends over time</li>
+              <li>• AI extracts <strong>all biomarkers</strong>: Glucose, Cholesterol (LDL/HDL), HbA1c, Vitamin D, Iron, Ferritin, Thyroid (TSH/T3/T4), CBC, liver enzymes, and more</li>
+              <li>• Flags abnormal values automatically based on your report's reference ranges</li>
+              <li>• Tracks trends over time across multiple uploads</li>
             </ul>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -287,7 +286,10 @@ export default function LabResults() {
               {isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
+                  {parseStep === 'uploading' && 'Uploading file...'}
+                  {parseStep === 'parsing' && 'AI is parsing biomarkers...'}
+                  {parseStep === 'saving' && 'Saving results...'}
+                  {!parseStep && 'Processing...'}
                 </>
               ) : (
                 <>
@@ -297,10 +299,62 @@ export default function LabResults() {
               )}
             </Button>
           </form>
+
+          {/* Parse loading state */}
+          {isUploading && parseStep === 'parsing' && (
+            <div className="mt-4 p-4 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-indigo-600 animate-spin flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-indigo-900">AI is reading your lab report...</p>
+                <p className="text-xs text-indigo-600 mt-0.5">Extracting glucose, cholesterol, HbA1c, vitamins, and all other biomarkers</p>
+              </div>
+            </div>
+          )}
+
+          {/* Parse result preview */}
+          {lastParsedResult && !isUploading && (
+            <div className="mt-4">
+              {lastParsedResult.error && !lastParsedResult.biomarkers && (
+                <div className="p-4 rounded-lg bg-rose-50 border border-rose-200 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-rose-900">Parsing failed</p>
+                    <p className="text-xs text-rose-700 mt-0.5">{lastParsedResult.error}</p>
+                  </div>
+                </div>
+              )}
+              {lastParsedResult.biomarkers && Object.keys(lastParsedResult.biomarkers).length > 0 && (
+                <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <p className="text-sm font-semibold text-emerald-900">
+                      {Object.keys(lastParsedResult.biomarkers).length} biomarkers extracted successfully
+                    </p>
+                    {lastParsedResult.error && (
+                      <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">Partial</Badge>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {Object.entries(lastParsedResult.biomarkers).map(([name, data]) => (
+                      <div key={name} className="bg-white rounded-lg p-2.5 border border-emerald-200">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-slate-600 truncate">{name}</span>
+                          {getStatusIcon(data.status)}
+                        </div>
+                        <p className="text-sm font-bold text-slate-900">
+                          {data.value}
+                          <span className="text-xs font-normal text-slate-500 ml-1">{data.unit}</span>
+                        </p>
+                        {getStatusBadge(data.status)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
-
-
 
       {/* Trends */}
       {labResults.length > 1 && (

@@ -6,6 +6,8 @@ import { ShoppingCart, Plus, Check, Copy, Printer, Download, DollarSign, Loader2
 import RetailerShopLinks, { ShopAllRetailersButton } from '../components/grocery/RetailerShopLinks';
 import AffiliateOrderButtons from '../components/grocery/AffiliateOrderButtons';
 import OrderFeedbackDialog from '../components/grocery/OrderFeedbackDialog';
+import MealKitToggle from '../components/grocery/MealKitToggle';
+import MealKitOffer from '../components/meals/MealKitOffer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -573,6 +575,18 @@ export default function GroceryLists() {
               }, {})
             )}
             groceryListId={selectedStandaloneId || selectedPlanId}
+          />
+
+          {/* Meal Kit Offer */}
+          <MealKitOffer 
+            mealPlan={selectedPlan}
+            userDietaryPreference={null}
+          />
+
+          {/* Meal Kit Toggle */}
+          <MealKitToggle 
+            groceryItems={Object.values(groceryList).flat()}
+            onToggle={() => {}}
           />
         </>
       )}

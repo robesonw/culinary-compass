@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import PlanDetailsView from '../components/plans/PlanDetailsView';
 import FavoriteMealsPanel from '../components/meals/FavoriteMealsPanel';
 import SharePlanDialog from '../components/share/SharePlanDialog';
+import MealKitOffer from '../components/meals/MealKitOffer';
 
 export default function MealPlans() {
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -216,6 +217,7 @@ export default function MealPlans() {
         plan={selectedPlan}
         open={viewDialogOpen}
         onOpenChange={setViewDialogOpen}
+        mealKitOffer={<MealKitOffer mealPlan={selectedPlan} />}
       />
 
       <SharePlanDialog

@@ -28,7 +28,7 @@ const mealIcons = {
 
 const groceryCategories = ['Proteins', 'Vegetables', 'Fruits', 'Grains', 'Dairy/Alternatives', 'Other'];
 
-export default function PlanDetailsView({ plan, open, onOpenChange }) {
+export default function PlanDetailsView({ plan, open, onOpenChange, mealKitOffer }) {
   const [selectedDay, setSelectedDay] = useState(0);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const [groceryList, setGroceryList] = useState(null);

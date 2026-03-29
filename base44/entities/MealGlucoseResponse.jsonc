@@ -1,0 +1,67 @@
+{
+  "name": "MealGlucoseResponse",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "meal_id": {
+      "type": "string",
+      "description": "ID of the meal (from meal plan or nutrition log)"
+    },
+    "meal_name": {
+      "type": "string",
+      "description": "Name of the meal"
+    },
+    "meal_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the meal was consumed"
+    },
+    "baseline_glucose": {
+      "type": "number",
+      "description": "Glucose reading at meal time (mg/dL)"
+    },
+    "peak_glucose": {
+      "type": "number",
+      "description": "Peak glucose in 2 hours after meal (mg/dL)"
+    },
+    "time_to_peak": {
+      "type": "number",
+      "description": "Minutes until peak glucose was reached"
+    },
+    "spike_value": {
+      "type": "number",
+      "description": "Difference between peak and baseline (mg/dL)"
+    },
+    "response_category": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "moderate",
+        "high",
+        "very_high"
+      ],
+      "description": "Blood sugar response classification"
+    },
+    "analysis_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the meal"
+    },
+    "readings_count": {
+      "type": "integer",
+      "description": "Number of glucose readings captured during this meal window"
+    }
+  },
+  "required": [
+    "user_email",
+    "meal_name",
+    "meal_time",
+    "baseline_glucose",
+    "peak_glucose",
+    "spike_value",
+    "response_category"
+  ]
+}

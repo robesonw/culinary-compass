@@ -1,0 +1,54 @@
+{
+  "name": "GlucoseReading",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "glucose_value": {
+      "type": "number",
+      "description": "Glucose reading in mg/dL"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the reading was taken"
+    },
+    "trend": {
+      "type": "string",
+      "enum": [
+        "rising",
+        "stable",
+        "falling"
+      ],
+      "description": "Glucose trend direction from CGM"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "dexcom_g6",
+        "dexcom_g7",
+        "dexcom_stelo",
+        "dexcom_one_plus",
+        "manual"
+      ],
+      "description": "Source of the glucose reading"
+    },
+    "dexcom_reading_id": {
+      "type": "string",
+      "description": "Dexcom's unique ID for this reading (for deduplication)"
+    },
+    "synced_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this reading was synced to VitaPlate"
+    }
+  },
+  "required": [
+    "user_email",
+    "glucose_value",
+    "timestamp",
+    "source"
+  ]
+}

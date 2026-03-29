@@ -1,0 +1,57 @@
+{
+  "name": "DexcomConnection",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who connected"
+    },
+    "device_type": {
+      "type": "string",
+      "enum": [
+        "dexcom_g6",
+        "dexcom_g7",
+        "dexcom_stelo",
+        "dexcom_one_plus"
+      ],
+      "description": "Type of Dexcom device connected"
+    },
+    "dexcom_user_id": {
+      "type": "string",
+      "description": "Dexcom's unique user ID"
+    },
+    "connected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the connection was established"
+    },
+    "last_sync": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last successful data sync"
+    },
+    "sync_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "error",
+        "disconnected"
+      ],
+      "default": "active",
+      "description": "Current sync status"
+    },
+    "sync_error": {
+      "type": "string",
+      "description": "Error message if sync failed"
+    },
+    "auto_sync_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether automatic syncing is enabled"
+    }
+  },
+  "required": [
+    "user_email",
+    "device_type"
+  ]
+}

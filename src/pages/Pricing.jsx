@@ -70,6 +70,7 @@ const PLANS = [
 
 export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState(null);
+  const isInIframe = window.self !== window.top;
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -86,9 +87,16 @@ export default function Pricing() {
       return;
     }
 
-    // Block checkout inside iframe (must be used from published app)
+    // Checkout cannot run inside an iframe (Stripe blocks it)
     if (window.self !== window.top) {
-      alert('Checkout is only available from the published app. Please open the app in a new tab.');
+      toast.info('Stripe checkout must be opened from the published app.', {
+        description: 'Click the button below to open in a new tab.',
+        action: {
+          label: 'Open App',
+          onClick: () => window.open(window.location.href, '_blank'),
+        },
+        duration: 8000,
+      });
       return;
     }
 
@@ -150,6 +158,21 @@ export default function Pricing() {
 
   return (
     <div className="space-y-8">
+      {isInIframe && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-center justify-between gap-4">
+          <p className="text-amber-800 text-sm font-medium">
+            💳 Stripe checkout requires the published app — click to open in a new tab.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-400 text-amber-800 hover:bg-amber-100 shrink-0"
+            onClick={() => window.open(window.location.href, '_blank')}
+          >
+            Open in New Tab
+          </Button>
+        </div>
+      )}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-slate-900">Choose Your Plan</h1>
         <p className="text-slate-500 mt-2">Start free, upgrade when you're ready</p>

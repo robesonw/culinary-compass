@@ -2,6 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppleHealthCard from '@/components/integrations/AppleHealthCard';
 import GoogleFitCard from '@/components/integrations/GoogleFitCard';
+import OuraRingCard from '@/components/integrations/OuraRingCard';
+import WHOOPCard from '@/components/integrations/WHOOPCard';
 
 export default function Integrations() {
   return (
@@ -66,6 +68,21 @@ export default function Integrations() {
         </CardContent>
       </Card>
 
+      {/* Additional Wearables */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-900">⌚ Premium Wearables</h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Advanced biometric tracking from premium devices.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <OuraRingCard />
+          <WHOOPCard />
+        </div>
+      </div>
+
       {/* Coming Soon */}
       <Card className="border-dashed border-slate-300">
         <CardHeader>
@@ -74,11 +91,11 @@ export default function Integrations() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div>
-              <h4 className="font-semibold text-slate-900 mb-2">🎯 Wearables</h4>
+              <h4 className="font-semibold text-slate-900 mb-2">🎯 More Wearables</h4>
               <ul className="space-y-1 text-slate-700">
-                <li>• Oura Ring</li>
-                <li>• WHOOP Band</li>
                 <li>• Fitbit</li>
+                <li>• Garmin</li>
+                <li>• Apple Watch Health</li>
               </ul>
             </div>
             <div>

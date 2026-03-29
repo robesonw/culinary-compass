@@ -21,6 +21,8 @@ import CarbBudgetTracker from '@/components/diabetes/CarbBudgetTracker';
 import BloodSugarTips from '@/components/diabetes/BloodSugarTips';
 import HeartHealthScore from '@/components/heart/HeartHealthScore';
 import HeartMarkers from '@/components/heart/HeartMarkers';
+import KidneyMetricsTracker from '@/components/kidney/KidneyMetricsTracker';
+import KidneyFriendlyFoods from '@/components/kidney/KidneyFriendlyFoods';
 
 // Small inline component to show free users how many swaps they have left
 function FreeTierSwapCounter() {
@@ -78,6 +80,21 @@ const heartConditions = [
   { value: 'heart_disease', label: 'Heart Disease History' },
 ];
 
+const kidneyConditions = [
+  { value: 'none', label: 'None' },
+  { value: 'ckd', label: 'Chronic Kidney Disease (CKD)' },
+  { value: 'kidney_stones', label: 'Kidney Stones' },
+  { value: 'dialysis', label: 'On Dialysis' },
+];
+
+const ckdStages = [
+  { value: 1, label: 'Stage 1 (GFR ≥90)' },
+  { value: 2, label: 'Stage 2 (GFR 60-89)' },
+  { value: 3, label: 'Stage 3 (GFR 30-59)' },
+  { value: 4, label: 'Stage 4 (GFR 15-29)' },
+  { value: 5, label: 'Stage 5 (GFR <15)' },
+];
+
 const culturalStylesList = [
   { value: 'mediterranean', label: 'Mediterranean', emoji: '🫒' },
   { value: 'asian', label: 'Asian', emoji: '🍜' },
@@ -124,6 +141,8 @@ export default function HealthDietHub() {
   const [healthGoal, setHealthGoal] = useState('liver_health');
   const [diabetesType, setDiabetesType] = useState('none');
   const [heartCondition, setHeartCondition] = useState('none');
+  const [kidneyCondition, setKidneyCondition] = useState('none');
+  const [ckdStage, setCkdStage] = useState(3);
   const [foodsLiked, setFoodsLiked] = useState('');
   const [foodsAvoided, setFoodsAvoided] = useState('');
   const [customRequirements, setCustomRequirements] = useState('');
@@ -250,6 +269,8 @@ export default function HealthDietHub() {
       if (userPrefs.health_goal) setHealthGoal(userPrefs.health_goal);
       if (userPrefs.diabetes_type) setDiabetesType(userPrefs.diabetes_type);
       if (userPrefs.heart_condition) setHeartCondition(userPrefs.heart_condition);
+      if (userPrefs.kidney_condition) setKidneyCondition(userPrefs.kidney_condition);
+      if (userPrefs.ckd_stage) setCkdStage(userPrefs.ckd_stage);
       if (userPrefs.foods_liked) setFoodsLiked(userPrefs.foods_liked);
       if (userPrefs.foods_avoided) setFoodsAvoided(userPrefs.foods_avoided);
       if (userPrefs.allergens) setAllergens(userPrefs.allergens);
@@ -429,11 +450,13 @@ Every single meal MUST reflect these adjustments. Prioritize foods that correct 
     }
 
     // Save health conditions to preferences
-    if (userPrefs && (diabetesType !== userPrefs.diabetes_type || heartCondition !== userPrefs.heart_condition)) {
+    if (userPrefs && (diabetesType !== userPrefs.diabetes_type || heartCondition !== userPrefs.heart_condition || kidneyCondition !== userPrefs.kidney_condition || ckdStage !== userPrefs.ckd_stage)) {
       try {
         const updateData = {};
         if (diabetesType !== userPrefs.diabetes_type) updateData.diabetes_type = diabetesType;
         if (heartCondition !== userPrefs.heart_condition) updateData.heart_condition = heartCondition;
+        if (kidneyCondition !== userPrefs.kidney_condition) updateData.kidney_condition = kidneyCondition;
+        if (ckdStage !== userPrefs.ckd_stage) updateData.ckd_stage = ckdStage;
         await base44.entities.UserPreferences.update(userPrefs.id, updateData);
       } catch (err) {
         console.log('Could not update health conditions');
@@ -476,6 +499,22 @@ Every single meal MUST reflect these adjustments. Prioritize foods that correct 
     if (heartCondition !== 'none') {
       const sodiumTarget = heartCondition === 'hypertension' ? 1500 : 2000;
       heartRules = `HEART HEALTH MEAL PLAN (${heartCondition}): ALL MEALS must follow: Saturated fat max 7% of calories (aim under 5g per 500cal meal). ZERO trans fats. Sodium limit ${sodiumTarget}mg/day. Dietary cholesterol under 200mg/day. MUST include 2+ omega-3-rich meals daily (fatty fish: salmon, mackerel, sardines OR flaxseeds, walnuts, chia). Emphasize: oats, barley, beans, leafy greens, olive oil, avocado, berries, nuts. AVOID: red meat, processed meats, full-fat dairy, fried foods, packaged snacks. Every meal includes soluble fiber source.`;
+    }
+
+    // Determine kidney health rules
+    let kidneyRules = '';
+    if (kidneyCondition !== 'none') {
+      const getKidneyLimits = (stage) => {
+        if (stage <= 2) return { k: 2500, p: 1000, na: 2000, protein: '0.8g/kg' };
+        if (stage <= 4) return { k: 2000, p: 800, na: 1500, protein: '0.6-0.8g/kg' };
+        return { k: 2000, p: 800, na: 1500, protein: '1.2-1.5g/kg' }; // Dialysis
+      };
+
+      const userWeight = userPrefs?.weight || 70;
+      const limits = getKidneyLimits(kidneyCondition === 'dialysis' ? 5 : ckdStage);
+      const proteinRange = limits.protein;
+
+      kidneyRules = `KIDNEY-FRIENDLY MEAL PLAN (${kidneyCondition}${kidneyCondition === 'ckd' ? ` Stage ${ckdStage}` : ''}): STRICT limits: Potassium max ${limits.k}mg/day, Phosphorus max ${limits.p}mg/day, Sodium max ${limits.na}mg/day. Protein target: ${proteinRange}g/kg (approx ${Math.round(userWeight * 0.8)}-${Math.round(userWeight * 1.5)}g total). AVOID ALL: bananas, oranges, avocados, potatoes, tomatoes, coconut, dairy products, milk, cheese, yogurt, nuts, seeds, dark colas, chocolate, processed foods. EMPHASIZE ONLY: apples, berries, white rice, white bread, cabbage, cauliflower, carrots, cucumber, green beans, egg whites, olive oil, herbs for flavor. NO soy sauce, NO salt substitutes. All recipes must include potassium, phosphorus, sodium values.`;
     }
     
     const allergenText = allergens.length > 0 ? `- STRICT ALLERGEN RESTRICTIONS (NEVER include): ${allergens.join(', ')}` : '';
@@ -543,6 +582,7 @@ ${labRawText}
 ${pantryText}
 ${diabetesRules}
 ${heartRules}
+${kidneyRules}
 
 IMPORTANT REQUIREMENTS:
 - Scale ALL portions and ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
@@ -566,6 +606,8 @@ For each day, provide:
   * sat_fat: saturated fat in grams
   * sodium: sodium in mg (critical for heart health)
   * dietary_cholesterol: dietary cholesterol in mg
+  * potassium: potassium in mg (CRITICAL for kidney health)
+  * phosphorus: phosphorus in mg (CRITICAL for kidney health)
   * prepSteps (array of 3-5 clear cooking steps)
   * prepTime (e.g., "15 minutes")
   * difficulty (Easy/Medium/Hard)
@@ -1029,6 +1071,43 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
             )}
           </div>
 
+          {/* Kidney Condition */}
+          <div>
+            <Label className="mb-2 block">Kidney Health</Label>
+            <Select value={kidneyCondition} onValueChange={setKidneyCondition}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {kidneyConditions.map(kc => (
+                  <SelectItem key={kc.value} value={kc.value}>{kc.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {kidneyCondition === 'ckd' && (
+              <div className="mt-3">
+                <Label className="mb-2 block text-sm">CKD Stage</Label>
+                <Select value={ckdStage.toString()} onValueChange={(v) => setCkdStage(parseInt(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ckdStages.map(stage => (
+                      <SelectItem key={stage.value} value={stage.value.toString()}>{stage.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {kidneyCondition !== 'none' && (
+              <p className="text-xs text-cyan-600 mt-2">
+                ✓ Kidney mode enabled: Your meals will restrict potassium, phosphorus, and sodium.
+              </p>
+            )}
+          </div>
+
           <Separator />
 
           {/* Health Goal */}
@@ -1425,6 +1504,14 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
               <>
                 <HeartMarkers labResults={labResults} />
                 {generatedPlan.days[0] && <HeartHealthScore day={generatedPlan.days[0]} />}
+              </>
+            )}
+
+            {/* Kidney Health-specific sections */}
+            {kidneyCondition !== 'none' && (
+              <>
+                {generatedPlan.days[0] && <KidneyMetricsTracker day={generatedPlan.days[0]} ckdStage={ckdStage} />}
+                <KidneyFriendlyFoods meals={generatedPlan.days.flatMap(d => [d.breakfast, d.lunch, d.dinner, d.snacks]).filter(Boolean)} />
               </>
             )}
             {/* Lab personalization banner */}

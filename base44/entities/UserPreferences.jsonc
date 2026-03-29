@@ -63,6 +63,28 @@
       "default": "none",
       "description": "Heart health condition"
     },
+    "kidney_condition": {
+      "type": "string",
+      "enum": [
+        "none",
+        "ckd",
+        "kidney_stones",
+        "dialysis"
+      ],
+      "default": "none",
+      "description": "Kidney health condition"
+    },
+    "ckd_stage": {
+      "type": "integer",
+      "enum": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "description": "CKD stage (1-5), only relevant if kidney_condition is ckd"
+    },
     "dietary_restrictions": {
       "type": "string",
       "description": "Any dietary restrictions or allergies"

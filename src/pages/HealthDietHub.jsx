@@ -19,6 +19,8 @@ import SwapMealButton from '@/components/meals/SwapMealButton';
 import { useSubscription } from '@/lib/useSubscription';
 import CarbBudgetTracker from '@/components/diabetes/CarbBudgetTracker';
 import BloodSugarTips from '@/components/diabetes/BloodSugarTips';
+import HeartHealthScore from '@/components/heart/HeartHealthScore';
+import HeartMarkers from '@/components/heart/HeartMarkers';
 
 // Small inline component to show free users how many swaps they have left
 function FreeTierSwapCounter() {
@@ -69,6 +71,13 @@ const diabetesTypes = [
   { value: 'pre_diabetes', label: 'Pre-Diabetes' },
 ];
 
+const heartConditions = [
+  { value: 'none', label: 'None' },
+  { value: 'high_cholesterol', label: 'High Cholesterol' },
+  { value: 'hypertension', label: 'Hypertension' },
+  { value: 'heart_disease', label: 'Heart Disease History' },
+];
+
 const culturalStylesList = [
   { value: 'mediterranean', label: 'Mediterranean', emoji: '🫒' },
   { value: 'asian', label: 'Asian', emoji: '🍜' },
@@ -114,6 +123,7 @@ const cuisineOptions = [
 export default function HealthDietHub() {
   const [healthGoal, setHealthGoal] = useState('liver_health');
   const [diabetesType, setDiabetesType] = useState('none');
+  const [heartCondition, setHeartCondition] = useState('none');
   const [foodsLiked, setFoodsLiked] = useState('');
   const [foodsAvoided, setFoodsAvoided] = useState('');
   const [customRequirements, setCustomRequirements] = useState('');
@@ -239,6 +249,7 @@ export default function HealthDietHub() {
     if (userPrefs) {
       if (userPrefs.health_goal) setHealthGoal(userPrefs.health_goal);
       if (userPrefs.diabetes_type) setDiabetesType(userPrefs.diabetes_type);
+      if (userPrefs.heart_condition) setHeartCondition(userPrefs.heart_condition);
       if (userPrefs.foods_liked) setFoodsLiked(userPrefs.foods_liked);
       if (userPrefs.foods_avoided) setFoodsAvoided(userPrefs.foods_avoided);
       if (userPrefs.allergens) setAllergens(userPrefs.allergens);
@@ -417,12 +428,15 @@ Every single meal MUST reflect these adjustments. Prioritize foods that correct 
       return;
     }
 
-    // Save diabetes type to preferences
-    if (userPrefs && diabetesType !== userPrefs.diabetes_type) {
+    // Save health conditions to preferences
+    if (userPrefs && (diabetesType !== userPrefs.diabetes_type || heartCondition !== userPrefs.heart_condition)) {
       try {
-        await base44.entities.UserPreferences.update(userPrefs.id, { diabetes_type: diabetesType });
+        const updateData = {};
+        if (diabetesType !== userPrefs.diabetes_type) updateData.diabetes_type = diabetesType;
+        if (heartCondition !== userPrefs.heart_condition) updateData.heart_condition = heartCondition;
+        await base44.entities.UserPreferences.update(userPrefs.id, updateData);
       } catch (err) {
-        console.log('Could not update diabetes type');
+        console.log('Could not update health conditions');
       }
     }
 
@@ -455,6 +469,13 @@ Every single meal MUST reflect these adjustments. Prioritize foods that correct 
           diabetesRules = `PRE-DIABETES MEAL PLAN (HbA1c ${hba1c}%): Focus on low glycemic index foods (GI < 55) at 45-60g carbs per meal. Every meal includes: protein, healthy fat, and plenty of non-starchy vegetables. Avoid added sugars, refined grains, and sugary drinks. Include soluble fiber (oats, beans, apples) and blood sugar-supporting foods (cinnamon, vinegar).`;
         }
       }
+    }
+
+    // Determine heart health rules
+    let heartRules = '';
+    if (heartCondition !== 'none') {
+      const sodiumTarget = heartCondition === 'hypertension' ? 1500 : 2000;
+      heartRules = `HEART HEALTH MEAL PLAN (${heartCondition}): ALL MEALS must follow: Saturated fat max 7% of calories (aim under 5g per 500cal meal). ZERO trans fats. Sodium limit ${sodiumTarget}mg/day. Dietary cholesterol under 200mg/day. MUST include 2+ omega-3-rich meals daily (fatty fish: salmon, mackerel, sardines OR flaxseeds, walnuts, chia). Emphasize: oats, barley, beans, leafy greens, olive oil, avocado, berries, nuts. AVOID: red meat, processed meats, full-fat dairy, fried foods, packaged snacks. Every meal includes soluble fiber source.`;
     }
     
     const allergenText = allergens.length > 0 ? `- STRICT ALLERGEN RESTRICTIONS (NEVER include): ${allergens.join(', ')}` : '';
@@ -521,6 +542,7 @@ ${userPrefs.cuisine_preferences?.length ? `- Saved cuisine preferences: ${userPr
 ${labRawText}
 ${pantryText}
 ${diabetesRules}
+${heartRules}
 
 IMPORTANT REQUIREMENTS:
 - Scale ALL portions and ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
@@ -541,12 +563,15 @@ For each day, provide:
   * calories PER PERSON (as string like "400 kcal")
   * protein, carbs, fat (in grams, as numbers)
   * glycemic_load: LOW, MEDIUM, or HIGH (GI 55 threshold)
+  * sat_fat: saturated fat in grams
+  * sodium: sodium in mg (critical for heart health)
+  * dietary_cholesterol: dietary cholesterol in mg
   * prepSteps (array of 3-5 clear cooking steps)
   * prepTime (e.g., "15 minutes")
   * difficulty (Easy/Medium/Hard)
   * equipment (array, e.g., ["skillet", "cutting board"])
   * healthBenefit (specific health benefit for the goal, e.g., "Turmeric supports liver detoxification")
-  * meal_tag: a short 2-4 word label describing the key health benefit of THIS meal (e.g., "💛 Heart-healthy", "🩸 Blood sugar friendly", "🔥 Anti-inflammatory", "🦴 Bone-strengthening", "⚡ Iron-boosting", "🌿 Liver-supportive"). Make these specific to the biomarker conditions present.
+  * meal_tag: a short 2-4 word label describing the key health benefit of THIS meal. If heart health mode is active, include "🍎 Heart-healthy" or "🐟 Omega-3 rich" tags when applicable. Make tags specific to the biomarker conditions present.
 
 ${hasLabOptimization ? `Also return a "lab_adjustments" array with 2-3 bullet points explaining what KEY dietary changes were made to this plan based on the lab results and WHY. Be specific (e.g., "Added salmon 3x/week to raise HDL cholesterol from 35 mg/dL").` : ''}
 
@@ -984,6 +1009,26 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
             )}
           </div>
 
+          {/* Heart Condition */}
+          <div>
+            <Label className="mb-2 block">Heart Health Concerns</Label>
+            <Select value={heartCondition} onValueChange={setHeartCondition}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {heartConditions.map(hc => (
+                  <SelectItem key={hc.value} value={hc.value}>{hc.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {heartCondition !== 'none' && (
+              <p className="text-xs text-rose-600 mt-2">
+                ✓ Heart health mode enabled: Your meals will prioritize low sodium, healthy fats, and omega-3s.
+              </p>
+            )}
+          </div>
+
           <Separator />
 
           {/* Health Goal */}
@@ -1372,6 +1417,14 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
                   hba1c={labResults[0]?.biomarkers?.HbA1c?.value || labResults[0]?.biomarkers?.['Hemoglobin A1c']?.value}
                 />
                 <BloodSugarTips />
+              </>
+            )}
+
+            {/* Heart Health-specific sections */}
+            {heartCondition !== 'none' && (
+              <>
+                <HeartMarkers labResults={labResults} />
+                {generatedPlan.days[0] && <HeartHealthScore day={generatedPlan.days[0]} />}
               </>
             )}
             {/* Lab personalization banner */}

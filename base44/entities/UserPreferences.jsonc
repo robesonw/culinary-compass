@@ -52,6 +52,17 @@
       "default": "none",
       "description": "Diabetes status"
     },
+    "heart_condition": {
+      "type": "string",
+      "enum": [
+        "none",
+        "high_cholesterol",
+        "hypertension",
+        "heart_disease"
+      ],
+      "default": "none",
+      "description": "Heart health condition"
+    },
     "dietary_restrictions": {
       "type": "string",
       "description": "Any dietary restrictions or allergies"

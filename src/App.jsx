@@ -40,7 +40,6 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-  usePageTitle();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -64,7 +63,9 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
+    <>
+      <PageTitleUpdater />
+      <Routes>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <MainPage />
@@ -104,7 +105,13 @@ const AuthenticatedApp = () => {
       <Route path="/MyProfile" element={<LayoutWrapper currentPageName="Settings"><Settings /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </>
   );
+};
+
+const PageTitleUpdater = () => {
+  usePageTitle();
+  return null;
 };
 
 

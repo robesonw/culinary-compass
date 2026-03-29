@@ -18,6 +18,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MealCard from '../meals/MealCard';
 import SharePlanDialog from '../share/SharePlanDialog';
 import ShareMealDialog from '../share/ShareMealDialog';
+import WeeklyCalendarView from './WeeklyCalendarView';
 
 const mealIcons = {
   breakfast: '🌅',
@@ -51,6 +52,7 @@ export default function PlanDetailsView({ plan, open, onOpenChange, mealKitOffer
   const [adjustmentType, setAdjustmentType] = useState('');
   const [adjustmentDetails, setAdjustmentDetails] = useState('');
   const [isAdjusting, setIsAdjusting] = useState(false);
+  const [showCalendarView, setShowCalendarView] = useState(true);
 
   const queryClient = useQueryClient();
 
@@ -802,33 +804,57 @@ export default function PlanDetailsView({ plan, open, onOpenChange, mealKitOffer
             )}
 
             {/* View Mode Toggle */}
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
-                <Button
-                  variant={viewMode === 'calendar' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('calendar')}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Calendar View
-                </Button>
-                <Button
-                  variant={viewMode === 'detailed' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('detailed')}
-                >
-                  <ChefHat className="w-4 h-4 mr-2" />
-                  Detailed View
-                </Button>
-              </div>
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <ArrowLeftRight className="w-3 h-3" />
-                Drag to swap meals
-              </Badge>
-            </div>
+             <div className="flex justify-between items-center">
+               <div className="flex gap-2">
+                 <Button
+                   variant={showCalendarView ? 'default' : 'outline'}
+                   size="sm"
+                   onClick={() => setShowCalendarView(true)}
+                 >
+                   <Calendar className="w-4 h-4 mr-2" />
+                   Weekly Calendar
+                 </Button>
+                 <Button
+                   variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                   size="sm"
+                   onClick={() => {
+                     setShowCalendarView(false);
+                     setViewMode('calendar');
+                   }}
+                 >
+                   <Calendar className="w-4 h-4 mr-2" />
+                   Grid View
+                 </Button>
+                 <Button
+                   variant={viewMode === 'detailed' ? 'default' : 'outline'}
+                   size="sm"
+                   onClick={() => {
+                     setShowCalendarView(false);
+                     setViewMode('detailed');
+                   }}
+                 >
+                   <ChefHat className="w-4 h-4 mr-2" />
+                   Detailed View
+                 </Button>
+               </div>
+               <Badge variant="secondary" className="flex items-center gap-1">
+                 <ArrowLeftRight className="w-3 h-3" />
+                 Drag to swap meals
+               </Badge>
+             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
-              {viewMode === 'calendar' ? (
+               {showCalendarView ? (
+                 /* Weekly Calendar View */
+                 <WeeklyCalendarView 
+                   plan={plan} 
+                   onDaySelect={(dayIndex) => {
+                     setSelectedDay(dayIndex);
+                     setShowCalendarView(false);
+                     setViewMode('detailed');
+                   }}
+                 />
+               ) : viewMode === 'calendar' ? (
                 /* Calendar/Weekly Overview */
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {localDays?.map((day, dayIndex) => (

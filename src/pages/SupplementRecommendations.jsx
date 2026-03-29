@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Lock } from 'lucide-react';
+import { Loader2, AlertCircle, Lock, Pill, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -68,16 +68,73 @@ export default function SupplementRecommendations() {
 
   if (!labResultId || !labResult) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Supplement Recommendations</h1>
-          <p className="text-slate-600 mt-2">
-            No lab result selected. Go to Lab Results to generate a supplement plan.
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center py-12">
+          <div className="mb-6 flex justify-center">
+            <div className="p-4 bg-indigo-100 rounded-full">
+              <Pill className="w-8 h-8 text-indigo-600" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Personalized Supplements</h1>
+          <p className="text-lg text-slate-600 mb-8">
+            Upload your lab results first to get personalized supplement recommendations based on your biomarkers.
           </p>
+          
+          <Card className="mb-8 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
+            <CardContent className="pt-6">
+              <div className="space-y-4 text-left">
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-indigo-600 text-white text-sm font-semibold">
+                      1
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900">Upload Lab Results</h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Upload a PDF of your bloodwork or connect Apple Health to automatically import results.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-indigo-600 text-white text-sm font-semibold">
+                      2
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900">We Analyze Your Biomarkers</h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Our AI reviews your lab values and identifies nutritional gaps based on your health goals.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-indigo-600 text-white text-sm font-semibold">
+                      3
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900">Get Your Plan</h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Receive a personalized supplement stack with affiliate links for easy ordering.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white h-12 text-base">
+            <a href="/LabResults" className="inline-flex items-center gap-2">
+              Upload Lab Results
+              <ArrowRight className="w-5 h-5" />
+            </a>
+          </Button>
         </div>
-        <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
-          <a href="/LabResults">Go to Lab Results</a>
-        </Button>
       </div>
     );
   }

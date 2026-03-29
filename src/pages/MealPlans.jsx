@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Trash2, Eye, Heart, Share2 } from 'lucide-react';
+import { Calendar, Trash2, Eye, Heart, Share2, Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanDetailsView from '../components/plans/PlanDetailsView';
 import FavoriteMealsPanel from '../components/meals/FavoriteMealsPanel';
@@ -17,6 +17,7 @@ export default function MealPlans() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [planToShare, setPlanToShare] = useState(null);
+  const [exportingPlanId, setExportingPlanId] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -42,6 +43,28 @@ export default function MealPlans() {
   const handleSharePlan = (plan) => {
     setPlanToShare(plan);
     setShareDialogOpen(true);
+  };
+
+  const handleExportPDF = async (plan) => {
+    setExportingPlanId(plan.id);
+    try {
+      const response = await base44.functions.invoke('exportMealPlanPDF', { planId: plan.id });
+      // response.data is a Blob-compatible object; treat as arraybuffer
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${plan.name || 'meal-plan'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('PDF exported!');
+    } catch (e) {
+      toast.error('Failed to export PDF');
+    } finally {
+      setExportingPlanId(null);
+    }
   };
 
   // Expose handleViewPlan globally for FavoriteMealDetailDialog
@@ -154,6 +177,18 @@ export default function MealPlans() {
                       onClick={() => handleSharePlan(plan)}
                     >
                       <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExportPDF(plan)}
+                      disabled={exportingPlanId === plan.id}
+                      title="Export PDF"
+                    >
+                      {exportingPlanId === plan.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <Download className="w-4 h-4 text-indigo-600" />
+                      }
                     </Button>
                     <Button
                       variant="outline"

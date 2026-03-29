@@ -3,15 +3,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
-
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Get all users
+    // Get all users using service role (scheduled job — no user auth needed)
     const allUsers = await base44.asServiceRole.entities.User.list();
 
     // Get today's nutrition logs
@@ -23,16 +17,16 @@ Deno.serve(async (req) => {
     for (const u of allUsers) {
       if (usersLoggedToday.has(u.email)) continue; // already logged today
 
-      // Send reminder email
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: u.email,
         from_name: 'VitaPlate',
-        subject: '🔥 Don\'t break your streak! Log your meals today',
+        subject: "🔥 Don't break your streak! Log your meals today",
         body: `Hi ${u.full_name || 'there'},
 
 You haven't logged any meals today yet! Don't let your nutrition streak end.
 
-Log your meals now to stay on track with your health goals: https://vitaplate.base44.app/NutritionTracking
+Log your meals now to stay on track with your health goals:
+https://vitaplate.base44.app/NutritionTracking
 
 Stay healthy,
 The VitaPlate Team`
@@ -41,6 +35,7 @@ The VitaPlate Team`
       remindedCount++;
     }
 
+    console.log(`Reminded ${remindedCount} of ${allUsers.length} users`);
     return Response.json({ success: true, reminded: remindedCount, total_users: allUsers.length });
   } catch (error) {
     console.error('Reminder error:', error);

@@ -1,0 +1,31 @@
+{
+  "name": "WeightLog",
+  "type": "object",
+  "properties": {
+    "log_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of weigh-in"
+    },
+    "weight_lbs": {
+      "type": "number",
+      "description": "Weight in pounds"
+    },
+    "weight_kg": {
+      "type": "number",
+      "description": "Weight in kilograms"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Progress photo URL"
+    }
+  },
+  "required": [
+    "log_date",
+    "weight_lbs"
+  ]
+}

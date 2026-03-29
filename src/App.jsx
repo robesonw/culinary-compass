@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import Pricing from './pages/Pricing';
 import Onboarding from './pages/Onboarding';
 import Pantry from './pages/Pantry';
+import ProgressTracking from './pages/ProgressTracking';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -64,6 +65,7 @@ const AuthenticatedApp = () => {
       <Route path="/Pricing" element={<LayoutWrapper currentPageName="Pricing"><Pricing /></LayoutWrapper>} />
       <Route path="/Onboarding" element={<Onboarding />} />
       <Route path="/Pantry" element={<LayoutWrapper currentPageName="Pantry"><Pantry /></LayoutWrapper>} />
+      <Route path="/ProgressTracking" element={<LayoutWrapper currentPageName="ProgressTracking"><ProgressTracking /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

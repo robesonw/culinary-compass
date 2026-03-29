@@ -828,8 +828,24 @@ export default function GroceryLists() {
                               </div>
                               
                               {/* Retailer Shop Links */}
-                              <div className="mt-1.5 pl-6">
-                               <RetailerShopLinks itemName={itemName} compact />
+                              <div className="mt-1.5 pl-6 flex items-center gap-2 flex-wrap">
+                                <RetailerShopLinks itemName={itemName} compact />
+                                <a
+                                  href={`https://www.amazon.com/s?k=${encodeURIComponent(itemName)}&tag=vitaplate-20`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors font-medium"
+                                >
+                                  <span>🛒</span> Amazon Fresh
+                                </a>
+                                <a
+                                  href={`https://www.instacart.com/store/s?k=${encodeURIComponent(itemName)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors font-medium"
+                                >
+                                  <span>🥦</span> Instacart
+                                </a>
                               </div>
 
                               {/* Notes Input */}

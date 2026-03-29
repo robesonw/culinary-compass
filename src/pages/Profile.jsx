@@ -11,10 +11,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Heart, ChefHat, ShoppingCart, Save, Loader2, CheckCircle2, Calendar, FileText, Settings, Bell, Edit, Trash2, Eye, Flame, Trophy } from 'lucide-react';
+import { User, Heart, ChefHat, ShoppingCart, Save, Loader2, CheckCircle2, Calendar, FileText, Settings, Bell, Edit, Trash2, Eye, Flame, Trophy, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import StreaksAchievementsSection from '../components/streaks/StreaksAchievementsSection';
+import MonthlyReportDialog from '../components/progress/MonthlyReportDialog';
 
 const healthGoals = [
   { value: 'liver_health', label: 'Liver Health' },
@@ -77,6 +78,7 @@ const mealTimingOptions = [
 
 export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -371,37 +373,63 @@ export default function Profile() {
 
         {/* Overview Tab */}
         <TabsContent value="overview">
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card className="border-indigo-200 bg-indigo-50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <ChefHat className="w-8 h-8 text-indigo-600" />
-                  <span className="text-3xl font-bold text-indigo-900">{myRecipes.length}</span>
-                </div>
-                <p className="text-sm text-indigo-700 font-medium">Submitted Recipes</p>
-                <p className="text-xs text-indigo-600 mt-1">
-                  {myRecipes.filter(r => r.status === 'pending').length} pending review
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-3 gap-4">
+              <Card className="border-indigo-200 bg-indigo-50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <ChefHat className="w-8 h-8 text-indigo-600" />
+                    <span className="text-3xl font-bold text-indigo-900">{myRecipes.length}</span>
+                  </div>
+                  <p className="text-sm text-indigo-700 font-medium">Submitted Recipes</p>
+                  <p className="text-xs text-indigo-600 mt-1">
+                    {myRecipes.filter(r => r.status === 'pending').length} pending review
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-rose-200 bg-rose-50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <Heart className="w-8 h-8 text-rose-600" />
+                    <span className="text-3xl font-bold text-rose-900">{favoriteMeals.length}</span>
+                  </div>
+                  <p className="text-sm text-rose-700 font-medium">Favorite Meals</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-emerald-200 bg-emerald-50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <Calendar className="w-8 h-8 text-emerald-600" />
+                    <span className="text-3xl font-bold text-emerald-900">{mealPlans.length}</span>
+                  </div>
+                  <p className="text-sm text-emerald-700 font-medium">Meal Plans</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-purple-600" />
+                  Monthly Health Report
+                </CardTitle>
+                <CardDescription>
+                  Generate a comprehensive PDF of your health metrics, nutrition, and progress
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => setReportDialogOpen(true)}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Generate Report
+                </Button>
+                <p className="text-xs text-slate-600 mt-3">
+                  ✨ Download your monthly report with lab results, nutrition analysis, achievements, and goals for next month.
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-rose-200 bg-rose-50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <Heart className="w-8 h-8 text-rose-600" />
-                  <span className="text-3xl font-bold text-rose-900">{favoriteMeals.length}</span>
-                </div>
-                <p className="text-sm text-rose-700 font-medium">Favorite Meals</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-emerald-200 bg-emerald-50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <Calendar className="w-8 h-8 text-emerald-600" />
-                  <span className="text-3xl font-bold text-emerald-900">{mealPlans.length}</span>
-                </div>
-                <p className="text-sm text-emerald-700 font-medium">Meal Plans</p>
               </CardContent>
             </Card>
           </div>
@@ -964,6 +992,13 @@ export default function Profile() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Monthly Report Dialog */}
+      <MonthlyReportDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        subscriptionStatus={userSettings?.subscription_plan || 'free'}
+      />
     </div>
   );
 }

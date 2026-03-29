@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingDown, Camera, BarChart3, Award, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingDown, Camera, BarChart3, Award, Loader2, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProgressEntryForm from '../components/progress/ProgressEntryForm';
 import ProgressTimeline from '../components/progress/ProgressTimeline';
 import ProgressCharts from '../components/progress/ProgressCharts';
 import MilestoneDetector from '../components/progress/MilestoneDetector';
+import MonthlyReportDialog from '../components/progress/MonthlyReportDialog';
 
 export default function MyProgress() {
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: progressEntries = [], isLoading } = useQuery({
@@ -28,6 +31,16 @@ export default function MyProgress() {
       const user = await base44.auth.me();
       const streaks = await base44.entities.UserStreak.filter({ created_by: user.email });
       return streaks?.[0] || {};
+    },
+    retry: false
+  });
+
+  const { data: userSettings = {} } = useQuery({
+    queryKey: ['userSettings'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      const settings = await base44.entities.UserSettings.filter({ created_by: user.email });
+      return settings?.[0] || {};
     },
     retry: false
   });
@@ -75,11 +88,20 @@ export default function MyProgress() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">My Progress</h1>
-        <p className="text-slate-600 mt-1">
-          Track your transformation with photos, measurements, and charts
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">My Progress</h1>
+          <p className="text-slate-600 mt-1">
+            Track your transformation with photos, measurements, and charts
+          </p>
+        </div>
+        <Button
+          onClick={() => setReportDialogOpen(true)}
+          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 whitespace-nowrap"
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Generate Report
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -175,6 +197,13 @@ export default function MyProgress() {
           </motion.div>
         </TabsContent>
       </Tabs>
+
+      {/* Monthly Report Dialog */}
+      <MonthlyReportDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        subscriptionStatus={userSettings.subscription_plan || 'free'}
+      />
     </div>
   );
 }

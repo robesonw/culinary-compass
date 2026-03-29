@@ -10,6 +10,7 @@ import Onboarding from './pages/Onboarding';
 import Pantry from './pages/Pantry';
 import ProgressTracking from './pages/ProgressTracking';
 import RecipeImport from './pages/RecipeImport';
+import AICoach from './pages/AICoach';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
       <Route path="/Pantry" element={<LayoutWrapper currentPageName="Pantry"><Pantry /></LayoutWrapper>} />
       <Route path="/ProgressTracking" element={<LayoutWrapper currentPageName="ProgressTracking"><ProgressTracking /></LayoutWrapper>} />
       <Route path="/RecipeImport" element={<LayoutWrapper currentPageName="RecipeImport"><RecipeImport /></LayoutWrapper>} />
+      <Route path="/AICoach" element={<LayoutWrapper currentPageName="AICoach"><AICoach /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

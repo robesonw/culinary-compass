@@ -20,7 +20,8 @@ import {
   MessageSquare,
   Zap,
   Package,
-  Link2
+  Link2,
+  Bot
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,7 @@ const navigation = [
   { name: 'Lab Results', href: 'LabResults', icon: FileText },
   { name: 'Health Diet Hub', href: 'HealthDietHub', icon: ChefHat },
   { name: 'AI Recipe Generator', href: 'AIRecipeGenerator', icon: Sparkles },
+  { name: 'AI Coach', href: 'AICoach', icon: Bot },
   { name: 'Import Recipe', href: 'RecipeImport', icon: Link2 },
   { name: 'Meal Plans', href: 'MealPlans', icon: Calendar },
   { name: 'Nutrition Tracking', href: 'NutritionTracking', icon: TrendingUp },

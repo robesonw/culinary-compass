@@ -83,47 +83,40 @@ export default function CreatePlanDialog({ open, onOpenChange }) {
   const handleCreatePlan = async () => {
     if (selectedDiet === 'custom') {
       setIsGenerating(true);
-      
-      const daysCount = preferences.duration === 'day' ? 1 : preferences.duration === '3days' ? 3 : 7;
-      const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-      
-      const prompt = `Create a ${daysCount}-day meal plan with:
-Foods liked: ${preferences.foodsLiked || 'No preferences'}
-Foods to avoid: ${preferences.foodsAvoided || 'None'}
-Notes: ${preferences.dietaryNotes || 'None'}
 
-For each day provide breakfast, lunch, dinner with: name, calories (format: "XXX-XXX kcal"), nutrients, prepTip.
-Return JSON array with ${daysCount} days starting from ${dayNames[0]}.`;
+      const daysCount = preferences.duration === 'day' ? 1 : preferences.duration === '3days' ? 3 : 7;
+      const generatedPlanName = planName || `Custom AI Plan - ${new Date().toLocaleDateString()}`;
 
       try {
-        const response = await base44.integrations.Core.InvokeLLM({
-          prompt,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              meal_plan: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    day: { type: "string" },
-                    breakfast: { type: "object", properties: { name: { type: "string" }, calories: { type: "string" }, nutrients: { type: "string" }, prepTip: { type: "string" } } },
-                    lunch: { type: "object", properties: { name: { type: "string" }, calories: { type: "string" }, nutrients: { type: "string" }, prepTip: { type: "string" } } },
-                    dinner: { type: "object", properties: { name: { type: "string" }, calories: { type: "string" }, nutrients: { type: "string" }, prepTip: { type: "string" } } }
-                  }
-                }
-              }
-            }
-          }
+        const res = await fetch('https://torez-00913626.base44.app/functions/generateMealPlan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            days: daysCount,
+            planName: generatedPlanName,
+            preferences: {
+              foods_liked: preferences.foodsLiked,
+              foods_avoided: preferences.foodsAvoided,
+              dietary_restrictions: preferences.dietaryNotes,
+            },
+            labResults: null,
+          }),
         });
 
-        if (response?.meal_plan) {
+        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+
+        const data = await res.json();
+        const mealPlan = data.meal_plan || data;
+
+        if (mealPlan?.days) {
           createMutation.mutate({
-            name: planName || `Custom AI Plan - ${new Date().toLocaleDateString()}`,
+            name: generatedPlanName,
             diet_type: 'custom',
-            days: response.meal_plan,
-            preferences
+            days: mealPlan.days.slice(0, daysCount),
+            preferences,
           });
+        } else {
+          toast.error('Unexpected response from meal plan service');
         }
       } catch (error) {
         toast.error('Failed to generate plan');

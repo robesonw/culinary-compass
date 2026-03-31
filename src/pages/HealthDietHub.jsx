@@ -467,253 +467,55 @@ Every single meal MUST reflect these adjustments. Prioritize foods that correct 
     setAiError(null);
 
     const daysCount = duration === 'day' ? 1 : duration === '3days' ? 3 : 7;
-    const dayNames = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
-    
-    const { text: healthContext, abnormals: labAbnormals, rules: labRules, labDate } = getHealthContext();
+    const { abnormals: labAbnormals, labDate } = getHealthContext();
     const hasLabOptimization = labAbnormals.length > 0;
     const goalDescription = healthGoals.find(g => g.value === healthGoal)?.label || 'General Wellness';
 
-    // Determine diabetes carb targets from HbA1c
-    let diabetesRules = '';
-    let carbTargetPerMeal = 45;
-    if (diabetesType !== 'none' && labResults.length > 0) {
-      const b = labResults[0].biomarkers || {};
-      const hba1c = b.HbA1c?.value || b['Hemoglobin A1c']?.value || b['A1c']?.value || null;
-      
-      if (hba1c) {
-        if (hba1c > 8) {
-          carbTargetPerMeal = 35;
-          diabetesRules = `DIABETES MEAL PLAN (HbA1c ${hba1c}%): Strict carb control at 30-45g per meal, consistent across all meals. Every meal MUST include: protein source, healthy fat, non-starchy vegetables, and carbs from low-GI foods only (GI < 55). Avoid white bread, white rice, sugary foods, fruit juice. Include blood sugar stabilizers: cinnamon, leafy greens, legumes, vinegar. Space meals 4-5 hours apart.`;
-        } else if (hba1c >= 6.5 && hba1c <= 8) {
-          carbTargetPerMeal = 50;
-          diabetesRules = `DIABETES MEAL PLAN (HbA1c ${hba1c}%): Moderate carb control at 45-60g per meal, carb-consistent daily. Every meal includes: lean protein, healthy fat, vegetables, and low-GI carbs (GI < 55). Flag any high-GI foods. Prioritize cinnamon, apple cider vinegar, and whole grains. Balance macros: 30% protein, 40% carbs, 30% fat.`;
-        } else if (hba1c >= 5.7 && hba1c < 6.5) {
-          carbTargetPerMeal = 50;
-          diabetesRules = `PRE-DIABETES MEAL PLAN (HbA1c ${hba1c}%): Focus on low glycemic index foods (GI < 55) at 45-60g carbs per meal. Every meal includes: protein, healthy fat, and plenty of non-starchy vegetables. Avoid added sugars, refined grains, and sugary drinks. Include soluble fiber (oats, beans, apples) and blood sugar-supporting foods (cinnamon, vinegar).`;
-        }
-      }
-    }
+    // Build preferences object to send
+    const preferencesPayload = {
+      ...userPrefs,
+      health_goal: healthGoal,
+      diabetes_type: diabetesType,
+      heart_condition: heartCondition,
+      kidney_condition: kidneyCondition,
+      ckd_stage: ckdStage,
+      foods_liked: [foodsLiked, userPrefs.foods_liked].filter(Boolean).join(', '),
+      foods_avoided: [foodsAvoided, userPrefs.foods_avoided].filter(Boolean).join(', '),
+      allergens,
+      cuisine_preferences: cuisinePreferences,
+      cooking_time: cookingTime,
+      skill_level: skillLevel,
+      num_people: numPeople,
+      weekly_budget: weeklyBudget,
+      dietary_restrictions: customRequirements || userPrefs.dietary_restrictions,
+      cultural_styles: customCulturalStyle.trim() ? [customCulturalStyle.trim()] : culturalStyles,
+      life_stage: lifeStage,
+      pantry_items: usePantry ? pantryItems.map(i => i.name) : [],
+    };
 
-    // Determine heart health rules
-    let heartRules = '';
-    if (heartCondition !== 'none') {
-      const sodiumTarget = heartCondition === 'hypertension' ? 1500 : 2000;
-      heartRules = `HEART HEALTH MEAL PLAN (${heartCondition}): ALL MEALS must follow: Saturated fat max 7% of calories (aim under 5g per 500cal meal). ZERO trans fats. Sodium limit ${sodiumTarget}mg/day. Dietary cholesterol under 200mg/day. MUST include 2+ omega-3-rich meals daily (fatty fish: salmon, mackerel, sardines OR flaxseeds, walnuts, chia). Emphasize: oats, barley, beans, leafy greens, olive oil, avocado, berries, nuts. AVOID: red meat, processed meats, full-fat dairy, fried foods, packaged snacks. Every meal includes soluble fiber source.`;
-    }
+    // Get latest lab result biomarkers
+    const latestLabBiomarkers = labResults[0]?.biomarkers || null;
 
-    // Determine kidney health rules
-    let kidneyRules = '';
-    if (kidneyCondition !== 'none') {
-      const getKidneyLimits = (stage) => {
-        if (stage <= 2) return { k: 2500, p: 1000, na: 2000, protein: '0.8g/kg' };
-        if (stage <= 4) return { k: 2000, p: 800, na: 1500, protein: '0.6-0.8g/kg' };
-        return { k: 2000, p: 800, na: 1500, protein: '1.2-1.5g/kg' }; // Dialysis
-      };
-
-      const userWeight = userPrefs?.weight || 70;
-      const limits = getKidneyLimits(kidneyCondition === 'dialysis' ? 5 : ckdStage);
-      const proteinRange = limits.protein;
-
-      kidneyRules = `KIDNEY-FRIENDLY MEAL PLAN (${kidneyCondition}${kidneyCondition === 'ckd' ? ` Stage ${ckdStage}` : ''}): STRICT limits: Potassium max ${limits.k}mg/day, Phosphorus max ${limits.p}mg/day, Sodium max ${limits.na}mg/day. Protein target: ${proteinRange}g/kg (approx ${Math.round(userWeight * 0.8)}-${Math.round(userWeight * 1.5)}g total). AVOID ALL: bananas, oranges, avocados, potatoes, tomatoes, coconut, dairy products, milk, cheese, yogurt, nuts, seeds, dark colas, chocolate, processed foods. EMPHASIZE ONLY: apples, berries, white rice, white bread, cabbage, cauliflower, carrots, cucumber, green beans, egg whites, olive oil, herbs for flavor. NO soy sauce, NO salt substitutes. All recipes must include potassium, phosphorus, sodium values.`;
-    }
-    
-    const allergenText = allergens.length > 0 ? `- STRICT ALLERGEN RESTRICTIONS (NEVER include): ${allergens.join(', ')}` : '';
-
-    // Combine selected cuisine preferences with custom input
-    const allCuisines = [...cuisinePreferences];
-    if (customCuisineInput.trim()) {
-      allCuisines.push(...customCuisineInput.split(',').map(c => c.trim()).filter(c => c));
-    }
-    const cuisineText = allCuisines.length > 0 ? `- Preferred Cuisines: ${allCuisines.join(', ')}` : '';
-
-    const timeText = cookingTime !== 'any' ? `- Cooking Time Preference: ${cookingTime}` : '';
-    const skillText = `- Cooking Skill Level: ${skillLevel}`;
-
-    // Handle multiple cultural styles
-    const effectiveCulturalStyles = customCulturalStyle.trim() 
-      ? [customCulturalStyle.trim()] 
-      : culturalStyles.length > 0 
-        ? culturalStyles 
-        : [];
-    const culturalText = effectiveCulturalStyles.length > 0 
-      ? `- CULTURAL STYLES: ${effectiveCulturalStyles.map(s => s.toUpperCase()).join(' + ')} - Blend these cultural cuisines with traditional ingredients, spices, and cooking methods` 
-      : '';
-
-    const lifeStageText = lifeStage !== 'general' ? `- LIFE STAGE: ${lifeStage.toUpperCase()} - Adjust portions, textures, and nutrients accordingly` : '';
-
-    const pantryText = (usePantry && pantryItems.length > 0) 
-      ? `\nPANTRY ITEMS AVAILABLE (prioritize using these to reduce grocery cost): ${pantryItems.map(i => i.name + (i.quantity ? ` (${i.quantity})` : '')).join(', ')}`
-      : '';
-
-    // Build raw biomarker string from latest lab result
-    const latestLab = labResults[0];
-    const biomarkerLines = latestLab?.biomarkers
-      ? Object.entries(latestLab.biomarkers)
-          .filter(([, v]) => v?.value != null)
-          .map(([key, v]) => `  ${key}: ${v.value} ${v.unit || ''} (${v.status || 'unknown'})`)
-          .join('\n')
-      : '';
-    const labRawText = biomarkerLines
-      ? `\nLAB RESULTS (latest, use these to fine-tune meals):\n${biomarkerLines}`
-      : '';
-
-    const prompt = `You are a professional nutritionist specializing in culturally authentic, health-focused meal planning. Create a ${daysCount}-day personalized meal plan.
-
-HEALTH PROFILE:
-- Primary Goal: ${goalDescription}
-- Age: ${userPrefs.age || 'not specified'}, Gender: ${userPrefs.gender || 'not specified'}
-- Height: ${userPrefs.height ? userPrefs.height + ' cm' : 'not specified'}, Weight: ${userPrefs.weight ? userPrefs.weight + ' kg' : 'not specified'}
-- Number of people: ${numPeople}
-- Plan Budget Target: $${weeklyBudget}
-- Cooking skill level: ${skillLevel}
-- Max cooking time: ${cookingTime}
-${culturalText}
-${lifeStageText}
-${allergenText}
-${cuisineText}
-${timeText}
-${customRequirements ? `- Custom Requirements: ${customRequirements}` : ''}
-${userPrefs.dietary_restrictions ? `- Dietary restrictions: ${userPrefs.dietary_restrictions}` : ''}
-${foodsLiked || userPrefs.foods_liked ? `- Foods they enjoy: ${[foodsLiked, userPrefs.foods_liked].filter(Boolean).join(', ')}` : ''}
-${foodsAvoided || userPrefs.foods_avoided ? `- Foods to avoid: ${[foodsAvoided, userPrefs.foods_avoided].filter(Boolean).join(', ')}` : ''}
-${userPrefs.cuisine_preferences?.length ? `- Saved cuisine preferences: ${userPrefs.cuisine_preferences.join(', ')}` : ''}
-- ${healthContext}
-${labRawText}
-${pantryText}
-${diabetesRules}
-${heartRules}
-${kidneyRules}
-
-IMPORTANT REQUIREMENTS:
-- Scale ALL portions and ingredients for ${numPeople} ${numPeople === 1 ? 'person' : 'people'}
-- Keep TOTAL cost around $${weeklyBudget} (for all ${numPeople} ${numPeople === 1 ? 'person' : 'people'}) by using affordable, seasonal ingredients
-- Each meal must clearly show "Serves ${numPeople}" and calories PER PERSON
-- If muscle gain/athletic goal: prioritize high protein (1.6-2g/kg), show macro breakdown
-- NEVER include allergens: ${allergens.join(', ') || 'none specified'}
-${effectiveCulturalStyle ? `- ALL meals must be ${effectiveCulturalStyle} style with authentic spices, techniques, and presentation` : ''}
-${lifeStage === 'children' ? '- Make meals fun, colorful, nutrient-dense, easy to eat' : ''}
-${lifeStage === 'pregnancy' ? '- Focus on folate, iron, calcium, omega-3; avoid raw/undercooked foods' : ''}
-${lifeStage === 'seniors' ? '- Easy to chew/digest, bone health focus, simple preparation' : ''}
-
-For each day, provide:
-- Breakfast, Lunch, Dinner, and Snacks
-- Each meal MUST include: 
-  * name (culturally appropriate)
-  * description
-  * calories PER PERSON (as string like "400 kcal")
-  * protein, carbs, fat (in grams, as numbers)
-  * glycemic_load: LOW, MEDIUM, or HIGH (GI 55 threshold)
-  * sat_fat: saturated fat in grams
-  * sodium: sodium in mg (critical for heart health)
-  * dietary_cholesterol: dietary cholesterol in mg
-  * potassium: potassium in mg (CRITICAL for kidney health)
-  * phosphorus: phosphorus in mg (CRITICAL for kidney health)
-  * prepSteps (array of 3-5 clear cooking steps)
-  * prepTime (e.g., "15 minutes")
-  * difficulty (Easy/Medium/Hard)
-  * equipment (array, e.g., ["skillet", "cutting board"])
-  * healthBenefit (specific health benefit for the goal, e.g., "Turmeric supports liver detoxification")
-  * meal_tag: a short 2-4 word label describing the key health benefit of THIS meal. If heart health mode is active, include "🍎 Heart-healthy" or "🐟 Omega-3 rich" tags when applicable. Make tags specific to the biomarker conditions present.
-
-${hasLabOptimization ? `Also return a "lab_adjustments" array with 2-3 bullet points explaining what KEY dietary changes were made to this plan based on the lab results and WHY. Be specific (e.g., "Added salmon 3x/week to raise HDL cholesterol from 35 mg/dL").` : ''}
-
-Return a JSON object with the meal plan, health notes, estimated weekly cost, average daily macros${hasLabOptimization ? ', and lab_adjustments' : ''}.`;
+    const planNameLabel = `${goalDescription} Plan - ${new Date().toLocaleDateString()}`;
 
     try {
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-        type: "object",
-        properties: {
-          health_notes: {
-            type: "string",
-            description: "2-3 sentences about how this plan supports their health goals"
-          },
-          lab_adjustments: {
-            type: "array",
-            items: { type: "string" },
-            description: "2-3 bullet points explaining key dietary changes made based on lab results and why"
-          },
-          estimated_weekly_cost: {
-            type: "number",
-            description: "Estimated total cost for the plan duration in dollars"
-          },
-          average_daily_macros: {
-            type: "object",
-            properties: {
-              protein: { type: "number", description: "Grams per person per day" },
-              carbs: { type: "number", description: "Grams per person per day" },
-              fat: { type: "number", description: "Grams per person per day" }
-            }
-          },
-          days: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                day: { type: "string" },
-                breakfast: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    description: { type: "string" },
-                    calories: { type: "string" },
-                    protein: { type: "number" },
-                    carbs: { type: "number" },
-                    fat: { type: "number" },
-                    glycemic_load: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
-                    health_benefit: { type: "string" },
-                    meal_tag: { type: "string" }
-                  }
-                },
-                lunch: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    description: { type: "string" },
-                    calories: { type: "string" },
-                    protein: { type: "number" },
-                    carbs: { type: "number" },
-                    fat: { type: "number" },
-                    glycemic_load: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
-                    health_benefit: { type: "string" },
-                    meal_tag: { type: "string" }
-                  }
-                },
-                dinner: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    description: { type: "string" },
-                    calories: { type: "string" },
-                    protein: { type: "number" },
-                    carbs: { type: "number" },
-                    fat: { type: "number" },
-                    glycemic_load: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
-                    health_benefit: { type: "string" },
-                    meal_tag: { type: "string" }
-                  }
-                },
-                snacks: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    description: { type: "string" },
-                    calories: { type: "string" },
-                    protein: { type: "number" },
-                    carbs: { type: "number" },
-                    fat: { type: "number" },
-                    glycemic_load: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
-                    health_benefit: { type: "string" },
-                    meal_tag: { type: "string" }
-                  }
-                }
-              }
-            }
-          }
-        }
-        }
+      const res = await fetch('https://torez-00913626.base44.app/functions/generateMealPlan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          days: daysCount,
+          planName: planNameLabel,
+          preferences: preferencesPayload,
+          labResults: latestLabBiomarkers,
+        }),
       });
+
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
+      }
+
+      const data = await res.json();
+      const response = data.meal_plan || data;
 
       // Ensure we only get the exact number of days requested
       if (response?.days) {
@@ -723,9 +525,9 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
       setGeneratedPlan(response);
       setCheckedItems(new Set());
 
-      const effectiveCulturalLabel = customCulturalStyle.trim() 
+      const effectiveCulturalLabel = customCulturalStyle.trim()
         ? customCulturalStyle.trim()
-        : culturalStyles.length > 0 
+        : culturalStyles.length > 0
           ? culturalStyles.map(s => culturalStylesList.find(cs => cs.value === s)?.label || s).join(' + ')
           : '';
       const culturalLabel = effectiveCulturalLabel ? ` ${effectiveCulturalLabel}` : '';
@@ -744,7 +546,7 @@ Return a JSON object with the meal plan, health notes, estimated weekly cost, av
       generateMealImages(response);
     } catch (error) {
       console.error(error);
-      setAiError('The AI could not generate your meal plan. This may be a temporary issue — please try again in a moment.');
+      setAiError('Could not generate your meal plan. Please try again in a moment.');
     } finally {
       setIsGenerating(false);
     }

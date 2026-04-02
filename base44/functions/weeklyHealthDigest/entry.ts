@@ -200,15 +200,15 @@ Deno.serve(async (req) => {
       </div>
 
       <div style="text-align: center; margin-top: 30px;">
-        <a href="https://vitaplate.app/Dashboard" class="button">View Full Dashboard</a>
+        <a href="https://vitaplate.ai/Dashboard" class="button">View Full Dashboard</a>
       </div>
     </div>
 
     <div class="footer">
       <p style="margin: 0 0 10px 0;">VitaPlate • Your AI-Powered Nutrition Coach</p>
       <p style="margin: 0;">
-        <a href="https://vitaplate.app/Settings">Manage Preferences</a> | 
-        <a href="https://vitaplate.app/Settings">Unsubscribe from Weekly Digest</a>
+        <a href="https://vitaplate.ai/Settings">Manage Preferences</a> | 
+        <a href="https://vitaplate.ai/Settings">Unsubscribe from Weekly Digest</a>
       </p>
     </div>
   </div>

@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 You haven't logged any meals today yet! Don't let your nutrition streak end.
 
 Log your meals now to stay on track with your health goals:
-https://vitaplate.base44.app/NutritionTracking
+https://vitaplate.ai/NutritionTracking
 
 Stay healthy,
 The VitaPlate Team`

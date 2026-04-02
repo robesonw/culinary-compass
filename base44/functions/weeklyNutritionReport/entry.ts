@@ -83,7 +83,7 @@ Here's your personalized nutrition summary for last week:
 ${tip}
 
 Keep up the great work! Log your meals this week:
-https://vitaplate.base44.app/NutritionTracking
+https://vitaplate.ai/NutritionTracking
 
 Stay healthy,
 The VitaPlate Team`

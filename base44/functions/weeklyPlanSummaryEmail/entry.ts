@@ -47,7 +47,7 @@ ${macroLine}
 
 ${plan.estimated_cost ? `Estimated grocery cost: $${plan.estimated_cost.toFixed(2)}` : ''}
 
-View your full plan and grocery list: https://vitaplate.base44.app/MealPlans
+View your full plan and grocery list: https://vitaplate.ai/MealPlans
 
 Have a healthy week!
 The VitaPlate Team`

@@ -1,6 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
+  // PAUSED: All email notifications disabled until further notice
+  return Response.json({ skipped: true, reason: 'Notifications paused by admin' });
+
   try {
     const base44 = createClientFromRequest(req);
 
